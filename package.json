@@ -1,0 +1,31 @@
+{
+  "name": "bloggrs-pluggable",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "plugins/*"
+  ],
+  "scripts": {
+    "dev:web": "pnpm --filter @bloggrs/web dev",
+    "dev:api": "pnpm --filter @bloggrs/api dev",
+    "dev": "concurrently -k -n web,api -c blue,green \"pnpm dev:web\" \"pnpm dev:api\"",
+    "build": "pnpm -r build"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.5",
+    "bcryptjs": "^3.0.2",
+    "concurrently": "^9.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "prisma": "^6.18.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.18.0",
+    "express": "^5.1.0",
+    "leaflet": "^1.9.4",
+    "vue": "^3.5.22",
+    "vue-router": "^4.6.3"
+  }
+}

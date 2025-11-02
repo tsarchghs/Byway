@@ -1,0 +1,17 @@
+{
+  "date": "2025-11-02T11:58:34.082Z",
+  "preset": "nitro-dev",
+  "framework": {
+    "name": "nuxt",
+    "version": "4.2.0"
+  },
+  "versions": {
+    "nitro": "2.12.8"
+  },
+  "dev": {
+    "pid": 11185,
+    "workerAddress": {
+      "socketPath": "/Users/gjergjkadriu/shopware-temp/nitro-worker-11185-2-2-6593.sock"
+    }
+  }
+}
