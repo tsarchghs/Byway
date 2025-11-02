@@ -162,7 +162,7 @@
     "../modules/dist/runtime"
   ],
   "exclude": [
-    "../../../../node_modules",
+    "../../../node_modules",
     "../../../node_modules/.pnpm/nuxt@4.2.0_@parcel+watcher@2.5.1_@types+node@22.18.13_@vue+compiler-sfc@3.5.22_db0@0.3.4_iore_osugdioqrxz5r6rprm5dacpjmy/node_modules/nuxt/node_modules",
     "../../../packages/shared-ui/node_modules",
     "../../../node_modules/.pnpm/@nuxt+devtools@2.7.0_vite@7.1.12_@types+node@22.18.13_jiti@2.6.1_terser@5.44.0_tsx@4.20.6_yam_vehq43gy6idzlt7qme7gzblbvq/node_modules/@nuxt/devtools/node_modules",

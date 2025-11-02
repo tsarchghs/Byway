@@ -36,6 +36,14 @@ if (!pluginsDir) {
       }
     }
   }
+    // ---- expose each plugin's public/ folder ----
+    for (const name of pluginNames) {
+      const publicDir = path.join(pluginsDir, name, 'public')
+      if (fs.existsSync(publicDir)) {
+        app.use(`/plugins/${name}`, express.static(publicDir))
+        console.log(`[api] Serving static: /plugins/${name} -> ${publicDir}`)
+      }
+    }
 }
 
 app.get('/api/health', (_req, res) => {
