@@ -33,8 +33,8 @@
 </svg>
 
         </button>
-        <NuxtLink to="/login" class="login-btn">Log In</NuxtLink>
-        <NuxtLink to="/signup" class="signup-btn">Sign Up</NuxtLink>
+        <NuxtLink to="/auth/login" class="login-btn">Log In</NuxtLink>
+        <NuxtLink to="/auth/signup" class="signup-btn">Sign Up</NuxtLink>
       </div>
     </div>
 

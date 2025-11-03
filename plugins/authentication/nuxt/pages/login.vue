@@ -85,11 +85,6 @@
     <div class="signin-image"></div>
   </section>
 </template>
-
-<script setup>
-// purely presentational for now
-</script>
-
 <style scoped>
 /* === LAYOUT === */
 .signin-section {
