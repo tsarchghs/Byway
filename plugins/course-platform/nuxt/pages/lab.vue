@@ -1,0 +1,857 @@
+<template>
+  <a-layout id="course-area" class="course-area">
+    <!-- SIDEBAR -->
+    <a-layout-sider
+      collapsible
+      v-model:collapsed="siderCollapsed"
+      :width="260"
+      class="sider"
+    >
+      <div class="sider-head">
+        <a-avatar :src="course.avatar" shape="square" :size="46" />
+        <div class="sider-title" v-show="!siderCollapsed">
+          <div class="name">{{ course.title }}</div>
+          <div class="muted">{{ course.instructor.name }}</div>
+        </div>
+      </div>
+
+      <a-menu
+        mode="inline"
+        :selectedKeys="[active]"
+        @click="onMenu"
+        :inline-collapsed="siderCollapsed"
+      >
+        <a-menu-item key="overview">
+          <template #icon><DashboardOutlined /></template>
+          Overview
+        </a-menu-item>
+        <a-menu-item key="modules">
+          <template #icon><BookOutlined /></template>
+          Modules
+        </a-menu-item>
+        <a-menu-item key="assignments">
+          <template #icon><FileTextOutlined /></template>
+          Assignments
+        </a-menu-item>
+        <a-menu-item key="quizzes">
+          <template #icon><ExperimentOutlined /></template>
+          Quizzes
+        </a-menu-item>
+        <a-menu-item key="discussions">
+          <template #icon><MessageOutlined /></template>
+          Discussions
+        </a-menu-item>
+        <a-menu-item key="files">
+          <template #icon><PaperClipOutlined /></template>
+          Files
+        </a-menu-item>
+        <a-menu-item key="participants">
+          <template #icon><TeamOutlined /></template>
+          Participants
+        </a-menu-item>
+        <a-menu-item key="grades">
+          <template #icon><OrderedListOutlined /></template>
+          Gradebook
+        </a-menu-item>
+        <a-menu-item key="calendar">
+          <template #icon><CalendarOutlined /></template>
+          Calendar
+        </a-menu-item>
+        <a-menu-item key="analytics">
+          <template #icon><BarChartOutlined /></template>
+          Analytics
+        </a-menu-item>
+        <a-menu-item key="settings">
+          <template #icon><SettingOutlined /></template>
+          Settings
+        </a-menu-item>
+      </a-menu>
+    </a-layout-sider>
+
+    <!-- MAIN -->
+    <a-layout>
+      <a-layout-header class="topbar">
+        <a-page-header
+          :title="course.title"
+          :sub-title="`${course.term} • ${course.instructor.name}`"
+          ghost
+        >
+          <template #extra>
+            <a-segmented
+              :options="['Student view','Instructor view']"
+              v-model:value="viewMode"
+              size="small"
+            />
+            <a-button type="default" @click="toggleEnroll">
+              <template #icon>
+                <component :is="enrolled ? CheckCircleOutlined : PlusOutlined" />
+              </template>
+              {{ enrolled ? 'Enrolled' : 'Join Course' }}
+            </a-button>
+            <a-dropdown>
+              <a-button>
+                Actions
+                <DownOutlined />
+              </a-button>
+              <template #overlay>
+                <a-menu>
+                  <a-menu-item @click="openAnnouncementEditor()">New announcement</a-menu-item>
+                  <a-menu-item @click="openAssignmentEditor()">New assignment</a-menu-item>
+                  <a-menu-item @click="openModuleCreator()">New module</a-menu-item>
+                </a-menu>
+              </template>
+            </a-dropdown>
+          </template>
+        </a-page-header>
+      </a-layout-header>
+
+      <a-layout-content class="content">
+        <a-spin :spinning="loading">
+          <!-- OVERVIEW -->
+          <div v-show="active==='overview'" class="panel">
+            <a-row :gutter="[16,16]">
+              <a-col :xs="24" :md="10">
+                <a-card title="Progress">
+                  <div class="stack-8">
+                    <a-progress :percent="progressPercent" status="active" />
+                    <div class="muted">
+                      {{ completedLessons }} / {{ totalLessons }} lessons complete
+                    </div>
+                    <a-space wrap>
+                      <a-tag color="blue">Activities: {{ assignments.length }}</a-tag>
+                      <a-tag color="cyan">Quizzes: {{ quizzes.length }}</a-tag>
+                      <a-tag>Files: {{ files.length }}</a-tag>
+                    </a-space>
+                  </div>
+                </a-card>
+                <a-card title="Upcoming deadlines" class="mt16">
+                  <a-list
+                    v-if="upcoming.length"
+                    :data-source="upcoming"
+                    :renderItem="renderUpcoming"
+                  />
+                  <a-empty v-else description="No upcoming items" />
+                </a-card>
+              </a-col>
+              <a-col :xs="24" :md="14">
+                <a-card title="Recent announcements" :extra="overviewExtra">
+                  <a-list
+                    v-if="announcements.length"
+                    :data-source="announcements.slice(0,5)"
+                  >
+                    <template #renderItem="{ item }">
+                      <a-list-item>
+                        <a-list-item-meta
+                          :title="item.title"
+                          :description="formatDate(item.date)"
+                        />
+                        <template #actions>
+                          <a-button size="small" @click="openAnnouncement(item)">Open</a-button>
+                        </template>
+                      </a-list-item>
+                    </template>
+                  </a-list>
+                  <a-empty v-else description="Nothing yet" />
+                </a-card>
+              </a-col>
+            </a-row>
+          </div>
+
+          <!-- MODULES -->
+          <div v-show="active==='modules'" class="panel">
+            <div class="panel-head">
+              <a-typography-title :level="3">Modules</a-typography-title>
+              <a-space>
+                <a-input-search v-model:value="moduleSearch" placeholder="Search modules/lessons" />
+                <a-button type="primary" @click="openModuleCreator">New Module</a-button>
+              </a-space>
+            </div>
+            <a-collapse accordion>
+              <a-collapse-panel
+                v-for="m in filteredModules"
+                :key="m.id"
+                :header="`${m.title} • ${m.lessons.length} lessons`"
+              >
+                <a-list :data-source="m.lessons">
+                  <template #renderItem="{ item }">
+                    <a-list-item>
+                      <a-space align="center">
+                        <a-checkbox :checked="item.done" @change="toggleLesson(m, item)">
+                          <span :class="{done:item.done}">{{ item.title }}</span>
+                        </a-checkbox>
+                        <a-tag v-if="item.type" color="geekblue">{{ item.type }}</a-tag>
+                      </a-space>
+                      <template #actions>
+                        <a-button size="small" @click="openLesson(m, item)">Open</a-button>
+                        <a-button size="small" type="text" @click="quickAdd('assignment', m, item)">+ Assignment</a-button>
+                      </template>
+                    </a-list-item>
+                  </template>
+                </a-list>
+              </a-collapse-panel>
+            </a-collapse>
+          </div>
+
+          <!-- ASSIGNMENTS -->
+          <div v-show="active==='assignments'" class="panel">
+            <div class="panel-head">
+              <a-typography-title :level="3">Assignments</a-typography-title>
+              <a-space>
+                <a-segmented
+                  v-model:value="assignmentFilter"
+                  :options="['All','Open','Closed']"
+                />
+                <a-input-search
+                  v-model:value="assignmentSearch"
+                  placeholder="Search assignments"
+                  allow-clear
+                />
+                <a-button type="primary" @click="openAssignmentEditor()">New</a-button>
+              </a-space>
+            </div>
+            <a-table
+              :columns="assignmentCols"
+              :data-source="filteredAssignments"
+              row-key="id"
+              :pagination="{ pageSize: 8 }"
+              size="middle"
+            >
+              <template #bodyCell="{ column, record }">
+                <template v-if="column.key==='title'">
+                  <a-space>
+                    <a-badge :status="record.status==='open' ? 'processing' : 'default'" />
+                    <a-typography-link @click="openAssignment(record)">{{ record.title }}</a-typography-link>
+                  </a-space>
+                </template>
+                <template v-else-if="column.key==='due'">
+                  {{ formatDate(record.due) }}
+                </template>
+                <template v-else-if="column.key==='points'">
+                  {{ record.points }}
+                </template>
+                <template v-else-if="column.key==='actions'">
+                  <a-space>
+                    <a-button size="small" @click="openAssignment(record)">View</a-button>
+                    <a-button size="small" @click="openAssignmentEditor(record)">Edit</a-button>
+                    <a-popconfirm title="Delete assignment?" @confirm="removeAssignment(record)">
+                      <a-button size="small" danger>Delete</a-button>
+                    </a-popconfirm>
+                  </a-space>
+                </template>
+              </template>
+            </a-table>
+          </div>
+
+          <!-- QUIZZES -->
+          <div v-show="active==='quizzes'" class="panel">
+            <div class="panel-head">
+              <a-typography-title :level="3">Quizzes</a-typography-title>
+              <a-button type="primary" @click="createQuiz">New Quiz</a-button>
+            </div>
+            <a-table
+              :columns="quizCols"
+              :data-source="quizzes"
+              row-key="id"
+              :pagination="{ pageSize: 8 }"
+              size="middle"
+            />
+          </div>
+
+          <!-- DISCUSSIONS -->
+          <div v-show="active==='discussions'" class="panel">
+            <div class="panel-head">
+              <a-typography-title :level="3">Discussions</a-typography-title>
+              <a-space>
+                <a-input-search v-model:value="discussionSearch" placeholder="Search topics" />
+                <a-button @click="openDiscussionEditor()">New Topic</a-button>
+              </a-space>
+            </div>
+            <a-list :data-source="filteredDiscussions" item-layout="horizontal">
+              <template #renderItem="{ item }">
+                <a-list-item>
+                  <a-list-item-meta
+                    :title="item.title"
+                    :description="`${item.posts.length} posts • last active ${formatDate(item.updatedAt)}`"
+                  />
+                  <template #actions>
+                    <a-button size="small" @click="openDiscussion(item)">Open</a-button>
+                  </template>
+                </a-list-item>
+              </template>
+            </a-list>
+          </div>
+
+          <!-- FILES -->
+          <div v-show="active==='files'" class="panel">
+            <div class="panel-head">
+              <a-typography-title :level="3">Files</a-typography-title>
+              <a-space>
+                <a-select v-model:value="fileType" style="min-width: 140px">
+                  <a-select-option value="all">All types</a-select-option>
+                  <a-select-option value="pdf">PDF</a-select-option>
+                  <a-select-option value="video">Video</a-select-option>
+                  <a-select-option value="doc">Documents</a-select-option>
+                </a-select>
+                <a-input-search v-model:value="fileSearch" placeholder="Search files" />
+              </a-space>
+            </div>
+            <a-upload-dragger
+              :before-upload="handleBeforeUpload"
+              :show-upload-list="false"
+              multiple
+            >
+              <p class="ant-upload-drag-icon"><InboxOutlined /></p>
+              <p class="ant-upload-text">Click or drag files to upload</p>
+              <p class="ant-upload-hint">Mock upload adds entries locally.</p>
+            </a-upload-dragger>
+
+            <a-list class="mt16" :data-source="filteredFiles" grid="{ gutter: 16, column: 3 }">
+              <template #renderItem="{ item }">
+                <a-list-item>
+                  <a-card :title="item.name" :extra="item.type.toUpperCase()">
+                    <a-space direction="vertical" style="width:100%">
+                      <div class="muted">Added {{ formatDate(item.date) }}</div>
+                      <a-space>
+                        <a-button size="small" type="link">Open</a-button>
+                        <a-popconfirm title="Remove file?" @confirm="removeFile(item)">
+                          <a-button size="small" danger>Delete</a-button>
+                        </a-popconfirm>
+                      </a-space>
+                    </a-space>
+                  </a-card>
+                </a-list-item>
+              </template>
+            </a-list>
+          </div>
+
+          <!-- PARTICIPANTS -->
+          <div v-show="active==='participants'" class="panel">
+            <div class="panel-head">
+              <a-typography-title :level="3">Participants</a-typography-title>
+              <a-space>
+                <a-input-search v-model:value="participantSearch" placeholder="Search participants" />
+                <a-select v-model:value="roleFilter" style="min-width: 140px">
+                  <a-select-option value="all">All roles</a-select-option>
+                  <a-select-option value="student">Students</a-select-option>
+                  <a-select-option value="ta">TAs</a-select-option>
+                </a-select>
+              </a-space>
+            </div>
+            <a-table
+              :columns="participantCols"
+              :data-source="filteredParticipants"
+              row-key="id"
+              :pagination="{ pageSize: 10 }"
+              size="middle"
+            />
+          </div>
+
+          <!-- GRADEBOOK -->
+          <div v-show="active==='grades'" class="panel">
+            <div class="panel-head">
+              <a-typography-title :level="3">Gradebook</a-typography-title>
+              <a-space>
+                <a-select v-model:value="selectedStudent" style="min-width: 220px" allow-clear placeholder="Filter by student">
+                  <a-select-option v-for="p in participants" :key="p.id" :value="p.name">{{ p.name }}</a-select-option>
+                </a-select>
+                <a-button @click="exportGrades">Export CSV</a-button>
+              </a-space>
+            </div>
+            <a-table
+              :columns="gradeCols"
+              :data-source="filteredGrades"
+              row-key="id"
+              :pagination="{ pageSize: 10 }"
+              size="middle"
+            />
+          </div>
+
+          <!-- CALENDAR -->
+          <div v-show="active==='calendar'" class="panel">
+            <a-row :gutter="[16,16]">
+              <a-col :xs="24" :md="16">
+                <a-card title="Course calendar">
+                  <a-calendar>
+                    <template #dateCellRender="{ current }">
+                      <ul class="events">
+                        <li
+                          v-for="e in eventsOn(current.toDate())"
+                          :key="e.id"
+                        >
+                          <a-badge :status="e.type==='assignment' ? 'processing' : 'default'" :text="e.title" />
+                        </li>
+                      </ul>
+                    </template>
+                  </a-calendar>
+                </a-card>
+              </a-col>
+              <a-col :xs="24" :md="8">
+                <a-card title="Upcoming">
+                  <a-list :data-source="upcoming">
+                    <template #renderItem="{ item }">
+                      <a-list-item>
+                        <a-list-item-meta
+                          :title="item.title"
+                          :description="formatDate(item.due)"
+                        />
+                      </a-list-item>
+                    </template>
+                  </a-list>
+                </a-card>
+              </a-col>
+            </a-row>
+          </div>
+
+          <!-- ANALYTICS -->
+          <div v-show="active==='analytics'" class="panel">
+            <a-row :gutter="[16,16]">
+              <a-col :xs="24" :md="8">
+                <a-card>
+                  <a-statistic title="Average grade" :value="avgGrade" suffix="%" />
+                </a-card>
+              </a-col>
+              <a-col :xs="24" :md="8">
+                <a-card>
+                  <a-statistic title="Submission rate" :value="submissionRate" suffix="%" />
+                </a-card>
+              </a-col>
+              <a-col :xs="24" :md="8">
+                <a-card>
+                  <a-statistic title="Active discussions" :value="discussions.length" />
+                </a-card>
+              </a-col>
+            </a-row>
+            <a-card class="mt16" title="Completion by module">
+              <a-list :data-source="modules">
+                <template #renderItem="{ item }">
+                  <a-list-item>
+                    <div class="grow">
+                      <div class="bold">{{ item.title }}</div>
+                      <a-progress :percent="Math.round((item.lessons.filter(l=>l.done).length / item.lessons.length) * 100)" />
+                    </div>
+                  </a-list-item>
+                </template>
+              </a-list>
+            </a-card>
+          </div>
+
+          <!-- SETTINGS (minimal mock) -->
+          <div v-show="active==='settings'" class="panel">
+            <a-form layout="vertical" :model="course">
+              <a-form-item label="Course title">
+                <a-input v-model:value="course.title" />
+              </a-form-item>
+              <a-form-item label="Term">
+                <a-input v-model:value="course.term" />
+              </a-form-item>
+              <a-form-item label="Description">
+                <a-textarea v-model:value="course.description" :rows="5" />
+              </a-form-item>
+              <a-space>
+                <a-button type="primary" @click="saveCourse">Save changes</a-button>
+                <a-button @click="resetCourse">Reset</a-button>
+              </a-space>
+            </a-form>
+          </div>
+        </a-spin>
+      </a-layout-content>
+    </a-layout>
+
+    <!-- ASSIGNMENT EDITOR -->
+    <a-drawer
+      v-model:open="assignmentEditor.open"
+      width="520"
+      :title="assignmentEditor.mode==='create' ? 'New assignment' : 'Edit assignment'"
+    >
+      <a-form layout="vertical" @finish="saveAssignment" :model="assignmentEditor.data">
+        <a-form-item label="Title" required>
+          <a-input v-model:value="assignmentEditor.data.title" />
+        </a-form-item>
+        <a-form-item label="Due date">
+          <a-date-picker v-model:value="assignmentEditor.data.due" style="width:100%" />
+        </a-form-item>
+        <a-form-item label="Points">
+          <a-input-number v-model:value="assignmentEditor.data.points" :min="0" style="width:100%" />
+        </a-form-item>
+        <a-form-item label="Status">
+          <a-select v-model:value="assignmentEditor.data.status">
+            <a-select-option value="open">Open</a-select-option>
+            <a-select-option value="closed">Closed</a-select-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item label="Instructions">
+          <a-textarea v-model:value="assignmentEditor.data.body" :rows="6" />
+        </a-form-item>
+        <a-space>
+          <a-button type="primary" html-type="submit">Save</a-button>
+          <a-button @click="assignmentEditor.open=false">Cancel</a-button>
+        </a-space>
+      </a-form>
+    </a-drawer>
+
+    <!-- GENERIC MODAL -->
+    <a-modal v-model:open="detail.open" :title="detail.title" width="720" @cancel="detail.open=false" :footer="null">
+      <div v-if="detail.type==='assignment'">
+        <a-descriptions bordered size="small" :column="1">
+          <a-descriptions-item label="Title">{{ detail.item.title }}</a-descriptions-item>
+          <a-descriptions-item label="Due">{{ formatDate(detail.item.due) }}</a-descriptions-item>
+          <a-descriptions-item label="Points">{{ detail.item.points }}</a-descriptions-item>
+          <a-descriptions-item label="Status">{{ detail.item.status }}</a-descriptions-item>
+          <a-descriptions-item label="Instructions">
+            <div class="pre">{{ detail.item.body || '—' }}</div>
+          </a-descriptions-item>
+        </a-descriptions>
+      </div>
+      <div v-else-if="detail.type==='announcement'">
+        <a-typography-title :level="4">{{ detail.item.title }}</a-typography-title>
+        <div class="muted">{{ formatDate(detail.item.date) }}</div>
+        <a-typography-paragraph class="mt8">{{ detail.item.body }}</a-typography-paragraph>
+      </div>
+      <div v-else-if="detail.type==='discussion'">
+        <a-comment v-for="p in detail.item.posts" :key="p.id" :author="p.author" :content="p.body" />
+      </div>
+      <div v-else>
+        <a-empty />
+      </div>
+    </a-modal>
+  </a-layout>
+</template>
+
+<script setup lang="ts">
+// EXAMPLE COURSE INTERNAL (Ant Design Vue) — Vue 3 + <script setup>
+// Assumes Ant Design Vue is installed & configured.
+// Icons
+import {
+  DashboardOutlined, BookOutlined, FileTextOutlined, PaperClipOutlined, MessageOutlined,
+  TeamOutlined, OrderedListOutlined, CalendarOutlined, BarChartOutlined, SettingOutlined,
+  ExperimentOutlined, CheckCircleOutlined, PlusOutlined, DownOutlined, InboxOutlined
+} from '@ant-design/icons-vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { message } from 'ant-design-vue'
+import { h } from 'vue'
+
+type Lesson = { id: string; title: string; done?: boolean; type?: 'page'|'video'|'quiz' }
+type Module = { id: string; title: string; lessons: Lesson[] }
+type Assignment = { id: string; title: string; due: string; points: number; status: 'open'|'closed'; body?: string }
+type Announcement = { id: string; title: string; date: string; body: string }
+type Discussion = { id: string; title: string; posts: { id: string; author: string; body: string }[]; updatedAt: string }
+type FileItem = { id: string; name: string; type: 'pdf'|'video'|'doc'|'file'; date: string }
+type Participant = { id: string; name: string; email: string; role: 'student'|'ta' }
+type Quiz = { id: string; title: string; due: string; attempts: number; avg: number }
+type GradeRow = { id: string; student: string; item: string; max: number; score: number }
+
+const loading = ref(true)
+const active = ref<'overview'|'modules'|'assignments'|'quizzes'|'discussions'|'files'|'participants'|'grades'|'calendar'|'analytics'|'settings'>('overview')
+const siderCollapsed = ref(false)
+const enrolled = ref(true)
+const viewMode = ref<'Student view'|'Instructor view'>('Instructor view')
+
+// Course
+const course = reactive({
+  id: 'demo-course',
+  title: 'Human-Centered Design',
+  instructor: { name: 'Dr. Alex Example', email: 'alex@example.edu' },
+  term: 'Fall 2025',
+  description: 'Studio-based exploration of HCD methods.',
+  avatar: 'https://images.unsplash.com/photo-1587614382346-4ec71c171234?q=80&w=300&auto=format&fit=crop'
+})
+
+// Data
+const modules = ref<Module[]>([])
+const assignments = ref<Assignment[]>([])
+const announcements = ref<Announcement[]>([])
+const discussions = ref<Discussion[]>([])
+const files = ref<FileItem[]>([])
+const participants = ref<Participant[]>([])
+const quizzes = ref<Quiz[]>([])
+const grades = ref<GradeRow[]>([])
+
+// Seed mocks
+function seed() {
+  modules.value = [
+    {
+      id: 'm1', title: 'Orientation',
+      lessons: [
+        { id: 'l1', title: 'Course intro', type: 'page', done: true },
+        { id: 'l2', title: 'Syllabus walkthrough (video)', type: 'video' }
+      ]
+    },
+    {
+      id: 'm2', title: 'Research',
+      lessons: [
+        { id: 'l3', title: 'Interviews 101', type: 'page' },
+        { id: 'l4', title: 'Survey design', type: 'page' },
+        { id: 'l5', title: 'Quiz: Research basics', type: 'quiz' }
+      ]
+    }
+  ]
+  assignments.value = [
+    { id: 'a1', title: 'Research Plan', due: '2025-12-01', points: 10, status: 'open', body: 'Outline your plan.' },
+    { id: 'a2', title: 'Prototype v1', due: '2025-12-10', points: 25, status: 'open', body: 'Upload low-fi prototype.' },
+    { id: 'a3', title: 'Reflection', due: '2025-11-28', points: 5, status: 'closed', body: 'Short reflection.' }
+  ]
+  announcements.value = [
+    { id: 'ann1', title: 'Welcome!', date: new Date().toISOString(), body: 'Say hi on the forum.' },
+    { id: 'ann2', title: 'Room change', date: new Date().toISOString(), body: 'Next week in Studio B.' }
+  ]
+  discussions.value = [
+    { id: 'd1', title: 'Introductions', posts: [{ id:'p1', author:'Sam', body:'Hi everyone!' }], updatedAt: '2025-10-01' },
+    { id: 'd2', title: 'Tools & tips', posts: [{ id:'p2', author:'Lee', body:'Use Miro…' }], updatedAt: '2025-10-05' }
+  ]
+  files.value = [
+    { id:'f1', name:'Syllabus.pdf', type:'pdf', date:'2025-09-01' },
+    { id:'f2', name:'Lecture1.mp4', type:'video', date:'2025-09-03' },
+    { id:'f3', name:'Template.docx', type:'doc', date:'2025-09-04' }
+  ]
+  participants.value = [
+    { id:'u1', name:'Sam Taylor', email:'sam@ex.edu', role:'student' },
+    { id:'u2', name:'Lee Park', email:'lee@ex.edu', role:'student' },
+    { id:'u3', name:'Pat Doe', email:'pat@ex.edu', role:'ta' }
+  ]
+  quizzes.value = [
+    { id:'q1', title:'Research basics', due:'2025-12-02', attempts: 1, avg: 78 },
+    { id:'q2', title:'Ethnography', due:'2025-12-14', attempts: 0, avg: 0 }
+  ]
+  grades.value = [
+    { id:'g1', student:'Sam Taylor', item:'Research Plan', max:10, score:9 },
+    { id:'g2', student:'Sam Taylor', item:'Quiz: Research basics', max:10, score:7 },
+    { id:'g3', student:'Lee Park', item:'Research Plan', max:10, score:10 }
+  ]
+}
+
+onMounted(() => {
+  setTimeout(() => { seed(); loading.value = false }, 350)
+})
+
+// NAV
+function onMenu(e: any) { active.value = e.key }
+
+// UTILS / COMPUTED
+function formatDate(d: string | Date) {
+  const dt = typeof d === 'string' ? new Date(d) : d
+  if (Number.isNaN(dt.getTime())) return '—'
+  return dt.toLocaleDateString()
+}
+const totalLessons = computed(() => modules.value.reduce((n, m) => n + m.lessons.length, 0))
+const completedLessons = computed(() => modules.value.reduce((n, m) => n + m.lessons.filter(l => l.done).length, 0))
+const progressPercent = computed(() => totalLessons.value ? Math.round((completedLessons.value / totalLessons.value) * 100) : 0)
+
+const upcoming = computed(() =>
+  assignments.value
+    .filter(a => a.status === 'open')
+    .slice()
+    .sort((a,b)=> (a.due > b.due ? 1 : -1))
+    .slice(0,5)
+)
+const avgGrade = computed(() => {
+  const items = grades.value
+  if (!items.length) return 0
+  const pct = items.reduce((n, g) => n + (g.score / g.max), 0) / items.length
+  return Math.round(pct * 100)
+})
+const submissionRate = computed(() => Math.min(100, Math.round((assignments.value.filter(a=>a.status==='closed').length / Math.max(1, assignments.value.length)) * 100)))
+
+// OVERVIEW
+const overviewExtra = h('a-space', null, [
+  h('a-button', { size: 'small', onClick: openAnnouncementEditor }, 'New')
+])
+
+
+// MODULES
+const moduleSearch = ref('')
+const filteredModules = computed(() => {
+  const q = moduleSearch.value.toLowerCase().trim()
+  if (!q) return modules.value
+  return modules.value.map(m => ({
+    ...m,
+    lessons: m.lessons.filter(l => l.title.toLowerCase().includes(q))
+  })).filter(m => m.lessons.length)
+})
+function toggleLesson(m: Module, l: Lesson) { l.done = !l.done }
+function openLesson(m: Module, l: Lesson) {
+  detail.type = 'lesson'
+  detail.title = `${m.title} — ${l.title}`
+  detail.item = l
+  detail.open = true
+}
+function quickAdd(kind: 'assignment', m: Module, l: Lesson) {
+  if (kind === 'assignment') openAssignmentEditor({ title: `Follow-up: ${l.title}`, due: new Date().toISOString(), points: 10, status: 'open', id:'tmp' } as any)
+}
+function openModuleCreator() {
+  message.info('Module creator (mock)')
+}
+
+// ASSIGNMENTS
+const assignmentFilter = ref<'All'|'Open'|'Closed'>('All')
+const assignmentSearch = ref('')
+const assignmentCols = [
+  { title:'Title', key:'title', dataIndex:'title' },
+  { title:'Due', key:'due', dataIndex:'due' },
+  { title:'Points', key:'points', dataIndex:'points', width: 100 },
+  { title:'Status', key:'status', dataIndex:'status', width: 120 },
+  { title:'', key:'actions', width: 220 }
+]
+const filteredAssignments = computed(() => {
+  const q = assignmentSearch.value.toLowerCase().trim()
+  return assignments.value.filter(a => {
+    const f = assignmentFilter.value
+    const okStatus = f === 'All' || (f === 'Open' ? a.status === 'open' : a.status === 'closed')
+    const okSearch = !q || a.title.toLowerCase().includes(q)
+    return okStatus && okSearch
+  })
+})
+function openAssignment(a: Assignment) {
+  detail.type = 'assignment'; detail.title = a.title; detail.item = a; detail.open = true
+}
+function openAssignmentEditor(a?: Partial<Assignment>) {
+  assignmentEditor.open = true
+  assignmentEditor.mode = a?.id ? 'edit' : 'create'
+  assignmentEditor.data = {
+    id: a?.id || `a${Date.now()}`,
+    title: a?.title || '',
+    due: a?.due || new Date().toISOString(),
+    points: a?.points ?? 10,
+    status: (a?.status as any) || 'open',
+    body: a?.body || ''
+  }
+}
+function saveAssignment() {
+  const data = assignmentEditor.data as Assignment
+  const idx = assignments.value.findIndex(x => x.id === data.id)
+  if (idx === -1) assignments.value.unshift(data)
+  else assignments.value[idx] = { ...data }
+  assignmentEditor.open = false
+  message.success('Assignment saved')
+}
+function removeAssignment(a: Assignment) {
+  assignments.value = assignments.value.filter(x => x.id !== a.id)
+  message.success('Assignment deleted')
+}
+const assignmentEditor = reactive<{ open:boolean; mode:'create'|'edit'; data: Partial<Assignment> }>({ open:false, mode:'create', data:{} })
+
+// QUIZZES
+const quizCols = [
+  { title:'Title', dataIndex:'title', key:'title' },
+  { title:'Due', dataIndex:'due', key:'due' },
+  { title:'Attempts', dataIndex:'attempts', key:'attempts', width: 120 },
+  { title:'Average', dataIndex:'avg', key:'avg', width: 120 }
+]
+function createQuiz(){ message.info('Quiz builder (mock)') }
+
+// DISCUSSIONS
+const discussionSearch = ref('')
+const filteredDiscussions = computed(() => {
+  const q = discussionSearch.value.toLowerCase().trim()
+  return discussions.value.filter(d => !q || d.title.toLowerCase().includes(q))
+})
+function openDiscussion(d: Discussion) {
+  detail.type = 'discussion'; detail.title = d.title; detail.item = d; detail.open = true
+}
+function openDiscussionEditor(){ message.info('Discussion editor (mock)') }
+
+// FILES
+const fileType = ref<'all'|'pdf'|'video'|'doc'>('all')
+const fileSearch = ref('')
+const filteredFiles = computed(() => {
+  const q = fileSearch.value.toLowerCase().trim()
+  return files.value.filter(f => {
+    const okType = fileType.value === 'all' || f.type === fileType.value
+    const okSearch = !q || f.name.toLowerCase().includes(q)
+    return okType && okSearch
+  })
+})
+function handleBeforeUpload(file: File) {
+  const type = file.name.endsWith('.pdf') ? 'pdf' : file.name.match(/\.(mp4|mov)$/) ? 'video' : file.name.match(/\.(doc|docx)$/) ? 'doc' : 'file'
+  files.value.unshift({ id:`f${Date.now()}`, name:file.name, type: type as any, date: new Date().toISOString() })
+  message.success(`Added ${file.name}`)
+  return false // prevent real upload
+}
+function removeFile(f: FileItem){ files.value = files.value.filter(x => x.id !== f.id) }
+
+// PARTICIPANTS
+const participantSearch = ref('')
+const roleFilter = ref<'all'|'student'|'ta'>('all')
+const participantCols = [
+  { title:'Name', dataIndex:'name', key:'name' },
+  { title:'Email', dataIndex:'email', key:'email' },
+  { title:'Role', dataIndex:'role', key:'role', width: 120 }
+]
+const filteredParticipants = computed(() => {
+  const q = participantSearch.value.toLowerCase().trim()
+  return participants.value.filter(p => {
+    const okRole = roleFilter.value === 'all' || p.role === roleFilter.value
+    const okSearch = !q || p.name.toLowerCase().includes(q) || p.email.toLowerCase().includes(q)
+    return okRole && okSearch
+  })
+})
+
+// GRADEBOOK
+const selectedStudent = ref<string | undefined>()
+const gradeCols = [
+  { title:'Student', dataIndex:'student', key:'student' },
+  { title:'Item', dataIndex:'item', key:'item' },
+  { title:'Max', dataIndex:'max', key:'max', width: 100 },
+  { title:'Score', dataIndex:'score', key:'score', width: 100 }
+]
+const filteredGrades = computed(() => {
+  return grades.value.filter(g => !selectedStudent.value || g.student === selectedStudent.value)
+})
+function exportGrades(){
+  // quick CSV export
+  const header = 'student,item,max,score\n'
+  const lines = filteredGrades.value.map(g => [g.student, g.item, g.max, g.score].join(',')).join('\n')
+  const blob = new Blob([header + lines], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url; a.download = 'grades.csv'; a.click()
+  URL.revokeObjectURL(url)
+  message.success('Exported grades.csv')
+}
+
+// CALENDAR
+function eventsOn(date: Date){
+  const dstr = date.toDateString()
+  return assignments.value
+    .filter(a => new Date(a.due).toDateString() === dstr)
+    .map(a => ({ id: a.id, title: a.title, type:'assignment' as const }))
+}
+
+// DETAIL MODAL
+const detail = reactive<{ open:boolean; type:string; item:any; title:string }>({ open:false, type:'', item:null, title:'' })
+
+// ANNOUNCEMENTS (open/editor)
+function openAnnouncement(a: Announcement) {
+  detail.type = 'announcement'; detail.title = a.title; detail.item = a; detail.open = true
+}
+function openAnnouncementEditor(){ message.info('Announcement editor (mock)') }
+
+// SETTINGS
+function saveCourse(){ message.success('Course saved (mock)') }
+function resetCourse(){ seed(); message.success('Reset to mock data') }
+
+// ENROLL
+function toggleEnroll(){ enrolled.value = !enrolled.value; message.success(enrolled.value ? 'Joined' : 'Left') }
+</script>
+
+<style scoped>
+.course-area { min-height: 100vh; }
+.sider { background: #fff; border-right: 1px solid #f0f0f0; }
+.sider-head { display:flex; align-items:center; gap:12px; padding:12px; }
+.sider-title .name { font-weight: 600; line-height: 1.1; }
+.muted { color: #6b7280; }
+.topbar { background: #fff; padding: 0; border-bottom: 1px solid #f0f0f0; }
+.content { padding: 16px; background: #f7f9fc; }
+.panel { max-width: 1200px; margin: 0 auto; }
+.panel-head { display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; gap: 12px; flex-wrap: wrap; }
+.stack-8 > * + * { margin-top: 8px; }
+.bold { font-weight: 600; }
+.grow { flex: 1; }
+.mt16 { margin-top: 16px; }
+.mt8 { margin-top: 8px; }
+.done { text-decoration: line-through; color: #94a3b8; }
+.events { list-style: none; margin: 0; padding: 0; }
+.pre { white-space: pre-wrap; }
+@media (max-width: 880px){
+  .panel { padding-bottom: 48px; }
+}
+</style>

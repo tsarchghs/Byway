@@ -1,0 +1,6 @@
+{
+  "name": "authentication",
+  "routes": [
+    { "path": "/faq", "file": "nuxt/pages/faq.vue" }
+  ]
+}

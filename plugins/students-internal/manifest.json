@@ -1,0 +1,8 @@
+{
+  "name": "authentication",
+  "routes": [
+    { "path": "/student/[student_id]", "file": "nuxt/pages/stundent.vue" },
+    { "path": "/student/[student_id]/course/[course_id]", "file": "nuxt/pages/course-listing.vue" },
+    { "path": "/student/[student_id]/course/[course_id]/module/[module_id]", "file": "nuxt/pages/module-listing.vue" }
+  ]
+}

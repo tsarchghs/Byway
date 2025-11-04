@@ -1,31 +1,22 @@
 <template>
   <div class="homepage">
-    <Header/>
-    <!-- Hero Section -->
-    <HeroSection />
+    <Header />
 
-    <!-- Stats Section -->
-    <StatsSection />
+    <!-- Centered content wrapper -->
+    <main class="page-container">
+      <HeroSection />
+      <StatsSection />
+      <TopCategories />
+      <TopCourses />
+      <TopInstructors />
+      <InstructorsSection />
+    </main>
 
-    <!-- Top Categories -->
-    <TopCategories />
-
-    <!-- Top Courses -->
-    <TopCourses />
-
-    <!-- Top Instructors -->
-    <TopInstructors />
-
-    <!-- Instructors CTA Section -->
-    <InstructorsSection />
-
-    <!-- Footer -->
     <FooterSection />
   </div>
 </template>
 
 <script setup>
-// Import Nuxt auto-registered components if needed
 import HeroSection from '../components/HeroSection/index.vue'
 import StatsSection from '../components/StatsSection/index.vue'
 import TopCategories from '../components/TopCategories/index.vue'
@@ -37,22 +28,19 @@ import Header from '../../../../packages/shared-ui/src/components/Header.vue'
 </script>
 
 <style scoped>
-.homepage {
+/* Global center container */
+.page-container {
+  width: 100%;
+  max-width: 1200px; /* Keep consistent with other components */
+  margin: 0 auto; /* Centers everything */
   display: flex;
   flex-direction: column;
+  align-items: center;
+}
+
+/* Optional: normalize each section width */
+.page-container > * {
   width: 100%;
-  overflow-x: hidden;
-  background: #ffffff;
-}
-
-/* Add optional spacing between sections */
-.homepage > *:not(:last-child) {
-  margin-bottom: 80px;
-}
-
-@media (max-width: 768px) {
-  .homepage > *:not(:last-child) {
-    margin-bottom: 40px;
-  }
+  box-sizing: border-box;
 }
 </style>

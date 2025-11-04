@@ -27,201 +27,179 @@
 <script setup lang="ts">
 // Static illustration component for hero layout
 </script>
-
 <style scoped>
+/* =======================================
+   🎨 HERO ILLUSTRATIONS (Ant Design Style)
+   ======================================= */
+
 .hero-illustrations {
   position: relative;
   width: 100%;
   height: 600px;
+  overflow: visible;
+  display: block;
+  transition: transform 0.3s ease;
 }
 
-/* ===== Base Circle Containers ===== */
+/* ===== Base Frame ===== */
 .illustration-frame {
   position: absolute;
   border-radius: 50%;
   overflow: visible;
+  z-index: 2;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.illustration-frame:hover {
+  transform: scale(1.06);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+}
+
+/* ===== Ellipses (Soft Gradient Tone) ===== */
+.ellipse {
+  border-radius: 50%;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+  transition: background 0.3s ease;
 }
 
 /* ===== Blue Frame ===== */
 .frame-blue {
-  width: 217.35px;
-  height: 217.35px;
-  left: 1063px;
-  top: 84.56px;
+  width: 220px;
+  height: 220px;
+  right: 100px;
+  top: 60px;
 }
 
 .ellipse-blue {
-  position: absolute;
-  width: 217.35px;
-  height: 217.35px;
-  border-radius: 50%;
-  background: #60a5fa; /* primary/400 */
+  background: linear-gradient(135deg, #1677ff 0%, #69b1ff 100%);
 }
 
 .image-8 {
   position: absolute;
-  width: 217.35px;
-  height: 289.08px;
-  left: 0px;
-  bottom: -27.17px;
-  background: url('http://localhost:4000/plugins/homepage/illustrations/image8.png') no-repeat center/contain;
+  width: 220px;
+  height: 280px;
+  left: 0;
+  bottom: -30px;
+  background: url('http://localhost:4000/plugins/homepage/illustrations/image8.png')
+    no-repeat center/contain;
 }
 
 /* ===== Red Frame ===== */
 .frame-red {
-  width: 204.54px;
-  height: 204.54px;
-  left: 845.72px;
-  top: 202.78px;
+  width: 205px;
+  height: 205px;
+  right: 220px;
+  top: 180px;
 }
 
 .ellipse-red {
-  position: absolute;
-  width: 204.54px;
-  height: 204.54px;
-  border-radius: 50%;
-  background: #f87171; /* error/400 */
+  background: linear-gradient(135deg, #ff4d4f 0%, #ffa39e 100%);
 }
 
 .image-6 {
   position: absolute;
-  width: 183.62px;
-  height: 260.32px;
-  left: 0px;
-  top: -55.78px;
-  background: url('http://localhost:4000/plugins/homepage/illustrations/image6.png') no-repeat center/contain;
+  width: 185px;
+  height: 260px;
+  left: 0;
+  top: -55px;
+  background: url('http://localhost:4000/plugins/homepage/illustrations/image6.png')
+    no-repeat center/contain;
 }
 
 /* ===== Yellow Frame ===== */
 .frame-yellow {
-  width: 222px;
-  height: 222px;
-  left: 1070px;
-  top: 337px;
+  width: 220px;
+  height: 220px;
+  right: 40px;
+  top: 330px;
 }
 
 .ellipse-yellow {
-  position: absolute;
-  width: 222px;
-  height: 222px;
-  border-radius: 50%;
-  background: #facc15; /* warning/400 */
+  background: linear-gradient(135deg, #faad14 0%, #ffd666 100%);
 }
 
 .image-7 {
   position: absolute;
-  width: 331.64px;
-  height: 221.09px;
-  left: -33.78px;
-  top: 11px;
-  background: url('http://localhost:4000/plugins/homepage/illustrations/image7.png') no-repeat center/contain;
+  width: 330px;
+  height: 220px;
+  left: -35px;
+  top: 12px;
+  background: url('http://localhost:4000/plugins/homepage/illustrations/image7.png')
+    no-repeat center/contain;
   transform: scaleX(-1);
 }
 
-/* ===== Grey Outlines ===== */
+/* ===== Outline Ellipses ===== */
 .ellipse-outline {
   position: absolute;
-  box-sizing: border-box;
-  border: 1px solid #cbd5e1; /* grey/300 */
+  border: 1px dashed #d9d9d9;
+  border-radius: 50%;
+  z-index: 1;
+  opacity: 0.6;
 }
 
 .ellipse-outline-1 {
-  width: 235.52px;
-  height: 113.42px;
-  left: 830px;
-  top: 308.33px;
+  width: 240px;
+  height: 120px;
+  left: 820px;
+  top: 310px;
 }
 
 .ellipse-outline-2 {
-  width: 148.82px;
-  height: 211.68px;
-  left: 1159.18px;
-  top: 363.32px;
+  width: 150px;
+  height: 210px;
+  right: 120px;
+  top: 360px;
+}
+
+/* ===== Hover Motion (Ant Design Feel) ===== */
+.ellipse-blue:hover {
+  background: linear-gradient(135deg, #4096ff 0%, #91caff 100%);
+}
+.ellipse-red:hover {
+  background: linear-gradient(135deg, #ff7875 0%, #ffccc7 100%);
+}
+.ellipse-yellow:hover {
+  background: linear-gradient(135deg, #ffc53d 0%, #ffe58f 100%);
 }
 
 /* ===== Responsive Scaling ===== */
 @media (max-width: 1279px) {
   .hero-illustrations {
-    transform: scale(0.8);
+    transform: scale(0.85);
     transform-origin: right top;
   }
 }
 
 @media (max-width: 1023px) {
   .hero-illustrations {
-    transform: scale(0.6);
+    transform: scale(0.7);
     transform-origin: center top;
   }
 }
 
 @media (max-width: 767px) {
   .hero-illustrations {
-    transform: scale(0.45);
+    transform: scale(0.5);
     transform-origin: center top;
   }
+
+  .ellipse-outline {
+    display: none;
+  }
 }
-/* === Additive fixes for visibility and centering === */
-.hero-illustrations {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
+
+/* ===== Extra Fine-Tuning ===== */
+.image {
+  object-fit: contain;
+  border-radius: 50%;
 }
 
 .illustration-frame {
-  z-index: 1;
-  transition: transform 0.3s ease;
+  cursor: pointer;
 }
-
-.illustration-frame:hover {
-  transform: scale(1.05);
-}
-
-.ellipse,
-.ellipse-blue,
-.ellipse-red,
-.ellipse-yellow {
-  border-radius: 50%;
-  overflow: hidden;
-}
-
-.image img,
-.image {
-  object-fit: cover;
-  border-radius: 50%;
-}
-
-.frame-red {
-  left: auto;
-  right: 180px; /* pushes red circle inward */
-  top: 180px;
-}
-
-.frame-yellow {
-  left: auto;
-  right: 40px; /* aligns yellow circle to screen edge */
-  top: 320px;
-}
-
-.frame-blue {
-  left: auto;
-  right: 80px;
-  top: 60px;
-}
-
-/* keep smaller on tablets */
-@media (max-width: 1024px) {
-  .hero-illustrations {
-    transform: scale(0.8);
-    transform-origin: right center;
-  }
-}
-
-@media (max-width: 767px) {
-  .hero-illustrations {
-    transform: scale(0.6);
-    transform-origin: center top;
-  }
-}
-
 </style>

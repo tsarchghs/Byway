@@ -1,81 +1,179 @@
 <template>
-  <Header/>
+  <Header />
+
   <div class="author-page">
     <main class="author-main">
-      <section class="author-header">
-        <div class="author-meta">
-          <div class="role">Instructor</div>
-          <div class="name">{{ author.name }}</div>
-          <div class="subtitle">{{ author.title }}</div>
+      <!-- ===== Header / Meta ===== -->
+      <a-card :bordered="false" class="author-header-card">
+        <div class="author-header">
+          <div class="author-meta">
+            <a-typography-text type="secondary" class="role">Instructor</a-typography-text>
+            <a-typography-title :level="2" class="name">{{ author.name }}</a-typography-title>
+            <a-typography-paragraph class="subtitle">{{ author.title }}</a-typography-paragraph>
 
-          <div class="stats-row">
-            <div class="stat">
-              <div class="stat-label">Total Students</div>
-              <div class="stat-value">{{ author.students.toLocaleString() }}</div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">Reviews</div>
-              <div class="stat-value">{{ author.reviews }}</div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">Courses</div>
-              <div class="stat-value">{{ author.courses.length }}</div>
-            </div>
+            <a-space :size="24" wrap class="stats-row">
+              <a-statistic title="Total Students" :value="author.students" />
+              <a-statistic title="Reviews" :value="author.reviews" />
+              <a-statistic title="Courses" :value="author.courses.length" />
+              <!-- plugin mount point -->
+              <slot name="stats-extra" :author="author" />
+            </a-space>
+
+            <a-space class="actions" :size="12" wrap>
+              <a-button
+                :type="isFollowing ? 'primary' : 'default'"
+                :ghost="!isFollowing"
+                @click="toggleFollow"
+                :icon="h(isFollowing ? CheckOutlined : UserAddOutlined)"
+              >
+                {{ isFollowing ? 'Following' : 'Follow' }}
+              </a-button>
+
+              <a-button @click="openMessage = true" :icon="h(MailOutlined)">Message</a-button>
+
+              <a-dropdown>
+                <a-button :icon="h(ShareAltOutlined)">Share</a-button>
+                <template #overlay>
+                  <a-menu>
+                    <a-menu-item key="link" @click="copyProfileLink">Copy profile link</a-menu-item>
+                    <a-menu-item key="tweet">Share on X (Twitter)</a-menu-item>
+                    <a-menu-item key="linkedin">Share on LinkedIn</a-menu-item>
+                  </a-menu>
+                </template>
+              </a-dropdown>
+
+              <!-- plugin mount point -->
+              <slot name="header-actions" :author="author" />
+            </a-space>
           </div>
 
-          <div class="actions">
-            <button class="btn-outline" @click="toggleFollow" :aria-pressed="isFollowing">
-              {{ isFollowing ? 'Following' : 'Follow' }}
-            </button>
-            <button class="btn-ghost" @click="messageAuthor">Message</button>
+          <div class="author-avatar">
+            <a-avatar :size="160" :src="author.avatar" />
           </div>
         </div>
+      </a-card>
 
-        <div class="author-avatar">
-          <img :src="author.avatar" :alt="`Avatar of ${author.name}`" />
+      <!-- ===== About ===== -->
+      <a-card :bordered="true">
+        <a-typography-title :level="4">About {{ author.firstName }}</a-typography-title>
+
+        <a-typography-paragraph v-if="!bioExpanded" v-html="shortBio" class="bio" />
+        <a-typography-paragraph v-else v-html="author.bio" class="bio-full" />
+
+        <a-button type="link" @click="bioExpanded = !bioExpanded">
+          {{ bioExpanded ? 'Show less' : 'Read more' }}
+        </a-button>
+      </a-card>
+
+      <!-- ===== Expertise / Tags ===== -->
+      <a-card :bordered="true">
+        <a-typography-title :level="4">Areas of Expertise</a-typography-title>
+        <a-space :size="[8, 8]" wrap>
+          <a-checkable-tag
+            v-for="(tag,i) in author.expertise"
+            :key="i"
+            :checked="activeTags.has(tag)"
+            @change="onToggleTag(tag)"
+          >
+            {{ tag }}
+          </a-checkable-tag>
+        </a-space>
+      </a-card>
+
+      <!-- ===== Courses ===== -->
+      <a-card :bordered="true">
+        <div class="courses-header">
+          <a-typography-title :level="4" style="margin: 0">
+            More Courses by {{ author.firstName }}
+          </a-typography-title>
+
+          <a-space :size="12" wrap class="toolbar">
+            <a-segmented
+              v-model:value="levelFilter"
+              :options="['All','Beginner','Intermediate','Advanced']"
+            />
+            <a-select v-model:value="sortBy" style="width: 180px">
+              <a-select-option value="popular">Most Popular</a-select-option>
+              <a-select-option value="hoursAsc">Shortest Duration</a-select-option>
+              <a-select-option value="hoursDesc">Longest Duration</a-select-option>
+              <a-select-option value="titleAsc">Title A–Z</a-select-option>
+            </a-select>
+            <slot name="courses-toolbar-right" :author="author" />
+          </a-space>
         </div>
-      </section>
 
-      <section class="about">
-        <h4>About {{ author.firstName }}</h4>
-        <p class="bio" v-html="shortBio"></p>
-        <button class="more-link" v-if="!bioExpanded" @click="bioExpanded = true">Read more</button>
-        <div class="bio-full" v-if="bioExpanded" v-html="author.bio"></div>
-      </section>
+        <a-row :gutter="[16,16]" style="margin-top: 12px">
+          <a-col
+            v-for="c in pagedCourses"
+            :key="c.id"
+            :xs="24"
+            :sm="12"
+            :md="8"
+            :lg="8"
+            :xl="6"
+          >
+            <a-card
+              hoverable
+              class="course-card"
+              @click="openCourse(c)"
+              :cover="h('img', { alt: c.title, src: c.image })"
+            >
+              <a-card-meta :title="c.title" :description="`By ${author.name} • ${c.level} • ${c.hours}h`" />
+            </a-card>
+          </a-col>
+        </a-row>
 
-      <section class="expertise">
-        <h4>Areas of Expertise</h4>
-        <div class="tags">
-          <button v-for="(tag,i) in author.expertise" :key="i" class="tag" @click="filterByTag(tag)">{{ tag }}</button>
-        </div>
-      </section>
-
-      <section class="more-courses">
-        <h4>More Courses by {{ author.firstName }}</h4>
-        <div class="course-grid">
-          <article v-for="c in visibleCourses" :key="c.id" class="course-card" @click="openCourse(c)">
-            <div class="thumb" :style="{ backgroundImage: `url(${c.image})` }" />
-            <div class="course-info">
-              <div class="course-title">{{ c.title }}</div>
-              <div class="course-meta">By {{ author.name }} • {{ c.level }} • {{ c.hours }}h</div>
-            </div>
-          </article>
-        </div>
         <div class="course-actions">
-          <button class="btn-outline" @click="showAll = !showAll">{{ showAll ? 'Show less' : 'View all' }}</button>
+          <a-pagination
+            v-if="filteredCourses.length > pageSize"
+            v-model:current="page"
+            :total="filteredCourses.length"
+            :pageSize="pageSize"
+            show-less-items
+          />
         </div>
-      </section>
+      </a-card>
     </main>
+
+    <!-- ===== Message Drawer ===== -->
+    <a-drawer v-model:open="openMessage" title="Message the instructor" width="420">
+      <a-form layout="vertical" @finish="sendMessage">
+        <a-form-item name="subject" label="Subject" :rules="[{ required: true, message: 'Please enter a subject' }]">
+          <a-input v-model:value="messageForm.subject" placeholder="Subject" />
+        </a-form-item>
+        <a-form-item
+          name="body"
+          label="Message"
+          :rules="[{ required: true, message: 'Please write a message' }]"
+        >
+          <a-textarea v-model:value="messageForm.body" :rows="6" placeholder="Write your message…" />
+        </a-form-item>
+        <a-space>
+          <a-button @click="openMessage = false">Cancel</a-button>
+          <a-button type="primary" html-type="submit">Send</a-button>
+        </a-space>
+      </a-form>
+    </a-drawer>
   </div>
 </template>
 
 <script setup lang="ts">
-import Header from '../../../../packages/shared-ui/src/components/Header.vue';
+import { h, ref, reactive, computed } from 'vue'
+import Header from '../../../../packages/shared-ui/src/components/Header.vue'
 
-import { ref, reactive, computed } from 'vue'
+// icons
+import {
+  UserAddOutlined,
+  CheckOutlined,
+  MailOutlined,
+  ShareAltOutlined
+} from '@ant-design/icons-vue'
+import { message } from 'ant-design-vue'
 
-type CourseCard = { id: string; title: string; image: string; level: string; hours: number }
+// ===== Types =====
+type CourseCard = { id: string; title: string; image: string; level: 'Beginner'|'Intermediate'|'Advanced'; hours: number }
 
+// ===== Data =====
 const author = reactive({
   name: 'Ronald Richards',
   firstName: 'Ronald',
@@ -89,74 +187,132 @@ const author = reactive({
   courses: [
     { id: 'c1', title: `Beginner’s Guide to Design`, image: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=800&auto=format&fit=crop', level: 'Beginner', hours: 22 },
     { id: 'c2', title: `Advanced Interaction Patterns`, image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=800&auto=format&fit=crop', level: 'Intermediate', hours: 18 },
-    { id: 'c3', title: `Design Systems in Practice`, image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=800&auto=format&fit=crop', level: 'Advanced', hours: 30 }
+    { id: 'c3', title: `Design Systems in Practice`, image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=800&auto=format&fit=crop', level: 'Advanced', hours: 30 },
+    { id: 'c4', title: `Practical Usability Testing`, image: 'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?q=80&w=800&auto=format&fit=crop', level: 'Intermediate', hours: 14 },
+    { id: 'c5', title: `Wireframing to Prototyping`, image: 'https://images.unsplash.com/photo-1553877522-43269d4ea984?q=80&w=800&auto=format&fit=crop', level: 'Beginner', hours: 10 },
   ] as CourseCard[]
 })
 
 const isFollowing = ref(false)
 const bioExpanded = ref(false)
-const showAll = ref(false)
-const activeFilter = ref<string | null>(null)
+const activeTags = reactive(new Set<string>())
 
-function toggleFollow() { isFollowing.value = !isFollowing.value }
-function messageAuthor() { alert(`Open message composer to ${author.name} (mock)`) }
-function filterByTag(tag: string) {
-  activeFilter.value = activeFilter.value === tag ? null : tag
-}
-function openCourse(c: CourseCard) {
-  // in real app: navigate to course route; here we show a mock alert
-  alert(`Open course: ${c.title}`)
-}
+const levelFilter = ref<'All' | 'Beginner' | 'Intermediate' | 'Advanced'>('All')
+const sortBy = ref<'popular'|'hoursAsc'|'hoursDesc'|'titleAsc'>('popular')
 
+const page = ref(1)
+const pageSize = 8
+
+// ===== Computed =====
 const shortBio = computed(() => {
-  // produce a short excerpt (approx 160 chars)
   const txt = author.bio.replace(/<[^>]+>/g, '')
-  return txt.length > 160 ? txt.slice(0, 160) + '...' : txt
+  return txt.length > 200 ? txt.slice(0, 200) + '…' : txt
 })
 
-const visibleCourses = computed(() => showAll.value ? author.courses : author.courses.slice(0, 3))
+const filteredCourses = computed(() => {
+  let list = [...author.courses]
+  // level filter
+  if (levelFilter.value !== 'All') list = list.filter(c => c.level === levelFilter.value)
 
+  // tag filter heuristic: if any active tag words appear in title, keep
+  if (activeTags.size) {
+    const words = Array.from(activeTags).map(t => t.toLowerCase())
+    list = list.filter(c => words.some(w => c.title.toLowerCase().includes(w)))
+  }
+
+  // sort
+  switch (sortBy.value) {
+    case 'hoursAsc': list.sort((a,b) => a.hours - b.hours); break
+    case 'hoursDesc': list.sort((a,b) => b.hours - a.hours); break
+    case 'titleAsc': list.sort((a,b) => a.title.localeCompare(b.title)); break
+    default: /* popular */ break
+  }
+  return list
+})
+
+const pagedCourses = computed(() => {
+  const start = (page.value - 1) * pageSize
+  return filteredCourses.value.slice(start, start + pageSize)
+})
+
+// ===== Message Drawer =====
+const openMessage = ref(false)
+const messageForm = reactive({ subject: '', body: '' })
+
+function sendMessage() {
+  // mock send
+  openMessage.value = false
+  messageForm.subject = ''
+  messageForm.body = ''
+  message.success('Message sent!')
+}
+
+// ===== Actions =====
+function toggleFollow() {
+  isFollowing.value = !isFollowing.value
+  message.success(isFollowing.value ? 'You are now following this instructor' : 'Unfollowed')
+}
+
+function copyProfileLink() {
+  navigator.clipboard?.writeText(window.location.href)
+  message.success('Profile link copied')
+}
+
+function onToggleTag(tag: string) {
+  if (activeTags.has(tag)) activeTags.delete(tag)
+  else activeTags.add(tag)
+  page.value = 1
+}
+
+function openCourse(c: CourseCard) {
+  // replace with navigateTo in Nuxt or router push
+  message.info(`Open course: ${c.title}`)
+}
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-.author-page { font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial; background: #FFFFFF; color: #0F172A; padding: 40px }
-.author-main { max-width: 1140px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px }
-.author-header { display:flex; justify-content:space-between; align-items:center; gap: 24px }
-.author-meta { display:flex; flex-direction:column; gap:8px; max-width: 740px }
-.role { font-size:14px; color:#334155 }
-.name { font-size:32px; font-weight:600; color:#0F172A }
-.subtitle { font-size:14px; color:#334155 }
-.stats-row { display:flex; gap:24px; margin-top:12px }
-.stat { display:flex; flex-direction:column }
-.stat-label { font-size:14px; color:#334155 }
-.stat-value { font-size:24px; font-weight:600; color:#0F172A }
-.author-avatar img { width:200px; height:200px; border-radius:999px; object-fit:cover }
-.actions { display:flex; gap:12px; margin-top:12px }
-.btn-outline { padding:10px 20px; border-radius:8px; border:1px solid #020617; background:transparent; cursor:pointer }
-.btn-outline[aria-pressed='true'] { background:#0F172A; color:#fff; border-color:transparent }
-.btn-ghost { padding:10px 20px; border-radius:8px; background:#F8FAFC; border:1px solid #E2E8F0; cursor:pointer }
-
-.about { background: transparent; padding: 8px 0 }
-.about h4, .expertise h4, .more-courses h4 { font-size:20px; font-weight:600; color:#0F172A }
-.bio { color:#334155 }
-.more-link { background:none; border:0; color:#2563EB; cursor:pointer; margin-top:8px }
-.tags { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px }
-.tag { background:#F8FAFC; border:1px solid #E2E8F0; padding:8px 12px; border-radius:8px; cursor:pointer }
-
-.more-courses .course-grid { display:flex; gap:16px; flex-wrap:wrap; margin-top:12px }
-.course-card { width: 266px; background:#fff; border:1px solid #E2E8F0; border-radius:16px; overflow:hidden; cursor:pointer; box-shadow: 0 0 8px rgba(59,130,246,0.06) }
-.thumb { height:139px; background-size:cover; background-position:center }
-.course-info { padding:12px }
-.course-title { font-weight:600; color:#0F172A }
-.course-meta { color:#334155; font-size:14px; margin-top:6px }
-.course-actions { margin-top:12px }
-
-@media (max-width: 980px) {
-  .author-main { padding: 0 12px }
-  .author-header { flex-direction:column; align-items:flex-start }
-  .author-avatar img { width:120px; height:120px }
-  .course-grid { justify-content:flex-start }
+.author-page {
+  background: #fff;
+  padding: 24px 16px 40px;
+}
+.author-main {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  gap: 16px;
 }
 
+/* header */
+.author-header-card { }
+.author-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.author-meta {
+  display: grid;
+  gap: 8px;
+  min-width: 260px;
+}
+.role { text-transform: uppercase; letter-spacing: .4px; }
+.subtitle { color: rgba(0,0,0,.65); margin: 0; }
+.stats-row { margin-top: 8px; }
+.actions { margin-top: 8px; }
+.author-avatar { display: grid; place-items: center; }
+
+/* courses */
+.courses-header {
+  display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap;
+}
+.toolbar { margin-left: auto; }
+.course-card :deep(.ant-card-meta-title) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.course-actions { margin-top: 12px; text-align: center; }
+
+/* responsive */
+@media (max-width: 768px) {
+  .author-page { padding: 16px 12px 28px; }
+  .author-header { flex-direction: column; align-items: flex-start; }
+}
 </style>

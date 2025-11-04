@@ -2,198 +2,164 @@
   <section class="top-categories">
     <!-- Header -->
     <div class="top-categories-header">
-      <h3 class="section-title">Top Categories</h3>
-      <NuxtLink to="/categories" class="view-all-btn">View All</NuxtLink>
+      <a-typography-title :level="3" class="section-title">Top Categories</a-typography-title>
+
+      <a-button type="link" size="large" class="view-all-btn" @click="go('/categories')">
+        View All
+        <RightOutlined />
+      </a-button>
     </div>
 
-    <!-- Category Cards -->
-    <div class="categories-grid">
-      <div
+    <!-- Categories Grid -->
+    <a-row :gutter="[24, 24]" class="categories-grid">
+      <a-col
         v-for="(category, index) in categories"
         :key="index"
-        class="category-card"
+        :xs="24"
+        :sm="12"
+        :md="6"
       >
-        <div class="icon-wrapper">
-          <div class="icon-circle">
-            <img :src="category.icon" alt="" class="icon-image" />
+        <a-card
+          hoverable
+          bordered
+          class="category-card"
+        >
+          <div class="icon-wrapper">
+            <div class="icon-circle">
+              <img :src="category.icon" :alt="category.title" class="icon-image" />
+            </div>
           </div>
-        </div>
-        <h4 class="category-title">{{ category.title }}</h4>
-        <p class="category-courses">{{ category.courses }}</p>
-      </div>
-    </div>
+
+          <a-typography-title :level="5" class="category-title">
+            {{ category.title }}
+          </a-typography-title>
+
+          <a-typography-text type="secondary" class="category-courses">
+            {{ category.courses }}
+          </a-typography-text>
+        </a-card>
+      </a-col>
+    </a-row>
   </section>
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
+import { RightOutlined } from '@ant-design/icons-vue'
+
+const router = useRouter()
+const go = (path: string) => router.push(path)
+
 const categories = [
-  {
-    title: 'Astrology',
-    courses: '11 Courses',
-    icon: '/icons/telescope.svg'
-  },
-  {
-    title: 'Programming',
-    courses: '15 Courses',
-    icon: '/icons/code-browser.svg'
-  },
-  {
-    title: 'Business',
-    courses: '8 Courses',
-    icon: '/icons/briefcase.svg'
-  },
-  {
-    title: 'Physics',
-    courses: '6 Courses',
-    icon: '/icons/atom.svg'
-  }
+  { title: 'Astrology', courses: '11 Courses', icon: '/icons/telescope.svg' },
+  { title: 'Programming', courses: '15 Courses', icon: '/icons/code-browser.svg' },
+  { title: 'Business', courses: '8 Courses', icon: '/icons/briefcase.svg' },
+  { title: 'Physics', courses: '6 Courses', icon: '/icons/atom.svg' },
 ]
 </script>
 
 <style scoped>
-/* ==== Layout ==== */
 .top-categories {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 24px;
-  width: 100%;
-  max-width: 1280px;
+  padding: 100px 24px;
+  background: #fff;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 0 1rem;
 }
 
-/* ==== Header ==== */
 .top-categories-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
+  margin-bottom: 48px;
 }
 
 .section-title {
-  font-family: "Inter", sans-serif;
-  font-weight: 600;
-  font-size: 24px;
-  line-height: 140%;
-  color: #0f172a;
+  margin: 0;
+  color: rgba(0, 0, 0, 0.88);
 }
 
 .view-all-btn {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  padding: 10px 24px;
-  gap: 6px;
-  border-radius: 8px;
-  font-family: "Inter", sans-serif;
   font-weight: 500;
-  font-size: 14px;
-  line-height: 160%;
-  color: #3b82f6;
-  text-decoration: none;
-  border: 1px solid transparent;
-  transition: all 0.2s ease-in-out;
+  color: #1677ff;
 }
 
 .view-all-btn:hover {
-  background: #3b82f6;
-  color: #fff;
+  background-color: #e6f4ff;
+  border-radius: 8px;
 }
 
-/* ==== Category Grid ==== */
-.categories-grid {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 41px;
-  width: 100%;
-  flex-wrap: wrap;
-}
-
+/* Category Cards */
 .category-card {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 24px;
-  width: 286px;
-  height: 224px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 0 8px rgba(59, 130, 246, 0.12);
-  border-radius: 16px;
-  transition: transform 0.25s ease;
+  text-align: center;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  padding: 24px 16px;
 }
 
 .category-card:hover {
-  transform: translateY(-6px);
+  transform: translateY(-4px);
+  border-color: #91caff;
+  box-shadow: 0 8px 20px rgba(22, 119, 255, 0.15);
 }
 
-/* ==== Icon & Text ==== */
+/* Icons */
 .icon-wrapper {
-  position: relative;
-  width: 100px;
-  height: 100px;
+  display: flex;
+  justify-content: center;
   margin-bottom: 16px;
 }
 
 .icon-circle {
-  position: absolute;
-  width: 100px;
-  height: 100px;
-  border-radius: 100px;
-  background: #e0f2fe;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #e6f4ff;
   display: flex;
   justify-content: center;
   align-items: center;
+  transition: background 0.3s ease;
+}
+
+.category-card:hover .icon-circle {
+  background: #bae0ff;
 }
 
 .icon-image {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   object-fit: contain;
 }
 
+/* Text */
 .category-title {
-  font-family: "Inter", sans-serif;
   font-weight: 600;
-  font-size: 20px;
-  line-height: 150%;
-  color: #0f172a;
-  margin: 0;
-  text-align: center;
+  margin-top: 12px;
+  color: rgba(0, 0, 0, 0.88);
 }
 
 .category-courses {
-  font-family: "Inter", sans-serif;
-  font-weight: 400;
-  font-size: 16px;
-  line-height: 160%;
-  color: #334155;
-  text-align: center;
-  margin: 4px 0 0;
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 14px;
 }
 
-/* ==== Responsive ==== */
-@media (max-width: 1024px) {
-  .categories-grid {
-    justify-content: center;
-    gap: 24px;
-  }
-}
-
+/* Responsive */
 @media (max-width: 768px) {
-  .category-card {
-    width: 45%;
-    height: auto;
-    padding: 20px;
+  .top-categories {
+    padding: 64px 16px;
   }
-}
 
-@media (max-width: 480px) {
-  .category-card {
-    width: 100%;
+  .top-categories-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .section-title {
+    font-size: 22px;
+  }
+
+  .icon-circle {
+    width: 70px;
+    height: 70px;
   }
 }
 </style>

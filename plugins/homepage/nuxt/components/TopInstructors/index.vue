@@ -2,271 +2,189 @@
   <section class="top-instructors">
     <!-- Header -->
     <div class="header">
-      <h3 class="title">Top Instructors</h3>
-      <NuxtLink to="/instructors" class="view-all">View All</NuxtLink>
+      <a-typography-title :level="3" class="title">Top Instructors</a-typography-title>
+      <a-button type="link" size="large" @click="go('/instructors')">
+        View All
+        <RightOutlined />
+      </a-button>
     </div>
 
-    <!-- Instructor Cards -->
-    <div class="instructor-grid">
-      <div
+    <!-- Instructors Grid -->
+    <a-row :gutter="[24, 24]" justify="start" class="instructor-grid">
+      <a-col
         v-for="(instructor, index) in instructors"
         :key="index"
-        class="instructor-card"
+        :xs="24"
+        :sm="12"
+        :md="8"
+        :lg="6"
       >
-        <div class="card-inner">
-          <div class="image-wrap">
-            <img :src="instructor.image" alt="" class="image" />
-          </div>
+        <a-card hoverable bordered class="instructor-card">
+          <a-space direction="vertical" align="center" size="middle" class="card-inner">
+            <!-- Avatar -->
+            <a-avatar
+              :src="instructor.image"
+              :size="96"
+              shape="circle"
+              class="avatar"
+            />
 
-          <div class="info">
-            <h4 class="name">{{ instructor.name }}</h4>
-            <p class="role">{{ instructor.role }}</p>
-          </div>
-
-          <div class="divider"></div>
-
-          <div class="stats">
-            <div class="rating">
-              <div class="star"></div>
-              <span class="rating-value">{{ instructor.rating }}</span>
+            <!-- Info -->
+            <div class="info">
+              <a-typography-title :level="5" class="name">
+                {{ instructor.name }}
+              </a-typography-title>
+              <a-typography-text type="secondary" class="role">
+                {{ instructor.role }}
+              </a-typography-text>
             </div>
-            <span class="students">{{ instructor.students }} Students</span>
-          </div>
-        </div>
-      </div>
-    </div>
+
+            <a-divider class="divider" />
+
+            <!-- Stats -->
+            <a-space direction="horizontal" size="large" align="center" class="stats">
+              <a-space align="center" size="small">
+                <a-rate disabled :value="Number(instructor.rating)" allow-half />
+                <a-typography-text strong>{{ instructor.rating }}</a-typography-text>
+              </a-space>
+              <a-typography-text type="secondary">
+                {{ instructor.students }} Students
+              </a-typography-text>
+            </a-space>
+          </a-space>
+        </a-card>
+      </a-col>
+    </a-row>
   </section>
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
+import { RightOutlined } from '@ant-design/icons-vue'
+
+const router = useRouter()
+const go = (path: string) => router.push(path)
+
 const instructors = [
   {
-    name: "Ronald Richards",
-    role: "UI/UX Designer",
-    rating: "4.9",
-    students: "2400",
-    image: "/instructors/ronald.jpg"
+    name: 'Ronald Richards',
+    role: 'UI/UX Designer',
+    rating: '4.9',
+    students: '2400',
+    image: '/instructors/ronald.jpg',
   },
   {
-    name: "Theresa Webb",
-    role: "Frontend Developer",
-    rating: "4.8",
-    students: "1800",
-    image: "/instructors/theresa.jpg"
+    name: 'Theresa Webb',
+    role: 'Frontend Developer',
+    rating: '4.8',
+    students: '1800',
+    image: '/instructors/theresa.jpg',
   },
   {
-    name: "Cody Fisher",
-    role: "Digital Marketer",
-    rating: "4.7",
-    students: "2100",
-    image: "/instructors/cody.jpg"
+    name: 'Cody Fisher',
+    role: 'Digital Marketer',
+    rating: '4.7',
+    students: '2100',
+    image: '/instructors/cody.jpg',
   },
   {
-    name: "Darrell Steward",
-    role: "Motion Designer",
-    rating: "4.9",
-    students: "2600",
-    image: "/instructors/darrell.jpg"
+    name: 'Darrell Steward',
+    role: 'Motion Designer',
+    rating: '4.9',
+    students: '2600',
+    image: '/instructors/darrell.jpg',
   },
   {
-    name: "Jane Cooper",
-    role: "Photographer",
-    rating: "4.8",
-    students: "1900",
-    image: "/instructors/jane.jpg"
-  }
+    name: 'Jane Cooper',
+    role: 'Photographer',
+    rating: '4.8',
+    students: '1900',
+    image: '/instructors/jane.jpg',
+  },
 ]
 </script>
 
 <style scoped>
-/* ===== Layout ===== */
 .top-instructors {
-
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 24px;
-  width: 100%;
-  max-width: 1280px;
+  padding: 100px 24px;
+  background: #fff;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 0 1rem;
 }
 
-/* ===== Header ===== */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
+  margin-bottom: 48px;
 }
 
 .title {
-  font-family: "Inter", sans-serif;
-  font-weight: 600;
-  font-size: 24px;
-  line-height: 140%;
-  color: #0f172a;
+  margin: 0;
 }
 
-.view-all {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 24px;
-  border-radius: 8px;
-  font-family: "Inter", sans-serif;
-  font-weight: 500;
-  font-size: 14px;
-  line-height: 160%;
-  color: #3b82f6;
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-
-.view-all:hover {
-  background: #3b82f6;
-  color: #fff;
-}
-
-/* ===== Grid ===== */
-.instructor-grid {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 24px;
-  width: 100%;
-  flex-wrap: wrap;
-}
-
-/* ===== Card ===== */
 .instructor-card {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 16px;
-  gap: 16px;
-  width: 212px;
-  height: 281px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0px 0px 8px rgba(59, 130, 246, 0.12);
-  border-radius: 16px;
-  transition: transform 0.25s ease;
+  text-align: center;
+  border-radius: 12px;
+  transition: all 0.3s ease;
 }
 
 .instructor-card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(22, 119, 255, 0.12);
 }
 
-.card-inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  width: 180px;
+.avatar {
+  box-shadow: 0 2px 8px rgba(22, 119, 255, 0.1);
+  transition: transform 0.3s ease;
 }
 
-/* ===== Image ===== */
-.image-wrap {
-  width: 177px;
-  height: 132px;
-  border-radius: 8px;
-  overflow: hidden;
+.instructor-card:hover .avatar {
+  transform: scale(1.05);
 }
 
-.image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* ===== Info ===== */
 .info {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  text-align: center;
 }
 
 .name {
-  font-family: "Inter", sans-serif;
   font-weight: 600;
-  font-size: 18px;
-  line-height: 160%;
-  color: #0f172a;
-  margin: 0;
+  color: rgba(0, 0, 0, 0.88);
 }
 
 .role {
-  font-family: "Inter", sans-serif;
-  font-weight: 400;
   font-size: 14px;
-  line-height: 150%;
-  color: #334155;
+  color: rgba(0, 0, 0, 0.65);
 }
 
-/* ===== Divider ===== */
-.divider {
-  width: 180px;
-  border-top: 1px solid #e2e8f0;
-}
-
-/* ===== Stats ===== */
 .stats {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 180px;
-  height: 20px;
+  justify-content: center;
 }
 
-.rating {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+.divider {
+  margin: 8px 0;
+  border-color: #f0f0f0;
 }
 
-.star {
-  width: 16px;
-  height: 16px;
-  background: #eab308;
-  border-radius: 3px;
-}
-
-.rating-value {
-  font-family: "Inter", sans-serif;
-  font-weight: 600;
-  font-size: 12px;
-  color: #0f172a;
-}
-
-.students {
-  font-family: "Inter", sans-serif;
-  font-weight: 600;
-  font-size: 12px;
-  color: #334155;
-}
-
-/* ===== Responsive ===== */
-@media (max-width: 1024px) {
-  .instructor-grid {
-    justify-content: center;
-    gap: 24px;
-  }
-}
-
+/* Responsive */
 @media (max-width: 768px) {
-  .instructor-card {
-    width: 45%;
+  .top-instructors {
+    padding: 64px 16px;
   }
-}
 
-@media (max-width: 480px) {
-  .instructor-card {
-    width: 100%;
+  .header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .name {
+    font-size: 16px;
+  }
+
+  .role {
+    font-size: 13px;
   }
 }
 </style>

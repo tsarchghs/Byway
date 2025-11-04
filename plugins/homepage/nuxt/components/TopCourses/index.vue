@@ -2,39 +2,78 @@
   <section class="top-courses">
     <!-- Header -->
     <div class="top-courses-header">
-      <h3 class="section-title">Top Courses</h3>
-      <NuxtLink to="/courses" class="view-all-btn">View All</NuxtLink>
+      <a-typography-title :level="3" class="section-title">Top Courses</a-typography-title>
+
+      <a-button type="link" size="large" @click="go('/courses')">
+        View All
+        <RightOutlined />
+      </a-button>
     </div>
 
-    <!-- Course Cards -->
-    <div class="courses-grid">
-      <div
+    <!-- Course Grid -->
+    <a-row :gutter="[24, 24]" justify="start" class="courses-grid">
+      <a-col
         v-for="(course, i) in courses"
         :key="i"
-        class="course-card"
+        :xs="24"
+        :sm="12"
+        :md="12"
+        :lg="6"
       >
-        <img :src="course.image" alt="" class="course-image" />
+        <a-card
+          hoverable
+          class="course-card"
+          :cover="cover(course.image)"
+        >
+          <template #actions>
+            <a-button type="primary" block shape="round">
+              Enroll Now
+            </a-button>
+          </template>
 
-        <div class="course-content">
-          <h4 class="course-title">{{ course.title }}</h4>
-          <p class="course-author">By {{ course.author }}</p>
+          <a-space direction="vertical" size="small" class="course-content">
+            <a-typography-title :level="5" class="course-title">
+              {{ course.title }}
+            </a-typography-title>
 
-          <div class="rating">
-            <div class="stars">
-              <span v-for="s in 5" :key="s" class="star" />
+            <a-typography-text type="secondary" class="course-author">
+              By {{ course.author }}
+            </a-typography-text>
+
+            <div class="rating">
+              <a-rate disabled :value="4.5" allow-half />
+              <a-typography-text type="secondary" class="rating-text">
+                ({{ course.ratingCount }} ratings)
+              </a-typography-text>
             </div>
-            <span class="rating-text">({{ course.ratingCount }} Ratings)</span>
-          </div>
 
-          <p class="course-meta">{{ course.details }}</p>
-          <p class="course-price">{{ course.price }}</p>
-        </div>
-      </div>
-    </div>
+            <a-typography-text class="course-meta">{{ course.details }}</a-typography-text>
+
+            <a-typography-text strong class="course-price">
+              {{ course.price }}
+            </a-typography-text>
+          </a-space>
+        </a-card>
+      </a-col>
+    </a-row>
   </section>
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
+import { RightOutlined } from '@ant-design/icons-vue'
+import { h } from 'vue'
+
+const router = useRouter()
+const go = (path: string) => router.push(path)
+
+const cover = (src: string) =>
+  h('img', {
+    alt: 'Course image',
+    src,
+    style: 'object-fit: cover; height: 180px; width: 100%; border-radius: 12px 12px 0 0;'
+  })
+
 const courses = [
   {
     title: "Beginner’s Guide to Design",
@@ -72,115 +111,45 @@ const courses = [
 </script>
 
 <style scoped>
-/* ===== Layout ===== */
 .top-courses {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 24px;
-  width: 100%;
-  max-width: 1280px;
+  padding: 100px 24px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 0 1rem;
+  background: #fff;
 }
 
-/* ===== Header ===== */
 .top-courses-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
+  margin-bottom: 48px;
 }
 
 .section-title {
-  font-family: "Inter", sans-serif;
-  font-weight: 600;
-  font-size: 24px;
-  line-height: 140%;
-  color: #0f172a;
-}
-
-.view-all-btn {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  padding: 10px 24px;
-  border-radius: 8px;
-  font-family: "Inter", sans-serif;
-  font-weight: 500;
-  font-size: 14px;
-  line-height: 160%;
-  color: #3b82f6;
-  text-decoration: none;
-  transition: all 0.2s ease-in-out;
-}
-
-.view-all-btn:hover {
-  background: #3b82f6;
-  color: #fff;
-}
-
-/* ===== Courses Grid ===== */
-.courses-grid {
-  display: flex;
-  justify-content: space-between;
-  align-items: stretch;
-  gap: 40px;
-  width: 100%;
-  flex-wrap: wrap;
+  margin: 0;
 }
 
 .course-card {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 298px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 0 8px rgba(59, 130, 246, 0.12);
-  border-radius: 16px;
-  overflow: hidden;
-  transition: transform 0.25s ease;
+  border-radius: 12px;
+  transition: all 0.3s ease;
 }
 
 .course-card:hover {
-  transform: translateY(-6px);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(22, 119, 255, 0.12);
 }
 
-/* ===== Card Image ===== */
-.course-image {
-  width: 100%;
-  height: 160px;
-  object-fit: cover;
-  border-radius: 8px 8px 0 0;
-}
-
-/* ===== Card Content ===== */
 .course-content {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 16px;
-  width: 100%;
+  text-align: left;
 }
 
 .course-title {
-  font-family: "Inter", sans-serif;
   font-weight: 600;
-  font-size: 18px;
-  line-height: 160%;
-  color: #0f172a;
-  margin: 0;
+  color: rgba(0, 0, 0, 0.88);
 }
 
 .course-author {
-  font-family: "Inter", sans-serif;
   font-size: 14px;
-  font-weight: 400;
-  color: #334155;
-  margin: 0;
 }
 
 .rating {
@@ -189,57 +158,35 @@ const courses = [
   gap: 8px;
 }
 
-.stars {
-  display: flex;
-  gap: 2px;
-}
-
-.star {
-  width: 16px;
-  height: 16px;
-  background-color: #eab308;
-  border-radius: 2px;
-}
-
 .rating-text {
-  font-family: "Inter", sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  color: #334155;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.45);
 }
 
 .course-meta {
-  font-family: "Inter", sans-serif;
   font-size: 14px;
-  color: #334155;
-  line-height: 150%;
+  color: rgba(0, 0, 0, 0.65);
 }
 
 .course-price {
-  font-family: "Inter", sans-serif;
-  font-size: 20px;
-  font-weight: 600;
-  color: #0f172a;
-  margin-top: auto;
+  font-size: 18px;
+  color: #1677ff;
+  margin-top: 8px;
 }
 
-/* ===== Responsive ===== */
-@media (max-width: 1024px) {
-  .courses-grid {
-    justify-content: center;
-    gap: 24px;
-  }
-}
-
+/* Responsive */
 @media (max-width: 768px) {
-  .course-card {
-    width: 45%;
+  .top-courses {
+    padding: 64px 16px;
   }
-}
 
-@media (max-width: 480px) {
+  .top-courses-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
   .course-card {
-    width: 100%;
+    margin: 0 auto;
   }
 }
 </style>

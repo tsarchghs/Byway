@@ -1,6 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["nuxt"]
-  }
+    "jsx": "preserve",
+    "jsxImportSource": "vue",
+    "types": ["nuxt", "vite/client", "vue", "@vue/runtime-dom"],
+    "moduleResolution": "bundler"  },
+    "include": ["**/*.ts", "**/*.tsx", "**/*.vue"]
 }

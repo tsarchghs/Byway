@@ -1,191 +1,129 @@
 <template>
   <section class="instructors-section">
-    <!-- Section 1: Become an Instructor -->
-    <div class="instructor-block reverse">
-      <div class="instructor-image">
-        <img src="image1.png" alt="Instructor teaching" />
-      </div>
+    <a-row
+      v-for="(block, index) in blocks"
+      :key="index"
+      :gutter="[48, 48]"
+      class="instructor-block"
+      :class="{ reverse: index % 2 === 0 }"
+      align="middle"
+      justify="space-between"
+    >
+      <!-- Image -->
+      <a-col :xs="24" :md="12" class="instructor-image">
+        <a-card hoverable :bordered="false" class="image-card">
+          <img :src="block.image" :alt="block.title" class="instructor-img" />
+        </a-card>
+      </a-col>
 
-      <div class="instructor-content">
-        <div class="text-group">
-          <h4>Become an Instructor</h4>
-          <p>
-            Instructors from around the world teach millions of students on
-            Byway. We provide the tools and skills to teach what you love.
-          </p>
-        </div>
+      <!-- Content -->
+      <a-col :xs="24" :md="12" class="instructor-content">
+        <a-space direction="vertical" size="middle">
+          <a-typography-title :level="3">{{ block.title }}</a-typography-title>
+          <a-typography-paragraph class="instructor-text">
+            {{ block.text }}
+          </a-typography-paragraph>
 
-        <button class="cta-button">
-          <span class="label">Start Teaching Today</span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke-width="2"
-            stroke="currentColor"
-            class="arrow-icon"
+          <a-button
+            type="primary"
+            size="large"
+            shape="round"
+            @click="go(block.ctaLink)"
           >
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
-      </div>
-    </div>
-
-    <!-- Section 2: Transform Your Life -->
-    <div class="instructor-block">
-      <div class="instructor-content">
-        <div class="text-group">
-          <h4>Transform your life through education</h4>
-          <p>
-            Learners around the world are launching new careers, advancing in
-            their fields, and enriching their lives.
-          </p>
-        </div>
-
-        <button class="cta-button">
-          <span class="label">Start Learning</span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke-width="2"
-            stroke="currentColor"
-            class="arrow-icon"
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
-      </div>
-
-      <div class="instructor-image">
-        <img src="image2.png" alt="Learning experience" />
-      </div>
-    </div>
+            {{ block.ctaLabel }}
+            <RightOutlined />
+          </a-button>
+        </a-space>
+      </a-col>
+    </a-row>
   </section>
 </template>
 
-<script setup>
-// No script logic needed — purely presentational component
+<script setup lang="ts">
+import { RightOutlined } from '@ant-design/icons-vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+const go = (link: string) => router.push(link)
+
+const blocks = [
+  {
+    title: 'Become an Instructor',
+    text: 'Instructors from around the world teach millions of students on Byway. We provide the tools and skills to teach what you love.',
+    image: 'image1.png',
+    ctaLabel: 'Start Teaching Today',
+    ctaLink: '/teach'
+  },
+  {
+    title: 'Transform your life through education',
+    text: 'Learners around the world are launching new careers, advancing in their fields, and enriching their lives through Byway courses.',
+    image: 'image2.png',
+    ctaLabel: 'Start Learning',
+    ctaLink: '/courses'
+  }
+]
 </script>
 
 <style scoped>
 .instructors-section {
-  display: flex;
-  flex-direction: column;
-  gap: 100px;
-  width: 100%;
-  padding: 80px 20px;
   background: #fff;
+  padding: 100px 24px;
+  border-top: 1px solid #f0f0f0;
 }
 
-/* Each block (row) */
 .instructor-block {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 60px;
   max-width: 1200px;
-  margin: 0 auto;
-  width: 100%;
+  margin: 0 auto 80px;
 }
 
-/* Reverse layout for alternating sides */
 .instructor-block.reverse {
   flex-direction: row-reverse;
 }
 
-/* Image section */
-.instructor-image {
-  flex: 1 1 400px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.instructor-image img {
-  width: 100%;
-  max-width: 480px;
-  height: auto;
+.image-card {
+  overflow: hidden;
   border-radius: 12px;
-  object-fit: cover;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* Text + Button content */
+.image-card:hover {
+  transform: scale(1.03);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.instructor-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 12px;
+}
+
 .instructor-content {
-  flex: 1 1 500px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: flex-start;
-  gap: 20px;
 }
 
-.text-group h4 {
-  font-family: 'Inter', sans-serif;
-  font-weight: 600;
-  font-size: 20px;
-  color: #000;
-  margin: 0;
-}
-
-.text-group p {
-  font-family: 'Inter', sans-serif;
+.instructor-text {
+  color: rgba(0, 0, 0, 0.65);
   font-size: 16px;
-  line-height: 1.6;
-  color: #1d2939;
-  margin: 0;
+  max-width: 500px;
 }
 
-/* Buttons */
-.cta-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px 28px;
-  background: #020617;
-  border: none;
-  border-radius: 8px;
-  color: #fff;
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.3s ease;
-}
-
-.cta-button:hover {
-  background: #1e293b;
-}
-
-.arrow-icon {
-  width: 20px;
-  height: 20px;
-}
-
-/* 📱 Mobile-first responsiveness */
-@media (max-width: 900px) {
-  .instructor-block,
-  .instructor-block.reverse {
+@media (max-width: 768px) {
+  .instructors-section {
+    padding: 64px 16px;
+  }
+  .instructor-block {
     flex-direction: column;
     text-align: center;
   }
-
   .instructor-content {
     align-items: center;
   }
-
-  .text-group h4 {
-    font-size: 18px;
-  }
-
-  .text-group p {
-    font-size: 15px;
-  }
-
-  .cta-button {
-    margin-top: 10px;
+  .instructor-text {
+    max-width: 90%;
   }
 }
 </style>

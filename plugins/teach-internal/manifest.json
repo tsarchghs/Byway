@@ -1,0 +1,9 @@
+{
+  "name": "authentication",
+  "routes": [
+    { "path": "/teach-internal/[teacher_id]", "file": "nuxt/pages/teach-internal.vue" },
+    { "path": "/teach-internal/[teacher_id]/course/create", "file": "nuxt/pages/course/create.vue" },
+    { "path": "/teach-internal/[teacher_id]/course/create/module/create", "file": "nuxt/pages/course/module/create.vue" },
+    { "path": "/teach-internal/[teacher_id]/course/create/module/[module_id]/view", "file": "nuxt/pages/course/module/view.vue" }
+  ]
+}
