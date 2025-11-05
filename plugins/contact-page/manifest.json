@@ -1,6 +1,0 @@
-{
-  "name": "authentication",
-  "routes": [
-    { "path": "/contact", "file": "nuxt/pages/contact.vue" }
-  ]
-}

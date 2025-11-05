@@ -1,7 +1,0 @@
-{
-  "name": "authentication",
-  "routes": [
-    { "path": "/auth/login", "file": "nuxt/pages/all_auth.vue" },
-    { "path": "/auth/signup", "file": "nuxt/pages/all_auth.vue" }
-  ]
-}
