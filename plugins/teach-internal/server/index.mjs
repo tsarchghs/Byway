@@ -1,0 +1,50 @@
+import express from 'express'
+import { ApolloServer } from 'apollo-server-express'
+import { schema } from './nexus/index.js'
+import { PrismaClient } from './db/generated/client/index.js'
+import jwt from 'jsonwebtoken'
+
+const prisma = new PrismaClient()
+const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret'
+
+export async function register(app) {
+  const router = express.Router()
+
+  // ⚠️ DO NOT use express.json() here!
+  // Apollo already handles parsing internally
+
+  const server = new ApolloServer({
+    schema,
+    context: async ({ req }) => {
+      const auth = req.headers.authorization || ''
+      const token = auth.replace('Bearer ', '').trim()
+
+      let user = null
+      if (token) {
+        try {
+          user = jwt.verify(token, JWT_SECRET)
+        } catch (err) {
+          console.warn('[teach-internal] Invalid JWT:', err.message)
+        }
+      }
+
+      return { req, prisma, token, user }
+    },
+  })
+
+  await server.start()
+
+  // ✅ Apply Apollo middleware directly to router
+  server.applyMiddleware({
+    app: router,
+    path: '/graphql',
+    bodyParserConfig: false, // 👈 disables Apollo’s built-in parser conflict
+  })
+
+  // ✅ Simple health check
+  router.get('/health', (_, res) => res.json({ ok: true, plugin: 'teach-internal' }))
+
+  app.use('/api/teach-internal', router)
+
+  console.log('[teach-internal] GraphQL available at /api/teach-internal/graphql')
+}

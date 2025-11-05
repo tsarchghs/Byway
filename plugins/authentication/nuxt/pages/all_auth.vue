@@ -24,23 +24,93 @@
 
 <script setup>
 import { ref } from 'vue'
-import Header from '../../../../packages/shared-ui/src/components/Header.vue'
 import { message } from 'ant-design-vue'
+import Header from '../../../../packages/shared-ui/src/components/Header.vue'
 import SignInForm from './SignInForm.vue'
 import SignUpForm from './SignUpForm.vue'
+import { useAuth } from '../../../../packages/shared-ui/src/composables/useAuth'
+import { useMutation } from '@vue/apollo-composable'
+import { gql } from '@apollo/client/core'
+// Apollo & GraphQL
+import { useApolloPluginClient } from '~/composables/useApolloPluginClient'
+import { onMounted } from 'vue'
+// automatically uses /api/authentication/graphql
+useApolloPluginClient()
+const auth = useAuth()
 
 const activeTab = ref('signin')
 
+// --- GraphQL mutations ---
+const LOGIN_MUTATION = gql`
+  mutation Login($email: String!, $password: String!) {
+    login(email: $email, password: $password) {
+      token
+      user { id email }
+    }
+  }
+`
+
+const REGISTER_MUTATION = gql`
+  mutation Register($email: String!, $password: String!, $firstName: String, $lastName: String) {
+    register(email: $email, password: $password, firstName: $firstName, lastName: $lastName) {
+      id
+      email
+    }
+  }
+`
+
+// Apollo composables
+const { mutate: login, onDone: onLoginDone, onError: onLoginError } = useMutation(LOGIN_MUTATION)
+const { mutate: register, onDone: onRegisterDone, onError: onRegisterError } = useMutation(REGISTER_MUTATION)
+
+// --- handlers ---
 const handleSignIn = (data) => {
-  console.log('Sign In Data:', data)
-  message.success(`Welcome back, ${data.email}`)
+  login({
+    email: data.email,
+    password: data.password,
+  })
 }
 
+
+onLoginDone(({ data }) => {
+  const { token, user } = data.login
+  auth.login({ token, user })
+  message.success(`Welcome back, ${user.email}`)
+  navigateTo('/') // redirect to homepage
+})
+
+onLoginError((err) => {
+  message.error(err.message)
+})
+
 const handleSignUp = (data) => {
-  console.log('Sign Up Data:', data)
-  message.success(`Account created for ${data.email}`)
+  if (data.password !== data.confirm) {
+    return message.error('Passwords do not match')
+  }
+  register({
+    email: data.email,
+    password: data.password,
+    firstName: data.firstName,
+    lastName: data.lastName,
+  })
 }
+
+onRegisterDone(({ data }) => {
+  message.success(`Account created for ${data.register.email}`)
+})
+
+onRegisterError((err) => {
+  message.error(err.message)
+})
+
+onMounted(() => {
+  if (auth.isLoggedIn.value) {
+    // Already logged in → go home or profile
+    navigateTo('/')
+  }
+})
 </script>
+
 
 <style scoped>
 .signin-section {

@@ -625,7 +625,7 @@ import {
   PlayCircleOutlined, ArrowLeftOutlined, ArrowRightOutlined, UndoOutlined,
   CheckCircleTwoTone, FileTextOutlined, MessageOutlined, PaperClipOutlined,
   FilePdfOutlined, FieldTimeOutlined, LockOutlined, CheckOutlined,
-  BulbOutlined, CreditCardOutlined, ShoppingCartOutlined, LinkOutlined, KeyboardOutlined
+  BulbOutlined, CreditCardOutlined, ShoppingCartOutlined, LinkOutlined
 } from '@ant-design/icons-vue'
 
 /** ---------- Types ---------- */

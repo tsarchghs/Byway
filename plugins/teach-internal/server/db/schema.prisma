@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./teach_internal.db"
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  teacherId   String // soft link to Authentication.user.id
+  title       String
+  category    String?
+  difficulty  String?
+  description String?
+  price       Float    @default(0)
+  discount    Float    @default(0)
+  coverUrl    String?
+  modules     Module[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Module {
+  id       String   @id @default(cuid())
+  courseId String
+  title    String
+  lessons  Lesson[]
+  Course   Course   @relation(fields: [courseId], references: [id])
+}
+
+model Lesson {
+  id        String   @id @default(cuid())
+  moduleId  String
+  title     String
+  type      String
+  duration  Int?
+  content   String?
+  videoUrl  String?
+  rubric    String?
+  preview   Boolean  @default(false)
+  metadata  Json?
+  createdAt DateTime @default(now())
+  Module    Module   @relation(fields: [moduleId], references: [id])
+}

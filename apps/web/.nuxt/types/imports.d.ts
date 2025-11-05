@@ -95,6 +95,7 @@ declare global {
   const unref: typeof import('../../../../node_modules/.pnpm/vue@3.5.22_typescript@5.9.3/node_modules/vue').unref
   const updateAppConfig: typeof import('../../../../node_modules/.pnpm/nuxt@4.2.0_@parcel+watcher@2.5.1_@types+node@22.18.13_@vue+compiler-sfc@3.5.22_db0@0.3.4_iore_f5v7hewsddy5avpu7qdacj2zgu/node_modules/nuxt/dist/app/config').updateAppConfig
   const useApi: typeof import('../../composables/useApi').useApi
+  const useApolloPluginClient: typeof import('../../composables/useApolloPluginClient').useApolloPluginClient
   const useAppConfig: typeof import('../../../../node_modules/.pnpm/nuxt@4.2.0_@parcel+watcher@2.5.1_@types+node@22.18.13_@vue+compiler-sfc@3.5.22_db0@0.3.4_iore_f5v7hewsddy5avpu7qdacj2zgu/node_modules/nuxt/dist/app/config').useAppConfig
   const useAsyncData: typeof import('../../../../node_modules/.pnpm/nuxt@4.2.0_@parcel+watcher@2.5.1_@types+node@22.18.13_@vue+compiler-sfc@3.5.22_db0@0.3.4_iore_f5v7hewsddy5avpu7qdacj2zgu/node_modules/nuxt/dist/app/composables/asyncData').useAsyncData
   const useAttrs: typeof import('../../../../node_modules/.pnpm/vue@3.5.22_typescript@5.9.3/node_modules/vue').useAttrs
@@ -281,6 +282,7 @@ declare module 'vue' {
     readonly unref: UnwrapRef<typeof import('../../../../node_modules/.pnpm/vue@3.5.22_typescript@5.9.3/node_modules/vue')['unref']>
     readonly updateAppConfig: UnwrapRef<typeof import('../../../../node_modules/.pnpm/nuxt@4.2.0_@parcel+watcher@2.5.1_@types+node@22.18.13_@vue+compiler-sfc@3.5.22_db0@0.3.4_iore_f5v7hewsddy5avpu7qdacj2zgu/node_modules/nuxt/dist/app/config')['updateAppConfig']>
     readonly useApi: UnwrapRef<typeof import('../../composables/useApi')['useApi']>
+    readonly useApolloPluginClient: UnwrapRef<typeof import('../../composables/useApolloPluginClient')['useApolloPluginClient']>
     readonly useAppConfig: UnwrapRef<typeof import('../../../../node_modules/.pnpm/nuxt@4.2.0_@parcel+watcher@2.5.1_@types+node@22.18.13_@vue+compiler-sfc@3.5.22_db0@0.3.4_iore_f5v7hewsddy5avpu7qdacj2zgu/node_modules/nuxt/dist/app/config')['useAppConfig']>
     readonly useAsyncData: UnwrapRef<typeof import('../../../../node_modules/.pnpm/nuxt@4.2.0_@parcel+watcher@2.5.1_@types+node@22.18.13_@vue+compiler-sfc@3.5.22_db0@0.3.4_iore_f5v7hewsddy5avpu7qdacj2zgu/node_modules/nuxt/dist/app/composables/asyncData')['useAsyncData']>
     readonly useAttrs: UnwrapRef<typeof import('../../../../node_modules/.pnpm/vue@3.5.22_typescript@5.9.3/node_modules/vue')['useAttrs']>

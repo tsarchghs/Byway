@@ -6,8 +6,14 @@ import { pathToFileURL } from 'node:url'
 
 const app = express()
 app.use(cors())
-app.use(express.json())
-
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/authentication/graphql')) {
+    // skip global JSON parser
+    next()
+  } else {
+    express.json()(req, res, next)
+  }
+})
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000
 
 // Load plugin routers
