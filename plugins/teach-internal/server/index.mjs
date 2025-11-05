@@ -3,7 +3,7 @@ import { ApolloServer } from 'apollo-server-express'
 import { schema } from './nexus/index.js'
 import { PrismaClient } from './db/generated/client/index.js'
 import jwt from 'jsonwebtoken'
-
+import cors from 'cors'
 const prisma = new PrismaClient()
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret'
 
@@ -38,6 +38,7 @@ export async function register(app) {
   server.applyMiddleware({
     app: router,
     path: '/graphql',
+  cors: false,              
     bodyParserConfig: false, // 👈 disables Apollo’s built-in parser conflict
   })
 
@@ -46,5 +47,9 @@ export async function register(app) {
 
   app.use('/api/teach-internal', router)
 
+app.use(cors({
+  origin: ['http://localhost:3000'], // your frontend(s)
+  credentials: true, // allow cookies / auth headers
+}))
   console.log('[teach-internal] GraphQL available at /api/teach-internal/graphql')
 }

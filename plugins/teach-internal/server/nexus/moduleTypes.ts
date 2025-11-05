@@ -8,7 +8,30 @@ export const Module = objectType({
     t.string('title')
     t.list.field('lessons', {
       type: 'Lesson',
-      resolve: (p, _, ctx) => ctx.prisma.lesson.findMany({ where: { moduleId: p.id } }),
+      async resolve(parent, _, ctx) {
+        const lessons = await ctx.prisma.lesson.findMany({
+          where: { moduleId: parent.id },
+        })
+        return lessons || [] // ✅ never null
+      },
+    })
+      t.field('Course', { type: 'Course' })
+  },
+})
+
+export const ModuleQuery = extendType({
+  type: 'Query',
+  definition(t) {
+    t.list.field('modules', {
+      type: 'Module',
+      resolve: (_, __, ctx) => ctx.prisma.module.findMany({ include: { lessons: true } }),
+    })
+
+    t.field('module', {
+      type: 'Module',
+      args: { id: nonNull(stringArg()) },
+      resolve: (_, { id }, ctx) =>
+        ctx.prisma.module.findUnique({ where: { id }, include: { lessons: true } }),
     })
   },
 })
@@ -22,12 +45,24 @@ export const ModuleMutation = extendType({
         courseId: nonNull(stringArg()),
         title: nonNull(stringArg()),
       },
-      async resolve(_, args, ctx) {
-        console.log('🟢 createModule resolver called with:', args)
-        const module = await ctx.prisma.module.create({ data: args })
-        console.log('✅ created module:', module)
-        return module
+      resolve: (_, args, ctx) => ctx.prisma.module.create({ data: args }),
+    })
+
+    t.field('updateModule', {
+      type: 'Module',
+      args: {
+        id: nonNull(stringArg()),
+        title: stringArg(),
       },
+      resolve: (_, { id, ...data }, ctx) =>
+        ctx.prisma.module.update({ where: { id }, data }),
+    })
+
+    t.field('deleteModule', {
+      type: 'Module',
+      args: { id: nonNull(stringArg()) },
+      resolve: (_, { id }, ctx) =>
+        ctx.prisma.module.delete({ where: { id } }),
     })
   },
 })

@@ -1,13 +1,32 @@
-import { makeSchema } from 'nexus'
 import path from 'path'
-import * as Course from './courseTypes.js'
-import * as Module from './moduleTypes.js'
-import * as Lesson from './lessonTypes.js'
+import { makeSchema } from 'nexus'
+import { Course, CourseQuery, CourseMutation } from './courseTypes'
+import { Module, ModuleQuery, ModuleMutation } from './moduleTypes'
+import { Lesson, LessonQuery, LessonMutation } from './lessonTypes'
+import { DateTimeResolver, JSONResolver } from 'graphql-scalars'
 
 export const schema = makeSchema({
-  types: [Course, Module, Lesson],
+  types: [
+    // Scalars
+    DateTimeResolver, JSONResolver,
+    // Models
+    Course, Module, Lesson,
+    // Queries
+    CourseQuery, ModuleQuery, LessonQuery,
+    // Mutations
+    CourseMutation, ModuleMutation, LessonMutation,
+  ],
   outputs: {
-    schema: path.join(process.cwd(), 'plugins/teach-internal/server/db/schema.graphql'),
-    typegen: path.join(process.cwd(), 'plugins/teach-internal/server/db/nexus-typegen.ts'),
+    typegen: path.join(process.cwd(), 'src/nexus/generated/nexus-typegen.ts'),
+    schema: path.join(process.cwd(), 'src/nexus/generated/schema.graphql'),
   },
+  contextType: {
+    module: path.join(process.cwd(), 'src/context.ts'),
+    export: 'Context',
+  },
+  nonNullDefaults: {
+    output: true,
+    input: false,
+  },
+  shouldExitAfterGenerateArtifacts: process.env.NODE_ENV === 'production',
 })

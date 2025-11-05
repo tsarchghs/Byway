@@ -36,9 +36,22 @@ type Mutation {
   createCourse(category: String, description: String, difficulty: String, discount: Float, price: Float, title: String!): Course
   createLesson(content: String, duration: Int, moduleId: String!, title: String!, type: String!, videoUrl: String): Lesson
   createModule(courseId: String!, title: String!): Module
+  deleteCourse(id: String!): Course
+  deleteLesson(id: String!): Lesson
+  deleteModule(id: String!): Module
+  updateCourse(category: String, description: String, difficulty: String, discount: Float, id: String!, price: Float, title: String): Course
+  updateLesson(content: String, duration: Int, id: String!, title: String, type: String, videoUrl: String): Lesson
+  updateModule(id: String!, title: String): Module
 }
 
 type Query {
+  allCourses: [Course]
+  allLessons: [Lesson]
+  allModules: [Module]
   course(id: String!): Course
   coursesByTeacher(teacherId: String!): [Course]
+  lesson(id: String!): Lesson
+  lessonsByModule(moduleId: String!): [Lesson]
+  module(id: String!): Module
+  modulesByCourse(courseId: String!): [Module]
 }

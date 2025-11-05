@@ -365,10 +365,7 @@
                   </div>
 
                   <div v-else-if="currentLesson.type==='quiz'">
-                    <a-list
-                      :data-source="currentLesson.quiz?.questions || []"
-                      :renderItem="q => q"
-                    >
+                    <a-list :data-source="currentLesson.quiz?.questions || []" :renderItem="q => q">
                       <template #renderItem="{ item, index }">
                         <a-list-item>
                           <b>Q{{ index+1 }}</b>: {{ item.text || '(empty)' }}
@@ -402,21 +399,37 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed, onMounted, watch } from 'vue'
+import { reactive, ref, computed, onMounted } from 'vue'
 import { theme, message } from 'ant-design-vue'
 import {
   BulbOutlined, SaveOutlined, CloudDownloadOutlined, ExportOutlined, ImportOutlined,
   PlusOutlined, DeleteOutlined, EditOutlined, DownOutlined, FieldTimeOutlined
 } from '@ant-design/icons-vue'
+import { useRoute } from 'vue-router'
 
-/** ——— Shared types (align with learner component) ——— */
+/** Utils */
+const fmt = (n: number) => n.toLocaleString(undefined, { style: 'currency', currency: 'EUR' })
+const toPlain = <T,>(x:T):T => JSON.parse(JSON.stringify(x))
+const uid = () => Math.random().toString(36).slice(2, 9)
+const splitTags = (s:string) => s.split(',').map(x=>x.trim()).filter(Boolean)
+const ytEmbed = (url?:string) => {
+  if (!url) return ''
+  if (/youtube\.com|youtu\.be/.test(url)) {
+    const id = url.match(/(?:v=|be\/)([A-Za-z0-9_-]{6,})/)?.[1]
+    return id ? `https://www.youtube.com/embed/${id}?rel=0` : ''
+  }
+  return ''
+}
+
+/** Types */
 type QuizOption = { text: string; correct: boolean }
 type QuizQuestion = { id: string; text: string; type: 'mcq'|'tf'|'short'; options?: QuizOption[] }
 type Resource = { id?: string; name?: string; title?: string; kind?: 'pdf'|'file'|'link'; url: string }
 type Lesson = {
   id: string
+  moduleId?: string
   title: string
-  type: 'video'|'reading'|'quiz'|'assignment'
+  type: 'video'|'reading'|'quiz'|'assignment'|string
   duration?: number
   content?: string
   videoUrl?: string
@@ -430,80 +443,84 @@ type Lesson = {
   preview?: boolean
   quiz?: { questions: QuizQuestion[] }
 }
-type ModuleT = { title: string; lessons: Lesson[] }
+type ModuleT = { id?: string; courseId?: string; title: string; lessons: Lesson[] }
 type CourseT = {
-  id?: string | number
+  id?: string
   title: string
   category: string
   difficulty: 'Beginner'|'Intermediate'|'Advanced'|string
   description: string
   price: number
   discount: number
+  coverUrl?: string
   modules: ModuleT[]
   files: Array<{ name?: string; url?: string; thumbUrl?: string }>
 }
 
-/** ——— LocalStorage keys ——— */
-const COURSE_DATA_KEY = computed(()=>`byway-course:${course.id || course.title || 'draft'}:data`)
+/** Config / GraphQL helper */
+const route = useRoute()
+const API_URL = 'http://localhost:4000/api/teach-internal/graphql'
+function getAuthHeaders() {
+  const headers: Record<string,string> = { 'Content-Type':'application/json' }
+  const token = localStorage.getItem('auth:token') || ''
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  return headers
+}
+async function fetchGraphQL<T=any>(query: string, variables?: Record<string, any>): Promise<T> {
+  const resp = await fetch(API_URL, {
+    method: 'POST',
+    credentials: 'include',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ query, variables })
+  })
+  const json = await resp.json()
+  if (json.errors?.length) throw new Error(json.errors[0]?.message || 'GraphQL error')
+  return json.data as T
+}
 
-/** ——— Helper for learner usage (paste in your learner onMounted): 
-    const raw = localStorage.getItem(COURSE_DATA_KEY.value); if (raw) Object.assign(course, JSON.parse(raw));
-    (You already have the same CourseT shape.) 
-*/
-
-/** ——— Seed (same spirit as learner) ——— */
-const course = reactive<CourseT>({
-  title: 'Advanced Vue 3 Workshop',
-  category: 'Programming',
-  difficulty: 'Intermediate',
-  description: 'Learn Composition API, reactivity, and Ant Design Vue by building a production-grade dashboard.',
-  price: 69,
-  discount: 20,
-  modules: [
-    {
-      title: 'Getting Started',
-      lessons: [
-        { id:'m0l0', title:'Welcome & Setup', type:'video', duration:8, videoUrl:'https://www.youtube.com/watch?v=dQw4w9WgXcQ', content:'What you’ll learn and how to setup.', preview:true },
-        { id:'m0l1', title:'Project Tour', type:'reading', duration:12, content:'Tour the project structure.', preview:true },
-      ]
-    },
-    {
-      title: 'Composition API Deep Dive',
-      lessons: [
-        { id:'m1l0', title:'Refs vs Reactives', type:'reading', duration:18, content:'Understanding reactivity.' },
-        { id:'m1l1', title:'Computed & Watch', type:'video', duration:15, videoUrl:'https://www.youtube.com/watch?v=9bZkp7q19f0' },
-        { id:'m1l2', title:'Checkpoint', type:'quiz', duration:7, quiz:{questions:[
-          { id:'q1', text:'Pick the correct option', type:'mcq', options:[{text:'A',correct:true},{text:'B',correct:false}]},
-          { id:'q2', text:'Vue uses Virtual DOM (T/F)', type:'tf' },
-          { id:'q3', text:'One word: reactive primitive in Vue?', type:'short' }
-        ]}},
-        { id:'m1l3', title:'Mini Assignment', type:'assignment', duration:20, content:'Build a tiny feature.', rubric:'Completeness / Correctness / Clarity', prerequisites:['m1l2'] },
-      ]
-    }
-  ],
-  files: []
-})
-
-/** ——— Theme ——— */
+/** Theme & UI */
 const DARK_KEY = 'byway:theme:dark'
 const isDark = ref(false)
 function toggleDark(){ isDark.value = !isDark.value; localStorage.setItem(DARK_KEY, JSON.stringify(isDark.value)) }
 
-/** ——— UI State ——— */
 const tab = ref<'course'|'lesson'|'preview'>('course')
 const siderCollapsed = ref(false)
 const activePanels = ref<string[]>([])
 const activeQPanels = ref<string[]>([])
 const filter = ref('')
 
-/** ——— Outline selection ——— */
+/** Base reactive state */
+const course = reactive<CourseT>({
+  title: 'Advanced Vue 3 Workshop',
+  category: 'Programming',
+  difficulty: 'Intermediate',
+  description: 'Learn Composition API and Ant Design Vue by building a dashboard.',
+  price: 69,
+  discount: 20,
+  modules: [],
+  files: []
+})
+
+/** Derived */
+const totalMinutes = computed(()=> course.modules.flatMap(m=>m.lessons||[]).reduce((s,l)=> s+(l.duration||0), 0))
+const coverUrl = computed(()=> course.files?.[0]?.url || course.coverUrl || '')
+const coverStyle = computed(()=> ({ backgroundImage: coverUrl.value ? `url('${coverUrl.value}')` : 'linear-gradient(135deg,#111,#334155)' }))
+const flatLessons = computed(()=> {
+  const arr:{ id:string; label:string }[] = []
+  course.modules.forEach((m, mi)=> (m.lessons||[]).forEach((l, li)=> arr.push({ id: l.id, label: `${m.title || `Module ${mi+1}`}: ${l.title || 'Untitled'}`})))
+  return arr
+})
+const selectedKey = computed(()=>`l-${currentModuleIndex.value}-${currentLessonIndex.value}`)
+const payablePreview = computed(() => (Number(course.price||0)) * (1 - Number(course.discount||0)/100))
+
+/** Outline selection */
 const currentModuleIndex = ref(0)
 const currentLessonIndex = ref(0)
 const currentModule = computed<ModuleT|undefined>(() => course.modules[currentModuleIndex.value])
 const currentLesson  = computed<Lesson|undefined>(() => currentModule.value?.lessons?.[currentLessonIndex.value])
-const selectedKey = computed(()=>`l-${currentModuleIndex.value}-${currentLessonIndex.value}`)
+function select(mi:number, li:number){ currentModuleIndex.value = mi; currentLessonIndex.value = li; tab.value='lesson'; touch(false) }
 
-/** ——— Options ——— */
+/** Options */
 const typeOptions = [
   { label:'Video', value:'video' },
   { label:'Reading', value:'reading' },
@@ -521,53 +538,293 @@ const diffOptions = [
   { label:'Advanced', value:'Advanced' },
 ]
 
-/** ——— Derived ——— */
-const totalMinutes = computed(()=> course.modules.flatMap(m=>m.lessons||[]).reduce((s,l)=> s+(l.duration||0), 0))
-const coverUrl = computed(()=> (course.files?.[0]?.url || course.files?.[0]?.thumbUrl || ''))
-const coverStyle = computed(()=> ({ backgroundImage: coverUrl.value ? `url('${coverUrl.value}')` : 'linear-gradient(135deg,#111,#334155)' }))
-const flatLessons = computed(()=> {
-  const arr:{ id:string; label:string }[] = []
-  course.modules.forEach((m, mi)=> m.lessons.forEach((l, li)=> arr.push({ id: l.id, label: `${m.title || `Module ${mi+1}`}: ${l.title || 'Untitled'}`})))
-  return arr
-})
-const prereqOptions = computed(()=> (flatLessons.value
-  .filter(x => currentLesson.value ? x.id !== currentLesson.value.id : true)
-  .map(x => ({ label: x.label, value: x.id })) ))
-const payablePreview = computed(()=> {
-  const baseDiscounted = course.price * (1 - (course.discount||0)/100)
-  return fmt(Math.round(baseDiscounted*100)/100)
-})
-
-/** ——— Simple filters ——— */
+/** Filters */
 function matchFilter(l:Lesson){
   const q = filter.value.trim().toLowerCase()
   if (!q) return true
   return (l.title||'').toLowerCase().includes(q) || (l.type||'').toLowerCase().includes(q)
 }
 
-/** ——— Outline ops ——— */
-function select(mi:number, li:number){ currentModuleIndex.value = mi; currentLessonIndex.value = li; tab.value='lesson' }
-function addModule(){
-  course.modules.push({ title:`New module ${course.modules.length+1}`, lessons:[] })
-  activePanels.value = [`m-${course.modules.length-1}`]
-  touch()
+/** GraphQL operations */
+const GQL = {
+  courseTree: `
+    query CourseTree($id: String!) {
+      course(id: $id) {
+        id title category difficulty description price discount coverUrl
+        modules { id title courseId
+          lessons { id moduleId title type duration content videoUrl rubric }
+        }
+      }
+    }
+  `,
+  updateCourse: `
+    mutation UpdateCourse(
+      $id:String!,
+      $title:String, $category:String, $difficulty:String, $description:String,
+      $price:Float, $discount:Float, $coverUrl:String
+    ){
+      updateCourse(
+        id:$id, title:$title, category:$category, difficulty:$difficulty, description:$description,
+        price:$price, discount:$discount, coverUrl:$coverUrl
+      ){ id }
+    }
+  `,
+  createModule: `
+    mutation CreateModule($courseId:String!, $title:String!){
+      createModule(courseId:$courseId, title:$title){ id courseId title }
+    }
+  `,
+  updateModule: `
+    mutation UpdateModule($id:String!, $title:String){
+      updateModule(id:$id, title:$title){ id }
+    }
+  `,
+  deleteModule: `
+    mutation DeleteModule($id:String!){
+      deleteModule(id:$id){ id }
+    }
+  `,
+  createLesson: `
+    mutation CreateLesson(
+      $moduleId:String!, $title:String!, $type:String!,
+      $duration:Int, $content:String, $videoUrl:String, $rubric:String
+    ){
+      createLesson(
+        moduleId:$moduleId, title:$title, type:$type,
+        duration:$duration, content:$content, videoUrl:$videoUrl, rubric:$rubric
+      ){ id moduleId title type duration content videoUrl rubric }
+    }
+  `,
+  updateLesson: `
+    mutation UpdateLesson(
+      $id:String!,
+      $title:String, $type:String, $duration:Int, $content:String, $videoUrl:String, $rubric:String
+    ){
+      updateLesson(
+        id:$id, title:$title, type:$type, duration:$duration, content:$content, videoUrl:$videoUrl, rubric:$rubric
+      ){ id }
+    }
+  `,
+  deleteLesson: `
+    mutation DeleteLesson($id:String!){
+      deleteLesson(id:$id){ id }
+    }
+  `
 }
+
+/** Normalize server course */
+function normalizeCourse(src:any): CourseT {
+  return {
+    id: src.id,
+    title: src.title || '',
+    category: src.category || '',
+    difficulty: src.difficulty || 'Beginner',
+    description: src.description || '',
+    price: Number(src.price ?? 0),
+    discount: Number(src.discount ?? 0),
+    coverUrl: src.coverUrl || '',
+    modules: (src.modules || []).map((m:any) => ({
+      id: m.id, courseId: m.courseId, title: m.title || '', lessons:
+        (m.lessons || []).map((l:any) => ({
+          id: l.id, moduleId: l.moduleId,
+          title: l.title || '', type: l.type || 'reading',
+          duration: l.duration ?? undefined, content: l.content || '',
+          videoUrl: l.videoUrl || '', rubric: l.rubric || ''
+        }))
+    })),
+    files: src.coverUrl ? [{ name: 'cover', url: src.coverUrl }] : []
+  }
+}
+
+/** Replace the reactive course safely */
+function replaceCourse(next:CourseT){
+  next.modules ||= []
+  next.files ||= []
+  Object.keys(course).forEach(k => delete (course as any)[k])
+  Object.assign(course, next)
+  currentModuleIndex.value = Math.min(currentModuleIndex.value, Math.max(course.modules.length-1, 0))
+  currentLessonIndex.value = Math.min(currentLessonIndex.value, Math.max(course.modules[currentModuleIndex.value]?.lessons.length-1 || 0, 0))
+  reflectSideInputs()
+}
+
+/** Fetch */
+const loading = ref(false)
+async function fetchAllContent(id: string){
+  loading.value = true
+  try {
+    const data = await fetchGraphQL<{ course: any }>(GQL.courseTree, { id })
+    if (!data?.course) throw new Error('Course not found')
+    replaceCourse(normalizeCourse(data.course))
+    localStorage.setItem('byway:lastCourseId', course.id || '')
+  } catch (e:any) {
+    console.warn('[CourseEditor] Failed to fetch API:', e.message)
+    message.error('Using local draft if available.')
+    const raw = localStorage.getItem(COURSE_DATA_KEY.value)
+    if (raw) { try { replaceCourse(JSON.parse(raw)) } catch {} }
+  } finally {
+    loading.value = false
+  }
+}
+
+/** Debounced persistence */
+const autoSave = ref(true)
+const COURSE_DATA_KEY = computed(()=>`byway-course:${course.id || course.title || 'draft'}:data`)
+let saveTimer:number|undefined
+let syncTimer:number|undefined
+
+async function apiUpdateCourse(){
+  if (!course.id) return
+  try {
+    await fetchGraphQL(GQL.updateCourse, {
+      id: course.id,
+      title: course.title, category: course.category, difficulty: course.difficulty,
+      description: course.description,
+      price: Number(course.price ?? 0), discount: Number(course.discount ?? 0),
+      coverUrl: coverUrl.value || ''
+    })
+  } catch (e:any){ message.error('Update course failed: '+e.message) }
+}
+async function apiUpdateLesson(l: Lesson){
+  if (!l?.id) return
+  try {
+    await fetchGraphQL(GQL.updateLesson, {
+      id: l.id,
+      title: l.title, type: l.type, duration: l.duration ?? null,
+      content: l.content ?? '', videoUrl: l.videoUrl ?? '', rubric: l.rubric ?? ''
+    })
+  } catch (e:any){ message.error('Update lesson failed: '+e.message) }
+}
+function saveToLS(){
+  try { localStorage.setItem(COURSE_DATA_KEY.value, JSON.stringify(toPlain(course))); message.success('Saved locally') }
+  catch(e:any){ message.error('Save failed: '+(e?.message||e)) }
+}
+function loadFromLS(){
+  const raw = localStorage.getItem(COURSE_DATA_KEY.value)
+  if (!raw) return message.info('No saved course found')
+  try { replaceCourse(JSON.parse(raw)); message.success('Loaded from localStorage') }
+  catch(e:any){ message.error('Load failed: '+(e?.message||e)) }
+}
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(toPlain(course), null, 2)], { type:'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url; a.download = `${(course.title||'course').replace(/\s+/g,'_')}.json`; a.click()
+  URL.revokeObjectURL(url)
+}
+const importJSONOpen = ref(false)
+const importText = ref('')
+function confirmImport(){
+  try {
+    const parsed = JSON.parse(importText.value || '{}')
+    replaceCourse(parsed)
+    importJSONOpen.value = false; importText.value=''
+    message.success('Imported'); saveToLS()
+  } catch (e:any){ message.error('Invalid JSON: '+(e?.message||e)) }
+}
+function cancelImport(){ importJSONOpen.value=false; importText.value='' }
+function resetAll(){ localStorage.removeItem(COURSE_DATA_KEY.value); message.success('LocalStorage course data cleared') }
+
+function reflectSideInputs(){
+  if (currentLesson.value){
+    tagsInput.value = (currentLesson.value.tags || []).join(', ')
+    unlockInput.value = currentLesson.value.unlockAt ? String(currentLesson.value.unlockAt) : ''
+  }
+}
+async function syncDirty(){
+  try {
+    if (course.id) await apiUpdateCourse()
+    if (currentLesson.value?.id) await apiUpdateLesson(currentLesson.value)
+  } catch {}
+}
+function touch(syncApi = true){
+  reflectSideInputs()
+  if (autoSave.value) {
+    if (saveTimer) window.clearTimeout(saveTimer as any)
+    saveTimer = window.setTimeout(saveToLS, 400) as any
+  }
+  if (syncApi && autoSave.value) {
+    if (syncTimer) window.clearTimeout(syncTimer as any)
+    syncTimer = window.setTimeout(syncDirty, 600) as any
+  }
+}
+
+/** Module CRUD */
+async function apiCreateModule(title:string){
+  if (!course.id) { message.warning('Save course first before adding modules.'); return }
+  try {
+    const data = await fetchGraphQL<{ createModule: any }>(GQL.createModule, { courseId: course.id, title })
+    const created = data.createModule
+    course.modules.push({ id: created.id, courseId: created.courseId, title: created.title, lessons: [] })
+    activePanels.value = [`m-${course.modules.length-1}`]
+    message.success('Module created')
+  } catch (e:any){ message.error('Create module failed: '+e.message) }
+}
+async function apiUpdateModuleTitle(mi:number, title:string){
+  const m = course.modules[mi]
+  if (!m?.id) return
+  try { await fetchGraphQL(GQL.updateModule, { id: m.id, title }); message.success('Module updated') }
+  catch(e:any){ message.error('Update module failed: '+e.message) }
+}
+async function apiDeleteModule(mi:number){
+  const m = course.modules[mi]
+  if (!m?.id) { course.modules.splice(mi,1); return }
+  try {
+    await fetchGraphQL(GQL.deleteModule, { id: m.id })
+    course.modules.splice(mi,1)
+    currentModuleIndex.value = Math.max(0, Math.min(currentModuleIndex.value, course.modules.length-1))
+    currentLessonIndex.value = 0
+    message.success('Module deleted')
+  } catch (e:any){ message.error('Delete module failed: '+e.message) }
+}
+
+/** Lesson CRUD */
+async function apiCreateLesson(mi:number){
+  const m = course.modules[mi]
+  if (!m?.id) { message.warning('Create/save module first.'); return }
+  try {
+    const payload = { moduleId: m.id, title:'New lesson', type:'reading', duration:5, content:'' }
+    const data = await fetchGraphQL<{ createLesson:any }>(GQL.createLesson, payload)
+    const created = data.createLesson
+    m.lessons.push({
+      id: created.id, moduleId: created.moduleId,
+      title: created.title, type: created.type,
+      duration: created.duration, content: created.content, videoUrl: created.videoUrl || '', rubric: created.rubric || ''
+    })
+    select(mi, m.lessons.length-1)
+    message.success('Lesson created')
+  } catch (e:any){ message.error('Create lesson failed: '+e.message) }
+}
+async function apiDeleteLesson(mi:number, li:number){
+  const l = course.modules[mi]?.lessons?.[li]
+  if (!l) return
+  if (!l.id) { course.modules[mi].lessons.splice(li,1); return }
+  try {
+    await fetchGraphQL(GQL.deleteLesson, { id: l.id })
+    course.modules[mi].lessons.splice(li,1)
+    currentLessonIndex.value = Math.max(0, Math.min(currentLessonIndex.value, (course.modules[mi].lessons.length-1)))
+    message.success('Lesson deleted')
+  } catch (e:any){ message.error('Delete lesson failed: '+e.message) }
+}
+
+/** Outline ops */
+function addModule(){ apiCreateModule(`New module ${course.modules.length+1}`) }
 function renameModule(mi:number){
   const now = prompt('Module title', course.modules[mi].title || '')
-  if (now !== null){ course.modules[mi].title = now.trim(); touch() }
+  if (now !== null){
+    const title = now.trim()
+    course.modules[mi].title = title
+    apiUpdateModuleTitle(mi, title)
+    touch()
+  }
 }
 function removeModule(mi:number){
-  // cleanup prerequisites pointing to lessons in this module
-  const removedIds = new Set<string>(course.modules[mi].lessons.map(l=>l.id))
+  const removedIds = new Set<string>((course.modules[mi].lessons||[]).map(l=>l.id))
   for (const m of course.modules){
-    for (const l of m.lessons){
+    for (const l of (m.lessons||[])){
       if (l.prerequisites) l.prerequisites = l.prerequisites.filter(id=>!removedIds.has(id))
     }
   }
-  course.modules.splice(mi,1)
-  currentModuleIndex.value = Math.max(0, Math.min(currentModuleIndex.value, course.modules.length-1))
-  currentLessonIndex.value = 0
-  touch()
+  apiDeleteModule(mi)
 }
 function moveModule(mi:number, dir:number){
   const ni = mi + dir
@@ -578,24 +835,17 @@ function moveModule(mi:number, dir:number){
   if (currentModuleIndex.value===mi) currentModuleIndex.value = ni
   touch()
 }
-function addLesson(mi:number){
-  const l:Lesson = { id: uid(), title:'New lesson', type:'reading', duration:5, content:'' }
-  course.modules[mi].lessons.push(l)
-  select(mi, course.modules[mi].lessons.length-1)
-  touch()
-}
+
+function addLesson(mi:number){ apiCreateLesson(mi) }
 function addLessonToCurrent(){ if (currentModule.value) addLesson(currentModuleIndex.value) }
 function removeLesson(mi:number, li:number){
   const removed = course.modules[mi].lessons[li]
-  // cleanup prerequisites across course
   for (const m of course.modules){
-    for (const l of m.lessons){
+    for (const l of (m.lessons||[])){
       if (l.prerequisites) l.prerequisites = l.prerequisites.filter(id => id !== removed.id)
     }
   }
-  course.modules[mi].lessons.splice(li,1)
-  currentLessonIndex.value = Math.max(0, Math.min(currentLessonIndex.value, (course.modules[mi].lessons.length-1)))
-  touch()
+  apiDeleteLesson(mi, li)
 }
 function moveLesson(mi:number, li:number, dir:number){
   const ni = li + dir
@@ -608,7 +858,7 @@ function moveLesson(mi:number, li:number, dir:number){
 function expandAll(){ activePanels.value = course.modules.map((_,i)=>`m-${i}`) }
 function collapseAll(){ activePanels.value = [] }
 
-/** ——— Lesson meta helpers ——— */
+/** Lesson meta helpers */
 const tagsInput = ref('')
 const unlockInput = ref('')
 function applyTags(){ if (currentLesson.value){ currentLesson.value.tags = splitTags(tagsInput.value); touch() } }
@@ -619,7 +869,7 @@ function applyUnlock(){
   touch()
 }
 
-/** ——— Resource / attachment temp inputs ——— */
+/** Resources / Attachments */
 const resTitle = ref(''); const resUrl = ref('')
 function addResource(){
   if (!currentLesson.value) return
@@ -642,7 +892,7 @@ function addAttachment(){
 }
 function removeAttachment(i:number){ currentLesson.value?.attachments?.splice(i,1); touch() }
 
-/** ——— Course assets editor ——— */
+/** Course assets editor (maps first file to coverUrl on API) */
 const coverInput = ref('')
 const fileName = ref(''); const fileUrl = ref('')
 function setCover(){
@@ -650,9 +900,14 @@ function setCover(){
   if (!u) return
   if (!course.files.length) course.files.push({ name:'cover', url: u })
   else course.files[0] = { ...(course.files[0]||{}), name: course.files[0]?.name || 'cover', url: u }
+  if (course.id) apiUpdateCourse()
   touch()
 }
-function clearCover(){ if (course.files.length){ course.files.splice(0,1) } touch() }
+function clearCover(){
+  if (course.files.length){ course.files.splice(0,1) }
+  if (course.id) apiUpdateCourse()
+  touch()
+}
 function addCourseFile(){
   if (!fileUrl.value.trim()) return message.error('File URL required')
   course.files.push({ name: fileName.value || 'Asset', url: fileUrl.value.trim() })
@@ -661,7 +916,7 @@ function addCourseFile(){
 }
 function removeCourseFile(i:number){ course.files.splice(i,1); touch() }
 
-/** ——— Quiz builder helpers ——— */
+/** Quiz builder */
 function ensureQuiz(){ if (!currentLesson.value) return; currentLesson.value.quiz = currentLesson.value.quiz || { questions: [] } }
 function addQuestion(kind: 'mcq'|'tf'|'short'){
   ensureQuiz()
@@ -688,97 +943,35 @@ function onQTypeChange(q:QuizQuestion){
   touch()
 }
 
-/** ——— Persistence ——— */
-const autoSave = ref(true)
-let saveTimer:number|undefined
-function touch(){
-  // keep tag/unlock inputs reflected
-  if (currentLesson.value){
-    tagsInput.value = (currentLesson.value.tags || []).join(', ')
-    unlockInput.value = currentLesson.value.unlockAt ? String(currentLesson.value.unlockAt) : ''
-  }
-  if (!autoSave.value) return
-  if (saveTimer) window.clearTimeout(saveTimer as any)
-  saveTimer = window.setTimeout(saveToLS, 400) as any
-}
-function saveToLS(){
-  try {
-    localStorage.setItem(COURSE_DATA_KEY.value, JSON.stringify(toPlain(course)))
-    message.success('Saved')
-  } catch (e:any) { message.error('Save failed: '+(e?.message||e)) }
-}
-function loadFromLS(){
-  const raw = localStorage.getItem(COURSE_DATA_KEY.value)
-  if (!raw) { message.info('No saved course found'); return }
-  try {
-    const parsed = JSON.parse(raw)
-    replaceCourse(parsed)
-    message.success('Loaded')
-  } catch (e:any){ message.error('Load failed: '+(e?.message||e)) }
-}
-function exportJSON(){
-  const blob = new Blob([JSON.stringify(toPlain(course), null, 2)], { type:'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url; a.download = `${(course.title||'course').replace(/\s+/g,'_')}.json`; a.click()
-  URL.revokeObjectURL(url)
-}
-const importJSONOpen = ref(false)
-const importText = ref('')
-function confirmImport(){
-  try {
-    const parsed = JSON.parse(importText.value || '{}')
-    replaceCourse(parsed)
-    importJSONOpen.value = false; importText.value=''
-    message.success('Imported')
-    saveToLS()
-  } catch (e:any){ message.error('Invalid JSON: '+(e?.message||e)) }
-}
-function cancelImport(){ importJSONOpen.value=false; importText.value='' }
-function resetAll(){
-  localStorage.removeItem(COURSE_DATA_KEY.value)
-  message.success('LocalStorage course data cleared')
-}
-
-/** ——— Misc ——— */
-function splitTags(s:string){ return s.split(',').map(x=>x.trim()).filter(Boolean) }
-function ytEmbed(url?:string){
-  if (!url) return ''
-  if (/youtube\.com|youtu\.be/.test(url)) {
-    const id = url.match(/(?:v=|be\/)([A-Za-z0-9_-]{6,})/)?.[1]
-    return id ? `https://www.youtube.com/embed/${id}?rel=0` : ''
-  }
-  return ''
-}
-function fmt(n:number){ return n.toLocaleString(undefined, { style:'currency', currency:'EUR' }) }
-function uid(){ return Math.random().toString(36).slice(2,9) }
-function toPlain<T>(x:T):T{ return JSON.parse(JSON.stringify(x)) }
-
-/** Replace the reactive course safely (preserve reference used by template) */
-function replaceCourse(next:CourseT){
-  // Normalize minimal fields
-  next.modules ||= []
-  next.files ||= []
-  Object.keys(course).forEach(k => delete (course as any)[k])
-  Object.assign(course, next)
-  // keep selection valid
-  currentModuleIndex.value = Math.min(currentModuleIndex.value, Math.max(course.modules.length-1, 0))
-  currentLessonIndex.value = Math.min(currentLessonIndex.value, Math.max(course.modules[currentModuleIndex.value]?.lessons.length-1 || 0, 0))
-  touch()
-}
-
-/** ——— Lifecycle ——— */
-onMounted(()=>{
+/** Lifecycle */
+onMounted(async () => {
   try { isDark.value = JSON.parse(localStorage.getItem(DARK_KEY) || 'false') } catch {}
-  // try load existing
-  const raw = localStorage.getItem(COURSE_DATA_KEY.value)
-  if (raw){ try { replaceCourse(JSON.parse(raw)) } catch {} }
-  // reflect current lesson meta in side inputs
-  if (currentLesson.value){
-    tagsInput.value = (currentLesson.value.tags || []).join(', ')
-    unlockInput.value = currentLesson.value.unlockAt ? String(currentLesson.value.unlockAt) : ''
+  const pathname = route.path
+
+  function extractCourseIdFromPath(path: string): string | null {
+    const courseMatch = path.match(/course\/([^/]+)/)
+    const moduleMatch = path.match(/module\/([^/]+)/)
+    return courseMatch?.[1] || moduleMatch?.[1] || null
   }
+
+  const pid =
+    (route.params.id ||
+     route.params.courseId ||
+     route.query.courseId ||
+     extractCourseIdFromPath(pathname) ||
+     localStorage.getItem('byway:lastCourseId') ||
+     '').toString()
+
+  if (pid) await fetchAllContent(pid)
+  reflectSideInputs()
 })
+
+/** Computed for prereqs */
+const prereqOptions = computed(() =>
+  flatLessons.value
+    .filter(x => currentLesson.value ? x.id !== currentLesson.value.id : true)
+    .map(x => ({ label: x.label, value: x.id }))
+)
 </script>
 
 <style scoped>

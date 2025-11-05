@@ -99,10 +99,23 @@ export interface NexusGenFieldTypes {
     createCourse: NexusGenRootTypes['Course'] | null; // Course
     createLesson: NexusGenRootTypes['Lesson'] | null; // Lesson
     createModule: NexusGenRootTypes['Module'] | null; // Module
+    deleteCourse: NexusGenRootTypes['Course'] | null; // Course
+    deleteLesson: NexusGenRootTypes['Lesson'] | null; // Lesson
+    deleteModule: NexusGenRootTypes['Module'] | null; // Module
+    updateCourse: NexusGenRootTypes['Course'] | null; // Course
+    updateLesson: NexusGenRootTypes['Lesson'] | null; // Lesson
+    updateModule: NexusGenRootTypes['Module'] | null; // Module
   }
   Query: { // field return type
+    allCourses: Array<NexusGenRootTypes['Course'] | null> | null; // [Course]
+    allLessons: Array<NexusGenRootTypes['Lesson'] | null> | null; // [Lesson]
+    allModules: Array<NexusGenRootTypes['Module'] | null> | null; // [Module]
     course: NexusGenRootTypes['Course'] | null; // Course
     coursesByTeacher: Array<NexusGenRootTypes['Course'] | null> | null; // [Course]
+    lesson: NexusGenRootTypes['Lesson'] | null; // Lesson
+    lessonsByModule: Array<NexusGenRootTypes['Lesson'] | null> | null; // [Lesson]
+    module: NexusGenRootTypes['Module'] | null; // Module
+    modulesByCourse: Array<NexusGenRootTypes['Module'] | null> | null; // [Module]
   }
 }
 
@@ -138,10 +151,23 @@ export interface NexusGenFieldTypeNames {
     createCourse: 'Course'
     createLesson: 'Lesson'
     createModule: 'Module'
+    deleteCourse: 'Course'
+    deleteLesson: 'Lesson'
+    deleteModule: 'Module'
+    updateCourse: 'Course'
+    updateLesson: 'Lesson'
+    updateModule: 'Module'
   }
   Query: { // field return type name
+    allCourses: 'Course'
+    allLessons: 'Lesson'
+    allModules: 'Module'
     course: 'Course'
     coursesByTeacher: 'Course'
+    lesson: 'Lesson'
+    lessonsByModule: 'Lesson'
+    module: 'Module'
+    modulesByCourse: 'Module'
   }
 }
 
@@ -167,6 +193,36 @@ export interface NexusGenArgTypes {
       courseId: string; // String!
       title: string; // String!
     }
+    deleteCourse: { // args
+      id: string; // String!
+    }
+    deleteLesson: { // args
+      id: string; // String!
+    }
+    deleteModule: { // args
+      id: string; // String!
+    }
+    updateCourse: { // args
+      category?: string | null; // String
+      description?: string | null; // String
+      difficulty?: string | null; // String
+      discount?: number | null; // Float
+      id: string; // String!
+      price?: number | null; // Float
+      title?: string | null; // String
+    }
+    updateLesson: { // args
+      content?: string | null; // String
+      duration?: number | null; // Int
+      id: string; // String!
+      title?: string | null; // String
+      type?: string | null; // String
+      videoUrl?: string | null; // String
+    }
+    updateModule: { // args
+      id: string; // String!
+      title?: string | null; // String
+    }
   }
   Query: {
     course: { // args
@@ -174,6 +230,18 @@ export interface NexusGenArgTypes {
     }
     coursesByTeacher: { // args
       teacherId: string; // String!
+    }
+    lesson: { // args
+      id: string; // String!
+    }
+    lessonsByModule: { // args
+      moduleId: string; // String!
+    }
+    module: { // args
+      id: string; // String!
+    }
+    modulesByCourse: { // args
+      courseId: string; // String!
     }
   }
 }

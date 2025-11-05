@@ -5,7 +5,11 @@ import fs from 'node:fs'
 import { pathToFileURL } from 'node:url'
 
 const app = express()
-app.use(cors())
+
+app.use(cors({
+  origin: ['http://localhost:3000'], // your frontend(s)
+  credentials: true, // allow cookies / auth headers
+}))
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/authentication/graphql')) {
     // skip global JSON parser

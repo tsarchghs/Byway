@@ -1,4 +1,4 @@
-import { objectType, extendType, stringArg, intArg, nonNull } from 'nexus'
+import { objectType, extendType, stringArg, booleanArg, intArg, nonNull, floatArg, arg } from 'nexus'
 
 export const Lesson = objectType({
   name: 'Lesson',
@@ -10,6 +10,27 @@ export const Lesson = objectType({
     t.int('duration')
     t.string('content')
     t.string('videoUrl')
+    t.string('rubric')
+    t.boolean('preview')
+    t.field('metadata', { type: 'JSON' })
+    t.field('createdAt', { type: 'DateTime' })
+    t.field('Module', { type: 'Module' })
+  },
+})
+
+export const LessonQuery = extendType({
+  type: 'Query',
+  definition(t) {
+    t.list.field('lessons', {
+      type: 'Lesson',
+      resolve: (_, __, ctx) => ctx.prisma.lesson.findMany(),
+    })
+
+    t.field('lesson', {
+      type: 'Lesson',
+      args: { id: nonNull(stringArg()) },
+      resolve: (_, { id }, ctx) => ctx.prisma.lesson.findUnique({ where: { id } }),
+    })
   },
 })
 
@@ -22,16 +43,37 @@ export const LessonMutation = extendType({
         moduleId: nonNull(stringArg()),
         title: nonNull(stringArg()),
         type: nonNull(stringArg()),
+        duration: intArg(),
         content: stringArg(),
         videoUrl: stringArg(),
+        rubric: stringArg(),
+        preview: booleanArg(),
+        metadata: arg({ type: 'JSON' }),
+      },
+      resolve: (_, args, ctx) => ctx.prisma.lesson.create({ data: args }),
+    })
+
+    t.field('updateLesson', {
+      type: 'Lesson',
+      args: {
+        id: nonNull(stringArg()),
+        title: stringArg(),
+        type: stringArg(),
         duration: intArg(),
+        content: stringArg(),
+        videoUrl: stringArg(),
+        rubric: stringArg(),
+        preview: booleanArg(),
+        metadata: arg({ type: 'JSON' }),
       },
-      async resolve(_, args, ctx) {
-        console.log('🟢 createLesson resolver called with:', args)
-        const lesson = await ctx.prisma.lesson.create({ data: args })
-        console.log('✅ created lesson:', lesson)
-        return lesson
-      },
+      resolve: (_, { id, ...data }, ctx) =>
+        ctx.prisma.lesson.update({ where: { id }, data }),
+    })
+
+    t.field('deleteLesson', {
+      type: 'Lesson',
+      args: { id: nonNull(stringArg()) },
+      resolve: (_, { id }, ctx) => ctx.prisma.lesson.delete({ where: { id } }),
     })
   },
 })

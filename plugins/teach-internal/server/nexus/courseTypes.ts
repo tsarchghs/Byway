@@ -1,9 +1,27 @@
 import { objectType, extendType, stringArg, floatArg, nonNull } from 'nexus'
-import { fetchUserProfile } from '../../../../packages/shared-server/src/authBridge.js'
 
 export const Course = objectType({
   name: 'Course',
   definition(t) {
+t.field('course', {
+  type: 'Course',
+  args: { id: nonNull(stringArg()) },
+  async resolve(_, { id }, ctx) {
+    const course = await ctx.prisma.course.findUnique({
+      where: { id },
+      include: {
+        modules: {
+          include: {
+            lessons: true, // ✅ always populate lessons array
+          },
+        },
+      },
+    })
+
+    return course
+  },
+})
+
     t.string('id')
     t.string('teacherId')
     t.string('title')
@@ -12,31 +30,32 @@ export const Course = objectType({
     t.string('description')
     t.float('price')
     t.float('discount')
-    t.string('coverUrl')
-    t.list.field('modules', {
-      type: 'Module',
-      resolve: (p, _, ctx) => ctx.prisma.module.findMany({ where: { courseId: p.id } }),
-    })
+    t.nullable.string('coverUrl') 
+   t.list.field('modules', { type: 'Module' })   
+    t.field('createdAt', { type: 'DateTime' })
+    t.field('updatedAt', { type: 'DateTime' })
   },
 })
 
 export const CourseQuery = extendType({
   type: 'Query',
   definition(t) {
-    t.list.field('coursesByTeacher', {
+    t.list.field('courses', {
       type: 'Course',
-      args: { teacherId: nonNull(stringArg()) },
-      resolve(_, { teacherId }, ctx) {
-        return ctx.prisma.course.findMany({ where: { teacherId } })
-      },
+      resolve: (_, __, ctx) => ctx.prisma.course.findMany({ include: { modules: true } }),
     })
 
     t.field('course', {
       type: 'Course',
       args: { id: nonNull(stringArg()) },
-      resolve(_, { id }, ctx) {
-        return ctx.prisma.course.findUnique({ where: { id } })
-      },
+async resolve(_, { id }, ctx) {
+        return await ctx.prisma.course.findUnique({
+          where: { id },
+          include: {
+            modules: true, // Module resolver will handle lessons
+          },
+        })
+      }
     })
   },
 })
@@ -47,29 +66,39 @@ export const CourseMutation = extendType({
     t.field('createCourse', {
       type: 'Course',
       args: {
+        teacherId: nonNull(stringArg()),
         title: nonNull(stringArg()),
         category: stringArg(),
         difficulty: stringArg(),
         description: stringArg(),
         price: floatArg(),
         discount: floatArg(),
+        coverUrl: stringArg(),
       },
-      async resolve(_, args, ctx) {
-        console.log('🟢 createCourse resolver called')
+      resolve: (_, args, ctx) => ctx.prisma.course.create({ data: args }),
+    })
 
-        const profile = await fetchUserProfile(ctx.user?.userId, ctx.token)
-        console.log('✅ fetchUserProfile response:', profile)
-
-        const course = await ctx.prisma.course.create({
-          data: {
-            ...args,
-            teacherId: profile?.id || ctx.user?.userId || 'unknown',
-          },
-        })
-
-        console.log('✅ created course:', course)
-        return course
+    t.field('updateCourse', {
+      type: 'Course',
+      args: {
+        id: nonNull(stringArg()),
+        title: stringArg(),
+        category: stringArg(),
+        difficulty: stringArg(),
+        description: stringArg(),
+        price: floatArg(),
+        discount: floatArg(),
+        coverUrl: stringArg(),
       },
+      resolve: (_, { id, ...data }, ctx) =>
+        ctx.prisma.course.update({ where: { id }, data }),
+    })
+
+    t.field('deleteCourse', {
+      type: 'Course',
+      args: { id: nonNull(stringArg()) },
+      resolve: (_, { id }, ctx) =>
+        ctx.prisma.course.delete({ where: { id } }),
     })
   },
 })
