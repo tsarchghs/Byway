@@ -1,9 +1,5 @@
 {
-<<<<<<< HEAD
-  "date": "2025-11-04T18:52:12.014Z",
-=======
-  "date": "2025-11-05T09:17:29.676Z",
->>>>>>> parent of 7a6c157 (plugin)
+  "date": "2025-11-05T14:26:37.776Z",
   "preset": "nitro-dev",
   "framework": {
     "name": "nuxt",
@@ -13,15 +9,9 @@
     "nitro": "2.12.8"
   },
   "dev": {
-<<<<<<< HEAD
-    "pid": 33332,
+    "pid": 10642,
     "workerAddress": {
-      "socketPath": "/Users/gjergjkadriu/shopware-temp/nitro-worker-33332-1-1-6860.sock"
-=======
-    "pid": 48176,
-    "workerAddress": {
-      "socketPath": "/Users/gjergjkadriu/shopware-temp/nitro-worker-48176-1-1-1911.sock"
->>>>>>> parent of 7a6c157 (plugin)
+      "socketPath": "/Users/gjergjkadriu/shopware-temp/nitro-worker-10642-1-1-7144.sock"
     }
   }
 }
