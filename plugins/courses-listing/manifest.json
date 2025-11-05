@@ -1,0 +1,6 @@
+{
+  "name": "authentication",
+  "routes": [
+    { "path": "/course-listing", "file": "nuxt/pages/courses-listing.vue" }
+  ]
+}
