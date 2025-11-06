@@ -24,11 +24,9 @@
               </a-button>
               <template #overlay>
                 <a-menu>
-                  <a-menu-item @click="saveToLS"><SaveOutlined /> Save</a-menu-item>
-                  <a-menu-item @click="loadFromLS"><CloudDownloadOutlined /> Load</a-menu-item>
-                  <a-menu-item @click="exportJSON"><ExportOutlined /> Export JSON</a-menu-item>
-                  <a-menu-item @click="importJSONOpen = true"><ImportOutlined /> Import JSON</a-menu-item>
-                  <a-menu-item danger @click="resetAll"><DeleteOutlined /> Reset LS (danger)</a-menu-item>
+                  <a-menu-item @click="syncNow"><SaveOutlined /> Sync now</a-menu-item>
+                  <a-menu-item @click="reloadFromApi"><CloudDownloadOutlined /> Reload</a-menu-item>
+                  <!-- (No LS / Import / Export here anymore) -->
                 </a-menu>
               </template>
             </a-dropdown>
@@ -170,12 +168,10 @@
                     </a-form>
                   </a-card>
 
-                  <a-card title="Utilities" class="mt-2">
+                  <a-card title="API" class="mt-2">
                     <a-space direction="vertical" style="width:100%">
-                      <a-button block @click="saveToLS"><SaveOutlined/> Save to localStorage</a-button>
-                      <a-button block @click="loadFromLS"><CloudDownloadOutlined/> Load from localStorage</a-button>
-                      <a-button block @click="exportJSON"><ExportOutlined/> Export JSON</a-button>
-                      <a-button block @click="importJSONOpen = true"><ImportOutlined/> Import JSON</a-button>
+                      <a-button block @click="syncNow"><SaveOutlined/> Sync now</a-button>
+                      <a-button block @click="reloadFromApi"><CloudDownloadOutlined/> Reload from API</a-button>
                     </a-space>
                   </a-card>
                 </a-col>
@@ -240,7 +236,6 @@
                                   <a-select v-model:value="q.type" :options="qTypeOptions" @change="onQTypeChange(q)"/>
                                 </a-form-item>
 
-                                <!-- MCQ options -->
                                 <div v-if="q.type==='mcq'">
                                   <div v-for="(opt, oi) in (q.options || [])" :key="oi" class="option-row">
                                     <a-input v-model:value="opt.text" placeholder="Option text" class="opt-input" @change="touch"/>
@@ -389,11 +384,6 @@
           </a-tabs>
         </a-layout-content>
       </a-layout>
-
-      <!-- IMPORT JSON MODAL -->
-      <a-modal v-model:open="importJSONOpen" title="Import course JSON" @ok="confirmImport" @cancel="cancelImport">
-        <a-textarea v-model:value="importText" :rows="10" placeholder='Paste course JSON here…'/>
-      </a-modal>
     </a-layout>
   </a-config-provider>
 </template>
@@ -402,14 +392,13 @@
 import { reactive, ref, computed, onMounted } from 'vue'
 import { theme, message } from 'ant-design-vue'
 import {
-  BulbOutlined, SaveOutlined, CloudDownloadOutlined, ExportOutlined, ImportOutlined,
+  BulbOutlined, SaveOutlined, CloudDownloadOutlined,
   PlusOutlined, DeleteOutlined, EditOutlined, DownOutlined, FieldTimeOutlined
 } from '@ant-design/icons-vue'
 import { useRoute } from 'vue-router'
 
 /** Utils */
 const fmt = (n: number) => n.toLocaleString(undefined, { style: 'currency', currency: 'EUR' })
-const toPlain = <T,>(x:T):T => JSON.parse(JSON.stringify(x))
 const uid = () => Math.random().toString(36).slice(2, 9)
 const splitTags = (s:string) => s.split(',').map(x=>x.trim()).filter(Boolean)
 const ytEmbed = (url?:string) => {
@@ -460,11 +449,9 @@ type CourseT = {
 /** Config / GraphQL helper */
 const route = useRoute()
 const API_URL = 'http://localhost:4000/api/teach-internal/graphql'
+// rely on HttpOnly auth cookie; no localStorage token
 function getAuthHeaders() {
-  const headers: Record<string,string> = { 'Content-Type':'application/json' }
-  const token = localStorage.getItem('auth:token') || ''
-  if (token) headers['Authorization'] = `Bearer ${token}`
-  return headers
+  return { 'Content-Type':'application/json' } as Record<string,string>
 }
 async function fetchGraphQL<T=any>(query: string, variables?: Record<string, any>): Promise<T> {
   const resp = await fetch(API_URL, {
@@ -479,9 +466,8 @@ async function fetchGraphQL<T=any>(query: string, variables?: Record<string, any
 }
 
 /** Theme & UI */
-const DARK_KEY = 'byway:theme:dark'
 const isDark = ref(false)
-function toggleDark(){ isDark.value = !isDark.value; localStorage.setItem(DARK_KEY, JSON.stringify(isDark.value)) }
+function toggleDark(){ isDark.value = !isDark.value }
 
 const tab = ref<'course'|'lesson'|'preview'>('course')
 const siderCollapsed = ref(false)
@@ -491,12 +477,12 @@ const filter = ref('')
 
 /** Base reactive state */
 const course = reactive<CourseT>({
-  title: 'Advanced Vue 3 Workshop',
-  category: 'Programming',
-  difficulty: 'Intermediate',
-  description: 'Learn Composition API and Ant Design Vue by building a dashboard.',
-  price: 69,
-  discount: 20,
+  title: '',
+  category: '',
+  difficulty: 'Beginner',
+  description: '',
+  price: 0,
+  discount: 0,
   modules: [],
   files: []
 })
@@ -518,7 +504,7 @@ const currentModuleIndex = ref(0)
 const currentLessonIndex = ref(0)
 const currentModule = computed<ModuleT|undefined>(() => course.modules[currentModuleIndex.value])
 const currentLesson  = computed<Lesson|undefined>(() => currentModule.value?.lessons?.[currentLessonIndex.value])
-function select(mi:number, li:number){ currentModuleIndex.value = mi; currentLessonIndex.value = li; tab.value='lesson'; touch(false) }
+function select(mi:number, li:number){ currentModuleIndex.value = mi; currentLessonIndex.value = li; tab.value='lesson'; }
 
 /** Options */
 const typeOptions = [
@@ -552,7 +538,7 @@ const GQL = {
       course(id: $id) {
         id title category difficulty description price discount coverUrl
         modules { id title courseId
-          lessons { id moduleId title type duration content videoUrl rubric }
+          lessons { id moduleId title type duration content videoUrl rubric metadata }
         }
       }
     }
@@ -587,21 +573,23 @@ const GQL = {
   createLesson: `
     mutation CreateLesson(
       $moduleId:String!, $title:String!, $type:String!,
-      $duration:Int, $content:String, $videoUrl:String, $rubric:String
+      $duration:Int, $content:String, $videoUrl:String, $rubric:String, $metadata: JSON
     ){
       createLesson(
         moduleId:$moduleId, title:$title, type:$type,
-        duration:$duration, content:$content, videoUrl:$videoUrl, rubric:$rubric
-      ){ id moduleId title type duration content videoUrl rubric }
+        duration:$duration, content:$content, videoUrl:$videoUrl, rubric:$rubric, metadata:$metadata
+      ){ id moduleId title type duration content videoUrl rubric metadata }
     }
   `,
   updateLesson: `
     mutation UpdateLesson(
       $id:String!,
-      $title:String, $type:String, $duration:Int, $content:String, $videoUrl:String, $rubric:String
+      $title:String, $type:String, $duration:Int, $content:String, $videoUrl:String, $rubric:String,
+      $metadata: JSON
     ){
       updateLesson(
-        id:$id, title:$title, type:$type, duration:$duration, content:$content, videoUrl:$videoUrl, rubric:$rubric
+        id:$id, title:$title, type:$type, duration:$duration, content:$content, videoUrl:$videoUrl, rubric:$rubric,
+        metadata:$metadata
       ){ id }
     }
   `,
@@ -624,13 +612,30 @@ function normalizeCourse(src:any): CourseT {
     discount: Number(src.discount ?? 0),
     coverUrl: src.coverUrl || '',
     modules: (src.modules || []).map((m:any) => ({
-      id: m.id, courseId: m.courseId, title: m.title || '', lessons:
-        (m.lessons || []).map((l:any) => ({
-          id: l.id, moduleId: l.moduleId,
-          title: l.title || '', type: l.type || 'reading',
-          duration: l.duration ?? undefined, content: l.content || '',
-          videoUrl: l.videoUrl || '', rubric: l.rubric || ''
-        }))
+      id: m.id,
+      courseId: m.courseId,
+      title: m.title || '',
+      lessons: (m.lessons || []).map((l:any) => {
+        const md = l.metadata || {}
+        return {
+          id: l.id,
+          moduleId: l.moduleId,
+          title: l.title || '',
+          type: l.type || 'reading',
+          duration: l.duration ?? undefined,
+          content: l.content || '',
+          videoUrl: l.videoUrl || '',
+          rubric: l.rubric || '',
+          // merged metadata
+          tags: md.tags || [],
+          prerequisites: md.prerequisites || [],
+          unlockAt: md.unlockAt || undefined,
+          preview: !!md.preview,
+          resources: md.resources || [],
+          attachments: md.attachments || [],
+          quiz: md.quiz || { questions: [] }
+        } as Lesson
+      })
     })),
     files: src.coverUrl ? [{ name: 'cover', url: src.coverUrl }] : []
   }
@@ -655,22 +660,29 @@ async function fetchAllContent(id: string){
     const data = await fetchGraphQL<{ course: any }>(GQL.courseTree, { id })
     if (!data?.course) throw new Error('Course not found')
     replaceCourse(normalizeCourse(data.course))
-    localStorage.setItem('byway:lastCourseId', course.id || '')
   } catch (e:any) {
     console.warn('[CourseEditor] Failed to fetch API:', e.message)
-    message.error('Using local draft if available.')
-    const raw = localStorage.getItem(COURSE_DATA_KEY.value)
-    if (raw) { try { replaceCourse(JSON.parse(raw)) } catch {} }
+    message.error(e.message || 'Failed to fetch course from API.')
   } finally {
     loading.value = false
   }
 }
 
-/** Debounced persistence */
+/** Debounced persistence (API only) */
 const autoSave = ref(true)
-const COURSE_DATA_KEY = computed(()=>`byway-course:${course.id || course.title || 'draft'}:data`)
-let saveTimer:number|undefined
 let syncTimer:number|undefined
+
+function buildLessonMetadata(l: Lesson){
+  return {
+    tags: l.tags || [],
+    prerequisites: l.prerequisites || [],
+    unlockAt: l.unlockAt || undefined,
+    preview: !!l.preview,
+    resources: l.resources || [],
+    attachments: l.attachments || [],
+    quiz: l.quiz || { questions: [] }
+  }
+}
 
 async function apiUpdateCourse(){
   if (!course.id) return
@@ -682,7 +694,9 @@ async function apiUpdateCourse(){
       price: Number(course.price ?? 0), discount: Number(course.discount ?? 0),
       coverUrl: coverUrl.value || ''
     })
-  } catch (e:any){ message.error('Update course failed: '+e.message) }
+  } catch (e:any){
+    message.error('Update course failed: '+e.message)
+  }
 }
 async function apiUpdateLesson(l: Lesson){
   if (!l?.id) return
@@ -690,44 +704,17 @@ async function apiUpdateLesson(l: Lesson){
     await fetchGraphQL(GQL.updateLesson, {
       id: l.id,
       title: l.title, type: l.type, duration: l.duration ?? null,
-      content: l.content ?? '', videoUrl: l.videoUrl ?? '', rubric: l.rubric ?? ''
+      content: l.content ?? '', videoUrl: l.videoUrl ?? '', rubric: l.rubric ?? '',
+      metadata: buildLessonMetadata(l)
     })
-  } catch (e:any){ message.error('Update lesson failed: '+e.message) }
-}
-function saveToLS(){
-  try { localStorage.setItem(COURSE_DATA_KEY.value, JSON.stringify(toPlain(course))); message.success('Saved locally') }
-  catch(e:any){ message.error('Save failed: '+(e?.message||e)) }
-}
-function loadFromLS(){
-  const raw = localStorage.getItem(COURSE_DATA_KEY.value)
-  if (!raw) return message.info('No saved course found')
-  try { replaceCourse(JSON.parse(raw)); message.success('Loaded from localStorage') }
-  catch(e:any){ message.error('Load failed: '+(e?.message||e)) }
-}
-function exportJSON(){
-  const blob = new Blob([JSON.stringify(toPlain(course), null, 2)], { type:'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url; a.download = `${(course.title||'course').replace(/\s+/g,'_')}.json`; a.click()
-  URL.revokeObjectURL(url)
-}
-const importJSONOpen = ref(false)
-const importText = ref('')
-function confirmImport(){
-  try {
-    const parsed = JSON.parse(importText.value || '{}')
-    replaceCourse(parsed)
-    importJSONOpen.value = false; importText.value=''
-    message.success('Imported'); saveToLS()
-  } catch (e:any){ message.error('Invalid JSON: '+(e?.message||e)) }
-}
-function cancelImport(){ importJSONOpen.value=false; importText.value='' }
-function resetAll(){ localStorage.removeItem(COURSE_DATA_KEY.value); message.success('LocalStorage course data cleared') }
-
-function reflectSideInputs(){
-  if (currentLesson.value){
-    tagsInput.value = (currentLesson.value.tags || []).join(', ')
-    unlockInput.value = currentLesson.value.unlockAt ? String(currentLesson.value.unlockAt) : ''
+  } catch (e:any){
+    const msg = String(e?.message || '')
+    if (msg.includes('No record was found for an update')) {
+      message.warning('Lesson not found on server. Reloading…')
+      if (course.id) await fetchAllContent(course.id)
+    } else {
+      message.error('Update lesson failed: '+msg)
+    }
   }
 }
 async function syncDirty(){
@@ -738,19 +725,23 @@ async function syncDirty(){
 }
 function touch(syncApi = true){
   reflectSideInputs()
-  if (autoSave.value) {
-    if (saveTimer) window.clearTimeout(saveTimer as any)
-    saveTimer = window.setTimeout(saveToLS, 400) as any
-  }
   if (syncApi && autoSave.value) {
     if (syncTimer) window.clearTimeout(syncTimer as any)
-    syncTimer = window.setTimeout(syncDirty, 600) as any
+    syncTimer = window.setTimeout(syncDirty, 500) as any
   }
+}
+async function syncNow(){
+  if (syncTimer) { window.clearTimeout(syncTimer as any); syncTimer = undefined }
+  await syncDirty()
+}
+async function reloadFromApi(){
+  if (!course.id) return
+  await fetchAllContent(course.id)
 }
 
 /** Module CRUD */
 async function apiCreateModule(title:string){
-  if (!course.id) { message.warning('Save course first before adding modules.'); return }
+  if (!course.id) { message.warning('Open a valid course route with an ID.'); return }
   try {
     const data = await fetchGraphQL<{ createModule: any }>(GQL.createModule, { courseId: course.id, title })
     const created = data.createModule
@@ -782,13 +773,19 @@ async function apiCreateLesson(mi:number){
   const m = course.modules[mi]
   if (!m?.id) { message.warning('Create/save module first.'); return }
   try {
-    const payload = { moduleId: m.id, title:'New lesson', type:'reading', duration:5, content:'' }
+    const payload = {
+      moduleId: m.id, title:'New lesson', type:'reading', duration:5, content:'',
+      metadata: { tags:[], prerequisites:[], unlockAt:null, preview:false, resources:[], attachments:[], quiz:{questions:[]} }
+    }
     const data = await fetchGraphQL<{ createLesson:any }>(GQL.createLesson, payload)
-    const created = data.createLesson
+    const c = data.createLesson
+    const md = c.metadata || {}
     m.lessons.push({
-      id: created.id, moduleId: created.moduleId,
-      title: created.title, type: created.type,
-      duration: created.duration, content: created.content, videoUrl: created.videoUrl || '', rubric: created.rubric || ''
+      id: c.id, moduleId: c.moduleId, title: c.title, type: c.type,
+      duration: c.duration, content: c.content, videoUrl: c.videoUrl || '', rubric: c.rubric || '',
+      tags: md.tags || [], prerequisites: md.prerequisites || [], unlockAt: md.unlockAt || undefined,
+      preview: !!md.preview, resources: md.resources || [], attachments: md.attachments || [],
+      quiz: md.quiz || { questions: [] }
     })
     select(mi, m.lessons.length-1)
     message.success('Lesson created')
@@ -814,7 +811,7 @@ function renameModule(mi:number){
     const title = now.trim()
     course.modules[mi].title = title
     apiUpdateModuleTitle(mi, title)
-    touch()
+    touch(false)
   }
 }
 function removeModule(mi:number){
@@ -833,7 +830,7 @@ function moveModule(mi:number, dir:number){
   course.modules.splice(mi,1)
   course.modules.splice(ni,0,tmp)
   if (currentModuleIndex.value===mi) currentModuleIndex.value = ni
-  touch()
+  touch() // if you track order in DB, call an API to persist order here
 }
 
 function addLesson(mi:number){ apiCreateLesson(mi) }
@@ -853,7 +850,7 @@ function moveLesson(mi:number, li:number, dir:number){
   if (ni<0 || ni>=arr.length) return
   const tmp = arr[li]; arr.splice(li,1); arr.splice(ni,0,tmp)
   if (currentModuleIndex.value===mi && currentLessonIndex.value===li) currentLessonIndex.value = ni
-  touch()
+  touch() // if you track order in DB, call an API to persist order here
 }
 function expandAll(){ activePanels.value = course.modules.map((_,i)=>`m-${i}`) }
 function collapseAll(){ activePanels.value = [] }
@@ -861,6 +858,12 @@ function collapseAll(){ activePanels.value = [] }
 /** Lesson meta helpers */
 const tagsInput = ref('')
 const unlockInput = ref('')
+function reflectSideInputs(){
+  if (currentLesson.value){
+    tagsInput.value = (currentLesson.value.tags || []).join(', ')
+    unlockInput.value = currentLesson.value.unlockAt ? String(currentLesson.value.unlockAt) : ''
+  }
+}
 function applyTags(){ if (currentLesson.value){ currentLesson.value.tags = splitTags(tagsInput.value); touch() } }
 function applyUnlock(){
   if (!currentLesson.value) return
@@ -901,12 +904,10 @@ function setCover(){
   if (!course.files.length) course.files.push({ name:'cover', url: u })
   else course.files[0] = { ...(course.files[0]||{}), name: course.files[0]?.name || 'cover', url: u }
   if (course.id) apiUpdateCourse()
-  touch()
 }
 function clearCover(){
   if (course.files.length){ course.files.splice(0,1) }
   if (course.id) apiUpdateCourse()
-  touch()
 }
 function addCourseFile(){
   if (!fileUrl.value.trim()) return message.error('File URL required')
@@ -945,21 +946,17 @@ function onQTypeChange(q:QuizQuestion){
 
 /** Lifecycle */
 onMounted(async () => {
-  try { isDark.value = JSON.parse(localStorage.getItem(DARK_KEY) || 'false') } catch {}
   const pathname = route.path
-
   function extractCourseIdFromPath(path: string): string | null {
     const courseMatch = path.match(/course\/([^/]+)/)
     const moduleMatch = path.match(/module\/([^/]+)/)
     return courseMatch?.[1] || moduleMatch?.[1] || null
   }
-
   const pid =
     (route.params.id ||
      route.params.courseId ||
      route.query.courseId ||
      extractCourseIdFromPath(pathname) ||
-     localStorage.getItem('byway:lastCourseId') ||
      '').toString()
 
   if (pid) await fetchAllContent(pid)

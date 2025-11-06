@@ -10,6 +10,7 @@ type AuthPayload {
 type Mutation {
   login(email: String!, password: String!): AuthPayload
   register(email: String!, firstName: String, lastName: String, password: String!): User
+  updateUserTeacherProfile(teacherProfileId: String!): User
 }
 
 type Query {
@@ -22,5 +23,7 @@ type User {
   firstName: String
   id: ID!
   lastName: String
+  teacherProfileId: String
+  token: String
   updatedAt: String!
 }

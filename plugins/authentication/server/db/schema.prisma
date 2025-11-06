@@ -10,6 +10,7 @@ datasource db {
 
 model User {
   id        String   @id @default(cuid())
+  teacherProfileId       String?
   email     String   @unique
   password  String
   firstName String?

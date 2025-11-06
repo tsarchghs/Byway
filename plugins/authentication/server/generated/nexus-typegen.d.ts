@@ -40,6 +40,8 @@ export interface NexusGenObjects {
     firstName?: string | null; // String
     id: string; // ID!
     lastName?: string | null; // String
+    teacherProfileId?: string | null; // String
+    token?: string | null; // String
     updatedAt: string; // String!
   }
 }
@@ -62,6 +64,7 @@ export interface NexusGenFieldTypes {
   Mutation: { // field return type
     login: NexusGenRootTypes['AuthPayload'] | null; // AuthPayload
     register: NexusGenRootTypes['User'] | null; // User
+    updateUserTeacherProfile: NexusGenRootTypes['User'] | null; // User
   }
   Query: { // field return type
     me: NexusGenRootTypes['User'] | null; // User
@@ -72,6 +75,8 @@ export interface NexusGenFieldTypes {
     firstName: string | null; // String
     id: string; // ID!
     lastName: string | null; // String
+    teacherProfileId: string | null; // String
+    token: string | null; // String
     updatedAt: string; // String!
   }
 }
@@ -84,6 +89,7 @@ export interface NexusGenFieldTypeNames {
   Mutation: { // field return type name
     login: 'AuthPayload'
     register: 'User'
+    updateUserTeacherProfile: 'User'
   }
   Query: { // field return type name
     me: 'User'
@@ -94,6 +100,8 @@ export interface NexusGenFieldTypeNames {
     firstName: 'String'
     id: 'ID'
     lastName: 'String'
+    teacherProfileId: 'String'
+    token: 'String'
     updatedAt: 'String'
   }
 }
@@ -109,6 +117,9 @@ export interface NexusGenArgTypes {
       firstName?: string | null; // String
       lastName?: string | null; // String
       password: string; // String!
+    }
+    updateUserTeacherProfile: { // args
+      teacherProfileId: string; // String!
     }
   }
 }

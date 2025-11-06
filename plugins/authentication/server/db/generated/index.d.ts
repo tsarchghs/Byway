@@ -873,6 +873,7 @@ export namespace Prisma {
 
   export type UserMinAggregateOutputType = {
     id: string | null
+    teacherProfileId: string | null
     email: string | null
     password: string | null
     firstName: string | null
@@ -883,6 +884,7 @@ export namespace Prisma {
 
   export type UserMaxAggregateOutputType = {
     id: string | null
+    teacherProfileId: string | null
     email: string | null
     password: string | null
     firstName: string | null
@@ -893,6 +895,7 @@ export namespace Prisma {
 
   export type UserCountAggregateOutputType = {
     id: number
+    teacherProfileId: number
     email: number
     password: number
     firstName: number
@@ -905,6 +908,7 @@ export namespace Prisma {
 
   export type UserMinAggregateInputType = {
     id?: true
+    teacherProfileId?: true
     email?: true
     password?: true
     firstName?: true
@@ -915,6 +919,7 @@ export namespace Prisma {
 
   export type UserMaxAggregateInputType = {
     id?: true
+    teacherProfileId?: true
     email?: true
     password?: true
     firstName?: true
@@ -925,6 +930,7 @@ export namespace Prisma {
 
   export type UserCountAggregateInputType = {
     id?: true
+    teacherProfileId?: true
     email?: true
     password?: true
     firstName?: true
@@ -1008,6 +1014,7 @@ export namespace Prisma {
 
   export type UserGroupByOutputType = {
     id: string
+    teacherProfileId: string | null
     email: string
     password: string
     firstName: string | null
@@ -1035,6 +1042,7 @@ export namespace Prisma {
 
   export type UserSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    teacherProfileId?: boolean
     email?: boolean
     password?: boolean
     firstName?: boolean
@@ -1045,6 +1053,7 @@ export namespace Prisma {
 
   export type UserSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    teacherProfileId?: boolean
     email?: boolean
     password?: boolean
     firstName?: boolean
@@ -1055,6 +1064,7 @@ export namespace Prisma {
 
   export type UserSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    teacherProfileId?: boolean
     email?: boolean
     password?: boolean
     firstName?: boolean
@@ -1065,6 +1075,7 @@ export namespace Prisma {
 
   export type UserSelectScalar = {
     id?: boolean
+    teacherProfileId?: boolean
     email?: boolean
     password?: boolean
     firstName?: boolean
@@ -1073,13 +1084,14 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "email" | "password" | "firstName" | "lastName" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "teacherProfileId" | "email" | "password" | "firstName" | "lastName" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 
   export type $UserPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "User"
     objects: {}
     scalars: $Extensions.GetPayloadResult<{
       id: string
+      teacherProfileId: string | null
       email: string
       password: string
       firstName: string | null
@@ -1510,6 +1522,7 @@ export namespace Prisma {
    */
   interface UserFieldRefs {
     readonly id: FieldRef<"User", 'String'>
+    readonly teacherProfileId: FieldRef<"User", 'String'>
     readonly email: FieldRef<"User", 'String'>
     readonly password: FieldRef<"User", 'String'>
     readonly firstName: FieldRef<"User", 'String'>
@@ -1893,6 +1906,7 @@ export namespace Prisma {
 
   export const UserScalarFieldEnum: {
     id: 'id',
+    teacherProfileId: 'teacherProfileId',
     email: 'email',
     password: 'password',
     firstName: 'firstName',
@@ -1954,6 +1968,7 @@ export namespace Prisma {
     OR?: UserWhereInput[]
     NOT?: UserWhereInput | UserWhereInput[]
     id?: StringFilter<"User"> | string
+    teacherProfileId?: StringNullableFilter<"User"> | string | null
     email?: StringFilter<"User"> | string
     password?: StringFilter<"User"> | string
     firstName?: StringNullableFilter<"User"> | string | null
@@ -1964,6 +1979,7 @@ export namespace Prisma {
 
   export type UserOrderByWithRelationInput = {
     id?: SortOrder
+    teacherProfileId?: SortOrderInput | SortOrder
     email?: SortOrder
     password?: SortOrder
     firstName?: SortOrderInput | SortOrder
@@ -1978,6 +1994,7 @@ export namespace Prisma {
     AND?: UserWhereInput | UserWhereInput[]
     OR?: UserWhereInput[]
     NOT?: UserWhereInput | UserWhereInput[]
+    teacherProfileId?: StringNullableFilter<"User"> | string | null
     password?: StringFilter<"User"> | string
     firstName?: StringNullableFilter<"User"> | string | null
     lastName?: StringNullableFilter<"User"> | string | null
@@ -1987,6 +2004,7 @@ export namespace Prisma {
 
   export type UserOrderByWithAggregationInput = {
     id?: SortOrder
+    teacherProfileId?: SortOrderInput | SortOrder
     email?: SortOrder
     password?: SortOrder
     firstName?: SortOrderInput | SortOrder
@@ -2003,6 +2021,7 @@ export namespace Prisma {
     OR?: UserScalarWhereWithAggregatesInput[]
     NOT?: UserScalarWhereWithAggregatesInput | UserScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"User"> | string
+    teacherProfileId?: StringNullableWithAggregatesFilter<"User"> | string | null
     email?: StringWithAggregatesFilter<"User"> | string
     password?: StringWithAggregatesFilter<"User"> | string
     firstName?: StringNullableWithAggregatesFilter<"User"> | string | null
@@ -2013,6 +2032,7 @@ export namespace Prisma {
 
   export type UserCreateInput = {
     id?: string
+    teacherProfileId?: string | null
     email: string
     password: string
     firstName?: string | null
@@ -2023,6 +2043,7 @@ export namespace Prisma {
 
   export type UserUncheckedCreateInput = {
     id?: string
+    teacherProfileId?: string | null
     email: string
     password: string
     firstName?: string | null
@@ -2033,6 +2054,7 @@ export namespace Prisma {
 
   export type UserUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
+    teacherProfileId?: NullableStringFieldUpdateOperationsInput | string | null
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     firstName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -2043,6 +2065,7 @@ export namespace Prisma {
 
   export type UserUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
+    teacherProfileId?: NullableStringFieldUpdateOperationsInput | string | null
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     firstName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -2053,6 +2076,7 @@ export namespace Prisma {
 
   export type UserCreateManyInput = {
     id?: string
+    teacherProfileId?: string | null
     email: string
     password: string
     firstName?: string | null
@@ -2063,6 +2087,7 @@ export namespace Prisma {
 
   export type UserUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
+    teacherProfileId?: NullableStringFieldUpdateOperationsInput | string | null
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     firstName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -2073,6 +2098,7 @@ export namespace Prisma {
 
   export type UserUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
+    teacherProfileId?: NullableStringFieldUpdateOperationsInput | string | null
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     firstName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -2127,6 +2153,7 @@ export namespace Prisma {
 
   export type UserCountOrderByAggregateInput = {
     id?: SortOrder
+    teacherProfileId?: SortOrder
     email?: SortOrder
     password?: SortOrder
     firstName?: SortOrder
@@ -2137,6 +2164,7 @@ export namespace Prisma {
 
   export type UserMaxOrderByAggregateInput = {
     id?: SortOrder
+    teacherProfileId?: SortOrder
     email?: SortOrder
     password?: SortOrder
     firstName?: SortOrder
@@ -2147,6 +2175,7 @@ export namespace Prisma {
 
   export type UserMinOrderByAggregateInput = {
     id?: SortOrder
+    teacherProfileId?: SortOrder
     email?: SortOrder
     password?: SortOrder
     firstName?: SortOrder

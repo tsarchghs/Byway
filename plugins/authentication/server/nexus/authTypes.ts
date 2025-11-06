@@ -20,6 +20,10 @@ export const User = objectType({
     t.nonNull.id("id")
     t.nonNull.string("email")
     t.string("firstName")
+    t.string("token")
+
+        t.nullable.string("teacherProfileId") // ✅ add this line
+
     t.string("lastName")
     t.nonNull.string("createdAt")
     t.nonNull.string("updatedAt")
@@ -58,7 +62,7 @@ export const AuthMutation = extendType({
         }
 
         const hashed = await bcrypt.hash(args.password, 10)
-        return prisma.user.create({
+        const user = await prisma.user.create({
           data: {
             email: args.email,
             password: hashed,
@@ -66,6 +70,9 @@ export const AuthMutation = extendType({
             lastName: args.lastName,
           },
         })
+        const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "7d" })
+
+        return { ...user, token} 
       },
     })
 
@@ -86,6 +93,19 @@ export const AuthMutation = extendType({
 
         return { token, user }
       },
+    }),
+t.field("updateUserTeacherProfile", {
+  type: "User",
+  args: {
+    teacherProfileId: nonNull(stringArg()),
+  },
+  async resolve(_, { teacherProfileId }, ctx) {
+    if (!ctx.userId) throw new Error("Not authenticated")
+    return prisma.user.update({
+      where: { id: ctx.userId },
+      data: { teacherProfileId },
     })
+  },
+})
   },
 })

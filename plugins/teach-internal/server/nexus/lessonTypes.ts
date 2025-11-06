@@ -9,10 +9,10 @@ export const Lesson = objectType({
     t.string('type')
     t.int('duration')
     t.string('content')
-    t.string('videoUrl')
-    t.string('rubric')
+    t.nullable.string('videoUrl')
+    t.nullable.string('rubric')
     t.boolean('preview')
-    t.field('metadata', { type: 'JSON' })
+    t.nullable.field('metadata', { type: 'JSON' })
     t.field('createdAt', { type: 'DateTime' })
     t.field('Module', { type: 'Module' })
   },

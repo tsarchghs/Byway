@@ -6,28 +6,29 @@ import { createContext } from "./nexus/context.js"
 export async function register(app) {
   const router = express.Router()
 
+  // ✅ 1. Start Apollo first
   const apollo = new ApolloServer({
     schema,
     context: ({ req }) => createContext({ req }),
     introspection: true,
   })
-
   await apollo.start()
 
-  // 👇 Explicitly parse JSON for GraphQL route
-  router.use("/graphql", express.json())
+  // ✅ 2. Apply the JSON parser for *this* path only
+  router.use('/graphql', express.json())
 
+  // ✅ 3. Mount Apollo middleware *on router*, not app
   apollo.applyMiddleware({
     app: router,
-    path: "/graphql",
-    bodyParserConfig: false, // disable Apollo’s own parser
+    path: '/graphql',
+    bodyParserConfig: false,
   })
 
-  router.get("/health", (_, res) =>
-    res.json({ ok: true, plugin: "authentication" })
-  )
+  // ✅ 4. Health check
+  router.get('/health', (_, res) => res.json({ ok: true, plugin: 'authentication' }))
 
-  app.use("/api/authentication", router)
+  // ✅ 5. Register router under plugin base path
+  app.use('/api/authentication', router)
 
-  console.log("[auth] GraphQL available at /api/authentication/graphql")
+  console.log('[auth] GraphQL available at /api/authentication/graphql')
 }

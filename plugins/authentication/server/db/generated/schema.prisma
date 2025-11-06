@@ -9,11 +9,12 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  firstName String?
-  lastName  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String   @id @default(cuid())
+  teacherProfileId String?
+  email            String   @unique
+  password         String
+  firstName        String?
+  lastName         String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
