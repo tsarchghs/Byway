@@ -121,7 +121,8 @@ import {
 } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import { ref, reactive, h } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+const router = useRouter()
 
 const collapsed = ref(false)
 const activeKey = ref('overview')
@@ -161,7 +162,7 @@ const columns = [
   },
 ]
 
-const createCourse = () => message.success('Redirecting to course creation...')
+const createCourse = () => router.push("/teach-internal/" + teacher.id + "/course/create")
 const saveSettings = () => message.success('Profile updated successfully!')
 const renderStudent = (student: any) =>
   h('a-list-item', {}, [

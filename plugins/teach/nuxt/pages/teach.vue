@@ -108,7 +108,8 @@ import Header from '../../../../packages/shared-ui/src/components/Header.vue'
 import { ref, computed } from 'vue'
 import { message } from 'ant-design-vue'
 import { useAuth } from '../../../../packages/shared-ui/src/composables/useAuth'
-
+import { useRouter } from 'vue-router'
+import { watchEffect } from 'vue'
 const auth = useAuth()
 const user = computed(() => auth.user.value)
 const token = computed(() => auth.token.value)
@@ -180,7 +181,14 @@ const teacherForm = ref({
   avatarUrl: '',
   payoutEmail: '',
 })
+const router = useRouter()
 
+watchEffect(() => {
+  // ✅ If logged in AND already has a teacher profile, redirect immediately
+  if (isLoggedIn.value && user.value?.teacherProfileId) {
+    router.push(`/teach-internal/${user.value.teacherProfileId}`)
+  }
+})
 async function handleTeacherSubmit() {
   try {
     if (!token.value) throw new Error('Not authenticated.')
