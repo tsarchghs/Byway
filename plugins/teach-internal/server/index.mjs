@@ -4,6 +4,9 @@ import { schema } from './nexus/index.js'
 import { PrismaClient } from './db/generated/client/index.js'
 import jwt from 'jsonwebtoken'
 import cors from 'cors'
+import { ensureCodeServer } from './codeServerManager.js'
+
+
 const prisma = new PrismaClient()
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret'
 
@@ -44,7 +47,16 @@ export async function register(app) {
 
   // ✅ Simple health check
   router.get('/health', (_, res) => res.json({ ok: true, plugin: 'teach-internal' }))
-
+router.get('/code-server/:teacherId/:lessonId', async (req, res) => {
+  try {
+    const { teacherId, lessonId } = req.params
+    const info = await ensureCodeServer(teacherId, lessonId)
+    res.json({ ok: true, ...info })
+  } catch (err) {
+    console.error('[code-server]', err)
+    res.status(500).json({ ok: false, error: err.message })
+  }
+})
   app.use('/api/teach-internal', router)
 
 app.use(cors({

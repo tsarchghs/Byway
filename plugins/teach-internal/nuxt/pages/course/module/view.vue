@@ -213,6 +213,162 @@
                             <a-textarea :rows="4" v-model:value="currentLesson.rubric" @change="touch"/>
                           </a-form-item>
                         </template>
+<!-- ADD: Lab editor -->
+<template v-else-if="currentLesson.type==='lab'">
+  <a-alert type="info" show-icon class="mb-2"
+    message="Lab lesson"
+    description="Configure a Docker-based lab and open a web VS Code (code-server). This is a mock UI that saves to lesson.metadata.lab."
+  />
+  <a-form layout="vertical">
+    <a-row :gutter="16">
+      <a-col :md="14" :xs="24">
+        <a-card title="Runtime & environment">
+          <a-row :gutter="8">
+            <a-col :span="12">
+              <a-form-item label="Lab kind">
+                <a-select
+                  :options="labKindOptions"
+                  v-model:value="currentLesson.lab!.kind"
+                  @change="touch()"
+                />
+              </a-form-item>
+            </a-col>
+            <a-col :span="12">
+              <a-form-item label="Node environment">
+                <a-select
+                  :options="nodeImageOptions"
+                  v-model:value="currentLesson.lab!.dockerImage"
+                  @change="touch()"
+                />
+              </a-form-item>
+            </a-col>
+          </a-row>
+
+          <a-row :gutter="8">
+            <a-col :span="12">
+              <a-form-item label="Dev port (inside container)">
+                <a-input-number v-model:value="currentLesson.lab!.devPort" :min="1" style="width:100%" @change="touch()"/>
+              </a-form-item>
+            </a-col>
+            <a-col :span="12">
+              <a-form-item label="Traefik host (optional)">
+                <a-input v-model:value="currentLesson.lab!.traefikHost" placeholder="lab-{{id}}.localhost" @change="touch()"/>
+              </a-form-item>
+            </a-col>
+          </a-row>
+
+          <a-form-item label="Build command">
+            <a-input v-model:value="currentLesson.lab!.buildCmd" placeholder="pnpm i && pnpm build" @change="touch()"/>
+          </a-form-item>
+          <a-form-item label="Start command">
+            <a-input v-model:value="currentLesson.lab!.startCmd" placeholder="pnpm dev" @change="touch()"/>
+          </a-form-item>
+
+          <a-space>
+            <a-button type="primary" @click="handleOpenTeacherCode" :loading="codeServerStarting">
+              <template #icon><CodeOutlined/></template> Open VS Code (code-server)
+            </a-button>
+            <a-button danger @click="stopCodeServer" :disabled="!currentLesson.lab?.codeServer?.containerId" :loading="codeServerStopping">
+              Stop VS Code
+            </a-button>
+            <a-button v-if="currentLesson.lab?.codeServer?.url" @click="openLabUrl" >
+              Open instance
+            </a-button>
+          </a-space>
+
+          <a-divider/>
+
+          <a-descriptions bordered size="small" column="1">
+            <a-descriptions-item label="Docker image">{{ currentLesson.lab?.dockerImage }}</a-descriptions-item>
+            <a-descriptions-item label="VS Code URL">
+              {{ currentLesson.lab?.codeServer?.url || '—' }}
+            </a-descriptions-item>
+            <a-descriptions-item label="Container ID">
+              {{ currentLesson.lab?.codeServer?.containerId || '—' }}
+            </a-descriptions-item>
+          </a-descriptions>
+        </a-card>
+
+        <a-card class="mt-2" title="API tests (mock)">
+          <a-space class="mb-1">
+            <a-button size="small" type="primary" @click="addApiLabTest"><PlusOutlined/> Add API test</a-button>
+          </a-space>
+          <a-collapse accordion>
+            <a-collapse-panel
+              v-for="(t, i) in (currentLesson.lab!.apiTests||[])"
+              :key="t.id"
+              :header="t.name || `API Test ${i+1}`">
+              <a-row :gutter="8">
+                <a-col :span="6"><a-input v-model:value="t.name" placeholder="Name" @change="touch()"/></a-col>
+                <a-col :span="6">
+                  <a-select v-model:value="t.method" :options="httpMethods" @change="touch()"/>
+                </a-col>
+                <a-col :span="12"><a-input v-model:value="t.path" placeholder="/api/health" @change="touch()"/></a-col>
+              </a-row>
+              <a-row :gutter="8" class="mt-1">
+                <a-col :span="12">
+                  <a-input-textarea v-model:value="t.bodyJson" :rows="3" placeholder='Body JSON (optional)' @change="touch()"/>
+                </a-col>
+                <a-col :span="12">
+                  <a-input-textarea v-model:value="t.expectJsonStr" :rows="3" placeholder='Expect JSON subset (optional)' @change="touch()"/>
+                </a-col>
+              </a-row>
+              <a-row :gutter="8" class="mt-1">
+                <a-col :span="12"><a-input v-model:value="t.expectTextLine" placeholder="Expect text (comma sep)" @change="touch()"/></a-col>
+                <a-col :span="6"><a-input-number v-model:value="t.expectedStatus" :min="100" :max="599" style="width:100%" @change="touch()"/></a-col>
+                <a-col :span="4"><a-input-number v-model:value="t.points" :min="1" style="width:100%" @change="touch()"/></a-col>
+                <a-col :span="2"><a-button danger @click="removeApiLabTest(i)">Remove</a-button></a-col>
+              </a-row>
+            </a-collapse-panel>
+          </a-collapse>
+        </a-card>
+
+        <a-card class="mt-2" title="UI tests (mock)">
+          <a-space class="mb-1">
+            <a-button size="small" type="primary" @click="addUiLabTest"><PlusOutlined/> Add UI test</a-button>
+          </a-space>
+          <a-collapse accordion>
+            <a-collapse-panel
+              v-for="(t, i) in (currentLesson.lab!.uiTests||[])"
+              :key="t.id"
+              :header="t.name || `UI Test ${i+1}`">
+              <a-row :gutter="8">
+                <a-col :span="12"><a-input v-model:value="t.name" placeholder="Name" @change="touch()"/></a-col>
+                <a-col :span="12"><a-input v-model:value="t.path" placeholder="/ (path)" @change="touch()"/></a-col>
+              </a-row>
+              <a-row :gutter="8" class="mt-1">
+                <a-col :span="16"><a-input v-model:value="t.expectTextLine" placeholder="Expect text (comma sep)" @change="touch()"/></a-col>
+                <a-col :span="6"><a-input-number v-model:value="t.points" :min="1" style="width:100%" @change="touch()"/></a-col>
+                <a-col :span="2"><a-button danger @click="removeUiLabTest(i)">Remove</a-button></a-col>
+              </a-row>
+            </a-collapse-panel>
+          </a-collapse>
+        </a-card>
+      </a-col>
+
+      <a-col :md="10" :xs="24">
+        <a-card title="VS Code (code-server)">
+          <a-typography-paragraph type="secondary" style="margin-bottom:8px">
+            Starts a <code>codercom/code-server</code> container. Default password: <b>teacher</b>.
+          </a-typography-paragraph>
+          <a-descriptions bordered size="small" column="1">
+            <a-descriptions-item label="URL">
+              {{ currentLesson.lab?.codeServer?.url || '—' }}
+            </a-descriptions-item>
+            <a-descriptions-item label="Status">
+              {{ currentLesson.lab?.codeServer?.containerId ? 'RUNNING' : 'STOPPED' }}
+            </a-descriptions-item>
+          </a-descriptions>
+          <a-divider/>
+          <a-button block type="dashed" :disabled="!currentLesson.lab?.codeServer?.url" @click="showCodeDrawer = true">
+            Open embedded VS Code
+          </a-button>
+        </a-card>
+      </a-col>
+    </a-row>
+  </a-form>
+
+</template>
 
                         <template v-else-if="currentLesson.type==='quiz'">
                           <a-alert type="info" show-icon message="Build questions below. MCQ supports multiple options; mark the correct one(s)." class="mb-2"/>
@@ -389,6 +545,8 @@
 </template>
 
 <script setup lang="ts">
+import { CodeOutlined } from '@ant-design/icons-vue'
+import { watch } from 'vue'
 import { reactive, ref, computed, onMounted } from 'vue'
 import { theme, message } from 'ant-design-vue'
 import {
@@ -396,6 +554,35 @@ import {
   PlusOutlined, DeleteOutlined, EditOutlined, DownOutlined, FieldTimeOutlined
 } from '@ant-design/icons-vue'
 import { useRoute } from 'vue-router'
+type LabKind = 'BACKEND_NODE' | 'FRONTEND_NUXT'
+type ApiTestMock = {
+  id: string; name: string; method: string; path: string;
+  expectedStatus?: number; expectText?: string[];
+  expectJson?: any; points?: number;
+  // editor helpers (not persisted directly)
+  bodyJson?: string; expectJsonStr?: string; expectTextLine?: string;
+}
+function ensureLabMeta() {
+  if (!currentLesson.value) return
+  if (!currentLesson.value.lab) currentLesson.value.lab = labDefaults()
+}
+type UiTestMock = {
+  id: string; name: string; path: string;
+  expectText?: string[]; points?: number;
+  // editor helper
+  expectTextLine?: string;
+}
+type LabMeta = {
+  kind: LabKind;
+  dockerImage: string;
+  buildCmd?: string;
+  startCmd?: string;
+  devPort?: number;
+  traefikHost?: string;
+  codeServer?: { url?: string; containerId?: string };
+  apiTests?: ApiTestMock[];
+  uiTests?: UiTestMock[];
+}
 
 /** Utils */
 const fmt = (n: number) => n.toLocaleString(undefined, { style: 'currency', currency: 'EUR' })
@@ -417,6 +604,7 @@ type Resource = { id?: string; name?: string; title?: string; kind?: 'pdf'|'file
 type Lesson = {
   id: string
   moduleId?: string
+  lab?: LabMeta
   title: string
   type: 'video'|'reading'|'quiz'|'assignment'|string
   duration?: number
@@ -453,28 +641,39 @@ const API_URL = 'http://localhost:4000/api/teach-internal/graphql'
 function getAuthHeaders() {
   return { 'Content-Type':'application/json' } as Record<string,string>
 }
-async function fetchGraphQL<T=any>(query: string, variables?: Record<string, any>): Promise<T> {
-  const resp = await fetch(API_URL, {
-    method: 'POST',
-    credentials: 'include',
-    headers: getAuthHeaders(),
-    body: JSON.stringify({ query, variables })
-  })
-  const json = await resp.json()
-  if (json.errors?.length) throw new Error(json.errors[0]?.message || 'GraphQL error')
-  return json.data as T
+
+const labKindOptions = [
+  { label:'Backend (Node)', value:'BACKEND_NODE' },
+  { label:'Frontend (Nuxt)', value:'FRONTEND_NUXT' }
+]
+
+const nodeImageOptions = [
+  { label:'Node 18 (alpine)', value:'node:18-alpine' },
+  { label:'Node 20 (alpine)', value:'node:20-alpine' },
+  { label:'Node 22 (alpine)', value:'node:22-alpine' },
+]
+
+const httpMethods = ['GET','POST','PUT','DELETE','PATCH'].map(x=>({label:x, value:x}))
+const currentLesson  = computed<Lesson|undefined>(() => currentModule.value?.lessons?.[currentLessonIndex.value])
+
+function labDefaults(): LabMeta {
+  return {
+    kind: 'BACKEND_NODE',
+    dockerImage: 'node:22-alpine',
+    buildCmd: 'pnpm i',
+    startCmd: 'pnpm dev',
+    devPort: 3000,
+    traefikHost: '',
+    codeServer: {},
+    apiTests: [],
+    uiTests: [],
+  }
 }
 
-/** Theme & UI */
-const isDark = ref(false)
-function toggleDark(){ isDark.value = !isDark.value }
-
-const tab = ref<'course'|'lesson'|'preview'>('course')
-const siderCollapsed = ref(false)
-const activePanels = ref<string[]>([])
-const activeQPanels = ref<string[]>([])
-const filter = ref('')
-
+const currentModuleIndex = ref(0)
+const currentLessonIndex = ref(0)
+const currentModule = computed<ModuleT|undefined>(() => course.modules[currentModuleIndex.value])
+function select(mi:number, li:number){ currentModuleIndex.value = mi; currentLessonIndex.value = li; tab.value='lesson'; }
 /** Base reactive state */
 const course = reactive<CourseT>({
   title: '',
@@ -488,6 +687,113 @@ const course = reactive<CourseT>({
 })
 
 /** Derived */
+watch(() => currentLesson.value?.type, (t) => {
+  if (t === 'lab') ensureLabMeta()
+})
+const codeServerStopping = ref(false)
+const API_REST = 'http://localhost:4000/api/teach-internal' // adjust if needed
+
+/**
+ * Robust code-server drawer launcher.
+ */
+function extractTeacherIdFromPath(path: string): string | null {
+  // match URLs like /teach-internal/:teacherId/*
+  const match = path.match(/teach[-/]internal\/([^/]+)/i)
+  return match ? match[1] : null
+}
+
+async function stopCodeServer(){
+  if (!currentLesson.value?.lab?.codeServer?.containerId) return
+  codeServerStopping.value = true
+  try {
+    const cId = currentLesson.value.lab!.codeServer!.containerId
+    await fetch(`${API_REST}/code-server/stop`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ containerId: cId })
+    }).catch(()=>{})
+  } finally {
+    currentLesson.value.lab!.codeServer = {}
+    codeServerStopping.value = false
+    touch(false)
+  }
+}
+
+function openLabUrl(){
+  const url = currentLesson.value?.lab?.codeServer?.url
+  if (url) window.open(url, '_blank')
+}
+/** 🔧 Trigger teacher code-server */
+async function handleOpenTeacherCode() {
+  // try to get teacherId from route or user context
+  const teacherId =
+    route.params.teacherId ||
+    route.query.teacherId ||
+    extractTeacherIdFromPath(route.path)
+
+  if (!teacherId) {
+    return message.warning('Missing teacherId in route')
+  }
+
+  await openTeacherCodeServer(String(teacherId))
+}
+
+/** Helper for SSR-safe extraction */
+
+function addApiLabTest(){
+  ensureLabMeta()
+  currentLesson.value!.lab!.apiTests!.push({
+    id: uid(), name: 'Health', method: 'GET', path: '/api/health',
+    expectedStatus: 200, points: 1,
+    bodyJson: '', expectJsonStr: '', expectTextLine: ''
+  })
+  touch()
+}
+function removeApiLabTest(i:number){
+  currentLesson.value?.lab?.apiTests?.splice(i,1); touch()
+}
+function addUiLabTest(){
+  ensureLabMeta()
+  currentLesson.value!.lab!.uiTests!.push({
+    id: uid(), name: 'Home', path: '/', points: 1, expectTextLine: ''
+  })
+  touch()
+}
+function removeUiLabTest(i:number){
+  currentLesson.value?.lab?.uiTests?.splice(i,1); touch()
+}
+
+async function fetchGraphQL<T=any>(query: string, variables?: Record<string, any>): Promise<T> {
+  const resp = await fetch(API_URL, {
+    method: 'POST',
+    credentials: 'include',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ query, variables })
+  })
+  const json = await resp.json()
+  if (json.errors?.length) throw new Error(json.errors[0]?.message || 'GraphQL error')
+  return json.data as T
+}
+
+
+/** small helper if you keep JWT in cookie or localStorage */
+function getCookieToken(): string {
+  const m = document.cookie.match(/token=([^;]+)/)
+  return m ? m[1] : ''
+}
+
+/** Theme & UI */
+const isDark = ref(false)
+function toggleDark(){ isDark.value = !isDark.value }
+
+const tab = ref<'course'|'lesson'|'preview'>('course')
+const siderCollapsed = ref(false)
+const activePanels = ref<string[]>([])
+const activeQPanels = ref<string[]>([])
+const filter = ref('')
+
+
 const totalMinutes = computed(()=> course.modules.flatMap(m=>m.lessons||[]).reduce((s,l)=> s+(l.duration||0), 0))
 const coverUrl = computed(()=> course.files?.[0]?.url || course.coverUrl || '')
 const coverStyle = computed(()=> ({ backgroundImage: coverUrl.value ? `url('${coverUrl.value}')` : 'linear-gradient(135deg,#111,#334155)' }))
@@ -500,11 +806,6 @@ const selectedKey = computed(()=>`l-${currentModuleIndex.value}-${currentLessonI
 const payablePreview = computed(() => (Number(course.price||0)) * (1 - Number(course.discount||0)/100))
 
 /** Outline selection */
-const currentModuleIndex = ref(0)
-const currentLessonIndex = ref(0)
-const currentModule = computed<ModuleT|undefined>(() => course.modules[currentModuleIndex.value])
-const currentLesson  = computed<Lesson|undefined>(() => currentModule.value?.lessons?.[currentLessonIndex.value])
-function select(mi:number, li:number){ currentModuleIndex.value = mi; currentLessonIndex.value = li; tab.value='lesson'; }
 
 /** Options */
 const typeOptions = [
@@ -512,6 +813,7 @@ const typeOptions = [
   { label:'Reading', value:'reading' },
   { label:'Quiz', value:'quiz' },
   { label:'Assignment', value:'assignment' },
+  { label:'Lab', value:'lab' },
 ]
 const qTypeOptions = [
   { label:'Multiple Choice', value:'mcq' },
@@ -530,7 +832,6 @@ function matchFilter(l:Lesson){
   if (!q) return true
   return (l.title||'').toLowerCase().includes(q) || (l.type||'').toLowerCase().includes(q)
 }
-
 /** GraphQL operations */
 const GQL = {
   courseTree: `
@@ -618,6 +919,7 @@ function normalizeCourse(src:any): CourseT {
       lessons: (m.lessons || []).map((l:any) => {
         const md = l.metadata || {}
         return {
+          lab: md.lab || undefined,
           id: l.id,
           moduleId: l.moduleId,
           title: l.title || '',
@@ -680,7 +982,9 @@ function buildLessonMetadata(l: Lesson){
     preview: !!l.preview,
     resources: l.resources || [],
     attachments: l.attachments || [],
-    quiz: l.quiz || { questions: [] }
+    quiz: l.quiz || { questions: [] },
+    // ADD: persist lab meta
+    lab: l.lab || undefined
   }
 }
 
@@ -969,6 +1273,25 @@ const prereqOptions = computed(() =>
     .filter(x => currentLesson.value ? x.id !== currentLesson.value.id : true)
     .map(x => ({ label: x.label, value: x.id }))
 )
+/** 🔧 Teacher code-server launcher */
+async function openTeacherCodeServer(teacherId: string) {
+  try {
+    const resp = await fetch(`${API_REST}/code-server/${encodeURIComponent(String(teacherId))}/${encodeURIComponent(String(currentLesson.value.id))}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }, // or adjust if using HttpOnly
+      credentials: 'include'
+    })
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+    const data = await resp.json()
+    if (data.ok && data.url) {
+      window.open(data.url, '_blank') // open VS Code in new tab
+    } else {
+      message.error(data.error || 'Failed to start code-server')
+    }
+  } catch (err:any) {
+    console.error('[CodeServer] Failed:', err)
+    message.error('Could not open code-server')
+  }
+}
 </script>
 
 <style scoped>
@@ -1004,4 +1327,5 @@ const prereqOptions = computed(() =>
 
 .option-row { display:flex; gap:8px; align-items:center; margin-bottom:6px; }
 .opt-input { flex:1; }
+.code-frame { width:100%; height:80vh; border:none; }
 </style>
