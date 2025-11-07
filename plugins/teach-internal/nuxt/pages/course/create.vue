@@ -104,7 +104,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { theme, message } from 'ant-design-vue'
 import { BulbOutlined, SaveOutlined } from '@ant-design/icons-vue'
 
@@ -114,9 +114,26 @@ function toggleDark(){ isDark.value = !isDark.value }
 
 /** Router */
 const router = useRouter()
+const route = useRoute()
 function goBack(){ router.back() }
 
-/** Helpers */
+function useTeacherId() {
+  const route = useRoute()
+  return computed(() => {
+    // Prefer route param first (SSR-friendly)
+    if (route.params.teacherId) return route.params.teacherId as string
+
+    // Fallback to window parsing (client only)
+    if (typeof window !== 'undefined') {
+      const parts = window.location.pathname.split('/')
+      const idx = parts.indexOf('teach-internal')
+      return idx !== -1 ? parts[idx + 1] : null
+    }
+
+    return null
+  })
+}/** Helpers */
+const teacherId = useTeacherId()
 const fmt = (n: number) => n.toLocaleString(undefined, { style: 'currency', currency: 'EUR' })
 
 /** Form state */
@@ -182,6 +199,7 @@ const GQL = {
       $description:String,
       $price:Float,
       $discount:Float
+      $teacherId:String!
     ){
       createCourse(
         title:$title,
@@ -190,6 +208,7 @@ const GQL = {
         description:$description,
         price:$price,
         discount:$discount
+          teacherId:$teacherId,
       ){ id }
     }
   `,
@@ -218,7 +237,8 @@ async function submit(){
       difficulty: form.value.difficulty || null,
       description: form.value.description || '',
       price: Number(form.value.price || 0),
-      discount: Number(form.value.discount || 0)
+      discount: Number(form.value.discount || 0),
+      teacherId: teacherId.value,
     }
     const data = await fetchGraphQL<{ createCourse: { id: string } }>(GQL.createCourse, base)
     const newId = data.createCourse.id
@@ -230,7 +250,7 @@ async function submit(){
     }
 
     message.success('Course created')
-    router.push(`/admin/course/${newId}`)
+    router.push(`/teach-internal/${teacherId.value}/course/${newId}/module/new/view`)
   } catch (e:any) {
     message.error(e?.message || 'Create course failed')
   } finally {
