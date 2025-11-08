@@ -1,1191 +1,443 @@
 <template>
   <a-config-provider :theme="{ algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm }">
-    <a-layout :class="['course-internal', isDark ? 'is-dark' : '']">
-      <!-- LEFT: COVER + PROGRESS + OUTLINE -->
-      <a-layout-sider width="300" collapsible v-model:collapsed="siderCollapsed" class="sider">
-        <div class="cover" :style="coverStyle">
-          <div class="cover-gradient"></div>
-          <div class="cover-meta" v-if="!siderCollapsed">
-            <div class="cover-title">{{ course.title || 'Untitled course' }}</div>
-            <div class="cover-tags">
-              <a-tag v-if="course.category" color="blue">{{ course.category }}</a-tag>
-              <a-tag v-if="course.difficulty" color="gold">{{ course.difficulty }}</a-tag>
-            </div>
-          </div>
-        </div>
-
-        <div class="sider-body">
-          <a-progress :percent="progressPercent" status="active" :stroke-width="8" />
-          <div class="sider-actions">
-            <a-button type="primary" block @click="resumeLast" :disabled="totalLessons === 0">
-              <template #icon><PlayCircleOutlined/></template>
-              Resume ({{ resumeLabel }})
+    <a-layout :class="['course-listing', isDark ? 'is-dark' : '']">
+      <a-page-header
+        class="header"
+        title="Browse Courses"
+        :sub-title="`${filtered.length} result${filtered.length===1?'':'s'}`"
+      >
+        <template #extra>
+          <a-space>
+            <a-tooltip :title="isDark ? 'Switch to light' : 'Switch to dark'">
+              <a-button shape="circle" @click="toggleDark"><BulbOutlined /></a-button>
+            </a-tooltip>
+            <a-button shape="circle" @click="reload" :loading="loading" title="Refresh">
+              <svg viewBox="0 0 24 24" width="1em" height="1em"><path fill="currentColor" d="M12 6V3L8 7l4 4V8a4 4 0 1 1-4 4H6a6 6 0 1 0 6-6z"/></svg>
             </a-button>
-          </div>
+          </a-space>
+        </template>
+      </a-page-header>
 
-          <a-input-search
-            ref="filterInputRef"
-            v-model:value="filterText"
-            placeholder="Search lessons"
-            allow-clear
-            class="mt-2"
-          />
+      <!-- FILTER BAR -->
+      <div class="filters">
+        <a-row :gutter="[12,12]" align="middle">
+          <a-col :xs="24" :md="10" :lg="12">
+            <a-input-search v-model:value="q" placeholder="Search by title, category…" allow-clear @search="noop"/>
+          </a-col>
 
-          <a-tree
-            class="mt-2"
-            block-node
-            :tree-data="filteredTreeData"
-            :selectedKeys="[selectedTreeKey]"
-            :expandedKeys="expandedKeys"
-            @select="onSelectNode"
-            @expand="(keys)=>expandedKeys = keys as string[]"
-          />
+          <a-col :xs="12" :md="6" :lg="4">
+            <a-select v-model:value="category" allow-clear placeholder="Category" style="width:100%">
+              <a-select-option v-for="c in categories" :key="c" :value="c">{{ c }}</a-select-option>
+            </a-select>
+          </a-col>
+
+          <a-col :xs="12" :md="4" :lg="4">
+            <a-select v-model:value="difficulty" allow-clear placeholder="Difficulty" style="width:100%">
+              <a-select-option v-for="d in difficulties" :key="d" :value="d">{{ d }}</a-select-option>
+            </a-select>
+          </a-col>
+
+          <a-col :xs="24" :md="4" :lg="4" class="right-controls">
+            <a-segmented
+              v-model:value="viewMode"
+              :options="[{label:'Grid', value:'grid'},{label:'List', value:'list'}]"
+              size="small"
+            />
+          </a-col>
+        </a-row>
+
+        <div class="chips">
+          <a-checkbox v-model:checked="onlyFree">Free</a-checkbox>
+          <a-checkbox v-model:checked="onlyDiscounted">Discounted</a-checkbox>
+          <a-checkbox v-model:checked="onlyPurchased">Purchased</a-checkbox>
+
+          <a-select v-model:value="sort" size="small" style="min-width:180px;margin-left:auto">
+            <a-select-option value="popular">Most popular</a-select-option>
+            <a-select-option value="newest">Newest</a-select-option>
+            <a-select-option value="price-asc">Price ↑</a-select-option>
+            <a-select-option value="price-desc">Price ↓</a-select-option>
+            <a-select-option value="length-desc">Longest</a-select-option>
+          </a-select>
         </div>
-      </a-layout-sider>
+      </div>
 
-      <!-- RIGHT: MAIN -->
-      <a-layout>
-        <a-page-header
-          class="header"
-          :title="course.title || 'Course'"
-          :sub-title="subTitle"
-          @back="goBack"
-        >
-          <template #tags>
-            <a-tag v-if="course.category" color="blue">{{ course.category }}</a-tag>
-            <a-tag v-if="course.difficulty" color="gold">{{ course.difficulty }}</a-tag>
-            <a-tag v-if="totalMinutes" color="blue"><FieldTimeOutlined /> {{ totalMinutes }} min</a-tag>
-            <a-tag v-if="!purchased" color="red"><LockOutlined /> Locked content</a-tag>
-            <a-tag v-else color="green"><CheckCircleTwoTone :twoTone-color="'#52c41a'"/> Purchased</a-tag>
-          </template>
-          <template #extra>
-            <a-space>
-              <a-tooltip :title="isDark ? 'Switch to light' : 'Switch to dark'">
-                <a-button shape="circle" @click="toggleDark"><BulbOutlined /></a-button>
-              </a-tooltip>
+      <!-- RESULTS -->
+      <div class="results" v-if="!loading">
+        <a-empty v-if="paged.length===0" description="No matching courses." />
 
-              <a-button @click="notesOpen = true"><FileTextOutlined /> Notes</a-button>
-              <a-button @click="resourcesOpen = true"><PaperClipOutlined /> Resources</a-button>
+        <!-- GRID -->
+        <a-row v-else-if="viewMode==='grid'" :gutter="[16,16]">
+          <a-col v-for="c in paged" :key="c.id" :xs="24" :sm="12" :md="12" :lg="8" :xl="6">
+            <a-card class="course-card" :hoverable="true" :body-style="{padding:'12px'}">
+              <div class="cover" :style="cover(c)">
+                <div class="badge" v-if="c.discount || isFree(c)">
+                  <a-tag v-if="isFree(c)" color="green">Free</a-tag>
+                  <a-tag v-else color="red">{{ c.discount }}% off</a-tag>
+                </div>
+                <a-tag v-if="isPurchased(c)" color="green" class="purchased-tag">Purchased</a-tag>
+              </div>
 
-              <a-button v-if="!purchased" @click="addToCart">
-                <ShoppingCartOutlined /> Add to cart
-              </a-button>
-              <a-button v-if="!purchased" type="primary" @click="openCheckout">
-                <CreditCardOutlined /> Buy now
-              </a-button>
+              <div class="meta">
+                <div class="title" :title="c.title">{{ c.title }}</div>
+                <div class="tags">
+                  <a-tag v-if="c.category" color="blue">{{ c.category }}</a-tag>
+                  <a-tag v-if="c.difficulty" color="gold">{{ c.difficulty }}</a-tag>
+                </div>
 
-              <a-button v-if="purchased" type="primary" @click="goStartOrNext">
-                <PlayCircleOutlined /> {{ nextCta }}
-              </a-button>
+                <div class="stats">
+                  <span><FieldTimeOutlined /> {{ totalMinutes(c) }} min</span>
+                  <span>• {{ totalLessons(c) }} lessons</span>
+                </div>
 
-              <a-button @click="shortcutsOpen = true" shape="circle" :title="'Shortcuts'">
-                <KeyboardOutlined />
-              </a-button>
-            </a-space>
-          </template>
-        </a-page-header>
-
-        <a-layout-content class="content">
-          <a-row :gutter="24">
-            <!-- VIEWER + TABS -->
-            <a-col :xs="24" :lg="16">
-              <a-card :title="currentLesson?.title || 'Select a lesson'" :loading="!currentLesson && totalLessons>0">
-                <template v-if="currentLesson">
-                  <!-- Locked gate -->
-                  <a-result
-                    v-if="isLocked(currentLesson)"
-                    status="warning"
-                    :title="!purchased && !currentLesson.preview ? 'This lesson is behind a paywall' : 'This lesson is locked'"
-                    :sub-title="!purchased && !currentLesson.preview ? 'Purchase the course to unlock all lessons.' : lockedReason(currentLesson)"
-                  >
-                    <template #extra>
-                      <a-space>
-                        <a-button v-if="!purchased" type="primary" @click="openCheckout">
-                          <CreditCardOutlined /> Go to checkout
-                        </a-button>
-                        <a-button v-if="hasNext" @click="goNext">Next available</a-button>
-                      </a-space>
-                    </template>
-                  </a-result>
-
-                  <template v-else>
-                    <!-- Meta -->
-                    <div class="lesson-head">
-                      <div class="lh-left">
-                        <a-tag>{{ currentLesson.type }}</a-tag>
-                        <a-tag v-if="currentLesson.preview" color="cyan">Preview</a-tag>
-                        <div class="muted"><FieldTimeOutlined /> {{ Number(currentLesson.duration) || 0 }} min</div>
-                      </div>
-                      <div class="lh-right">
-                        <a-space>
-                          <a-button @click="notesOpen = true"><FileTextOutlined /> Notes</a-button>
-                          <a-button @click="resourcesOpen = true"><PaperClipOutlined /> Resources</a-button>
-                          <a-button
-                            :type="currentLesson.completed ? 'default' : 'primary'"
-                            @click="toggleDone(currentLesson.id)"
-                          >
-                            <template v-if="currentLesson.completed">
-                              <CheckCircleTwoTone :twoTone-color="'#52c41a'" /> Completed
-                            </template>
-                            <template v-else>
-                              <CheckOutlined /> Mark complete
-                            </template>
-                          </a-button>
-                        </a-space>
-                      </div>
-                    </div>
-
-                    <!-- VIEWER -->
-                    <a-card class="viewer" :bordered="false">
-                      <!-- VIDEO -->
-                      <template v-if="currentLesson.type === 'video'">
-                        <div v-if="ytEmbed(currentLesson.videoUrl)" class="video-wrap">
-                          <iframe
-                            class="player-iframe"
-                            :src="ytEmbed(currentLesson.videoUrl)"
-                            frameborder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowfullscreen
-                            title="Lesson video"
-                          />
-                        </div>
-                        <div v-else class="video-fallback">
-                          <a-typography-paragraph>
-                            Video URL: <a :href="currentLesson.videoUrl" target="_blank">{{ currentLesson.videoUrl || '—' }}</a>
-                          </a-typography-paragraph>
-                        </div>
-                        <a-divider>Notes</a-divider>
-                        <a-typography-paragraph style="white-space:pre-wrap">{{ currentLesson.content }}</a-typography-paragraph>
-                      </template>
-
-                      <!-- READING -->
-                      <template v-else-if="currentLesson.type === 'reading'">
-                        <a-typography-paragraph style="white-space:pre-wrap">
-                          {{ currentLesson.content || 'No content provided.' }}
-                        </a-typography-paragraph>
-                      </template>
-
-                      <!-- ASSIGNMENT -->
-                      <template v-else-if="currentLesson.type === 'assignment'">
-                        <a-typography-paragraph style="white-space:pre-wrap">
-                          {{ currentLesson.content || 'No brief provided.' }}
-                        </a-typography-paragraph>
-                        <a-alert v-if="currentLesson.rubric" type="info" show-icon :message="'Rubric'" :description="currentLesson.rubric" style="margin:12px 0" />
-                        <a-form layout="vertical" @finish="submitAssignment(currentLesson.id)">
-                          <a-form-item label="Submit a link to your work">
-                            <a-input v-model:value="assignmentLinks[currentLesson.id]" placeholder="https://…" />
-                          </a-form-item>
-                          <a-space>
-                            <a-button type="primary" html-type="submit">Submit</a-button>
-                            <a-typography-text type="secondary" v-if="assignmentSubmitted(currentLesson.id)">
-                              Submitted ✔
-                            </a-typography-text>
-                          </a-space>
-                        </a-form>
-                      </template>
-
-                      <!-- QUIZ -->
-                      <template v-else-if="currentLesson.type === 'quiz'">
-                        <a-alert
-                          type="info"
-                          show-icon
-                          message="Checkpoint"
-                          description="Answer MCQs for a score. True/False and Short are self-check (counted as answered)."
-                          style="margin-bottom:12px"
-                        />
-                        <div v-for="(q, qIdx) in (currentLesson.quiz?.questions || [])" :key="q.id" class="quiz-item">
-                          <a-card :title="`Q${qIdx+1}`" size="small" style="margin-bottom:8px">
-                            <div class="q-text">{{ q.text || 'Question' }}</div>
-
-                            <!-- MCQ -->
-                            <div v-if="q.type === 'mcq'">
-                              <a-radio-group
-                                :value="getAnswer(currentLesson.id, q.id)"
-                                @update:value="(v)=>setAnswer(currentLesson.id, q.id, v)"
-                                style="width:100%"
-                              >
-                                <div v-for="(opt, oi) in q.options" :key="oi" class="mcq-row">
-                                  <a-radio :value="oi">{{ opt.text || `Option ${oi + 1}` }}</a-radio>
-                                </div>
-                              </a-radio-group>
-                            </div>
-
-                            <!-- True/False -->
-                            <div v-else-if="q.type === 'tf'">
-                              <a-radio-group
-                                :value="getAnswer(currentLesson.id, q.id)"
-                                @update:value="(v)=>setAnswer(currentLesson.id, q.id, v)"
-                              >
-                                <a-radio value="T">True</a-radio>
-                                <a-radio value="F">False</a-radio>
-                              </a-radio-group>
-                            </div>
-
-                            <!-- Short -->
-                            <div v-else>
-                              <a-input
-                                :value="getAnswer(currentLesson.id, q.id)"
-                                @update:value="(v)=>setAnswer(currentLesson.id, q.id, v)"
-                                placeholder="Your answer"
-                              />
-                            </div>
-                          </a-card>
-                        </div>
-
-                        <a-space>
-                          <a-button type="primary" @click="gradeCurrentQuiz">Submit quiz</a-button>
-                          <a-typography-text v-if="quizScores[currentLesson.id]">
-                            Score: {{ quizScores[currentLesson.id].score }}/{{ quizScores[currentLesson.id].total }}
-                            <span v-if="quizScores[currentLesson.id].passed"> — Passed ✔</span>
-                          </a-typography-text>
-                        </a-space>
-                      </template>
-                    </a-card>
-
-                    <!-- Inline resources -->
-                    <div v-if="(currentLesson.resources && currentLesson.resources.length) || (currentLesson.attachments && currentLesson.attachments.length)" class="resources-inline">
-                      <a-divider>Resources</a-divider>
-                      <ul class="res-list" v-if="currentLesson.resources?.length">
-                        <li v-for="(r, i) in currentLesson.resources" :key="i">
-                          <a :href="r.url" target="_blank">{{ r.title || r.url }}</a>
-                        </li>
-                      </ul>
-                      <div v-if="currentLesson.attachments?.length" class="muted">
-                        {{ currentLesson.attachments.length }} attachment(s) available (see drawer)
-                      </div>
-                    </div>
-
-                    <!-- Player actions -->
-                    <div class="player-actions">
-                      <a-space>
-                        <a-button :disabled="!hasPrev" @click="goPrev">
-                          <template #icon><ArrowLeftOutlined/></template>
-                          Prev
-                        </a-button>
-                        <a-button :disabled="!hasNext" type="primary" @click="goNext">
-                          Next
-                          <template #icon><ArrowRightOutlined/></template>
-                        </a-button>
-                      </a-space>
-                      <a-space>
-                        <a-switch v-model:checked="currentLesson.completed" @change="onToggleComplete"
-                                  :checked-children="'Done'" :un-checked-children="'Mark done'"/>
-                        <a-button v-if="currentLesson.completed" type="default" size="small" @click="undoComplete">
-                          <template #icon><UndoOutlined/></template>
-                          Undo
-                        </a-button>
-                      </a-space>
-                    </div>
-                  </template>
-                </template>
-
-                <a-empty v-else description="No lessons yet." />
-              </a-card>
-
-              <!-- TABS -->
-              <a-tabs class="mt-3" v-model:activeKey="activeTab">
-                <a-tab-pane key="overview" tab="Overview">
-                  <template v-if="currentLesson">
-                    <div class="tab-pad">
-                      <div class="lesson-meta">
-                        <span class="muted">Duration: {{ currentLesson.duration ?? '—' }} min</span>
-                      </div>
-                      <div v-html="safeHtml(currentLesson.content || '<p>No content yet.</p>')"></div>
-                    </div>
-                  </template>
-                  <a-empty v-else description="Select a lesson" />
-                </a-tab-pane>
-
-                <a-tab-pane key="notes" tab="Notes">
-                  <template v-if="currentLesson">
-                    <div class="tab-pad">
-                      <a-textarea
-                        rows="3"
-                        v-model:value="noteText"
-                        placeholder="Write a quick note for this lesson…"
-                      />
-                      <div class="mt-2">
-                        <a-button type="primary" @click="addNote">Add note</a-button>
-                      </div>
-                      <a-list class="mt-2" :data-source="lessonNotes" bordered>
-                        <template #renderItem="{ item }">
-                          <a-list-item>
-                            <a-list-item-meta :title="new Date(item.ts).toLocaleString()" :description="item.text" />
-                            <template #actions>
-                              <a @click="delNote(item.id)">Delete</a>
-                            </template>
-                          </a-list-item>
-                        </template>
-                      </a-list>
-                    </div>
-                  </template>
-                  <a-empty v-else description="Select a lesson" />
-                </a-tab-pane>
-
-                <a-tab-pane key="qa" tab="Q&A">
-                  <div class="tab-pad">
-                    <a-textarea rows="3" v-model:value="qaText" placeholder="Ask a question…" />
-                    <div class="mt-2"><a-button type="primary" @click="addQuestion">Post question</a-button></div>
-                    <a-list class="mt-2" :data-source="qaFiltered" bordered>
-                      <template #renderItem="{ item }">
-                        <a-list-item>
-                          <a-list-item-meta :title="item.q" :description="new Date(item.ts).toLocaleString()" />
-                          <div v-if="item.a" class="answer"><b>Answer:</b> {{ item.a }}</div>
-                        </a-list-item>
-                      </template>
-                    </a-list>
-                  </div>
-                </a-tab-pane>
-
-                <a-tab-pane key="resources" tab="Resources">
-                  <template v-if="currentLesson">
-                    <a-list class="tab-pad" :data-source="mergedResources" bordered>
-                      <template #renderItem="{ item }">
-                        <a-list-item>
-                          <a-list-item-meta
-                            :title="item.name || item.title || item.url"
-                            :description="item.url"
-                          />
-                          <template #actions>
-                            <a-button size="small" @click="download(item)">Download</a-button>
-                          </template>
-                        </a-list-item>
-                      </template>
-                    </a-list>
-                  </template>
-                  <a-empty v-else description="Select a lesson" />
-                </a-tab-pane>
-
-                <a-tab-pane key="transcript" tab="Transcript">
-                  <div class="tab-pad muted" v-if="currentLesson">Transcript not available for this lesson yet.</div>
-                  <a-empty v-else description="Select a lesson" />
-                </a-tab-pane>
-              </a-tabs>
-            </a-col>
-
-            <!-- RIGHT RAIL -->
-            <a-col :xs="24" :lg="8">
-              <!-- Purchase (visible if NOT purchased) -->
-              <a-card v-if="!purchased" title="Get full access" class="mb-3">
                 <div class="price-row">
-                  <span class="price" v-if="course.price > 0">
-                    {{ fmt(payablePrice) }}
-                    <template v-if="effectiveDiscountPct > 0">
-                      <del class="muted small">{{ fmt(course.price) }}</del>
-                      <a-tag color="red">{{ effectiveDiscountPct }}% off</a-tag>
+                  <span class="price" v-if="!isFree(c)">
+                    {{ fmt(payablePrice(c)) }}
+                    <template v-if="c.discount">
+                      <del class="muted small">{{ fmt(c.price) }}</del>
                     </template>
                   </span>
-                  <span v-else class="price">Free</span>
+                  <span class="price" v-else>Free</span>
                 </div>
-                <a-input
-                  v-model:value="couponInput"
-                  placeholder="Coupon code (SAVE10, SAVE20)"
-                  class="mt-2"
-                  @pressEnter="applyCoupon"
-                />
-                <a-space class="mt-2">
-                  <a-button @click="applyCoupon">Apply</a-button>
-                  <a-button type="primary" @click="openCheckout">
-                    <CreditCardOutlined /> Checkout
-                  </a-button>
-                </a-space>
-                <div v-if="appliedCoupon" class="muted mt-2">
-                  Applied: <b>{{ appliedCoupon }}</b> ({{ couponPct }}% off)
-                  <a @click="clearCoupon">remove</a>
+
+                <div class="actions">
+                  <a-space>
+                    <a-button @click="openCourse(c)">View</a-button>
+                    <a-button
+                      type="primary"
+                      @click="isPurchased(c) ? openCourse(c) : addToCart(c)"
+                    >
+                      <template v-if="isPurchased(c)">Continue</template>
+                      <template v-else>Buy</template>
+                    </a-button>
+                  </a-space>
                 </div>
-              </a-card>
-
-              <!-- About this course (HIDDEN when purchased) -->
-              <a-card v-if="!purchased" title="About this course" class="mb-3">
-                <p class="muted" v-if="!course.description">No description yet.</p>
-                <p v-else v-html="safeHtml(course.description)"></p>
-                <a-divider />
-                <div class="meta-row"><span class="muted">Difficulty</span><span>{{ course.difficulty || '—' }}</span></div>
-                <div class="meta-row"><span class="muted">Category</span><span>{{ course.category || '—' }}</span></div>
-                <div class="meta-row"><span class="muted">Lessons</span><span>{{ totalLessons }}</span></div>
-                <div class="meta-row"><span class="muted">Est. time</span><span>{{ estimatedTime }}</span></div>
-              </a-card>
-
-              <!-- Syllabus (always visible) -->
-              <a-card title="Syllabus">
-                <a-collapse accordion>
-                  <a-collapse-panel
-                    v-for="(m, mi) in course.modules"
-                    :key="'pm-'+mi"
-                    :header="m.title || ('Module '+(mi+1))"
-                  >
-                    <a-list size="small" :data-source="m.lessons">
-                      <template #renderItem="{ item, index }">
-                        <a-list-item
-                          :class="['mini-lesson', item.completed && 'done', isActive(mi,index) && 'active']"
-                          @click="setCurrent(mi,index)"
-                        >
-                          <a-list-item-meta
-                            :title="item.title"
-                            :description="(item.duration ? (item.duration + ' min') : '') + (item.preview ? ' • preview' : '')"
-                          />
-                          <template #actions>
-                            <CheckCircleTwoTone v-if="item.completed" :twoTone-color="'#52c41a'" />
-                            <LockOutlined v-else-if="isLocked(item)" />
-                            <PlayCircleOutlined v-else />
-                          </template>
-                        </a-list-item>
-                      </template>
-                    </a-list>
-                  </a-collapse-panel>
-                </a-collapse>
-              </a-card>
-            </a-col>
-          </a-row>
-        </a-layout-content>
-      </a-layout>
-
-      <!-- RESOURCES DRAWER -->
-      <a-drawer v-model:open="resourcesOpen" title="Resources & Attachments" placement="right" :width="420">
-        <div v-if="currentLesson">
-          <a-typography-title :level="5">For: {{ currentLesson.title || 'Lesson' }}</a-typography-title>
-          <a-divider />
-          <a-typography-title :level="5">Links</a-typography-title>
-          <a-empty v-if="!currentLesson.resources?.length" description="No links" />
-          <a-list v-else :data-source="currentLesson.resources" bordered>
-            <template #renderItem="{ item }">
-              <a-list-item>
-                <a :href="item.url" target="_blank"><LinkOutlined /> {{ item.title || item.url }}</a>
-              </a-list-item>
-            </template>
-          </a-list>
-
-          <a-divider />
-          <a-typography-title :level="5">Attachments</a-typography-title>
-          <a-empty v-if="!currentLesson.attachments?.length" description="No attachments" />
-          <a-list v-else :data-source="currentLesson.attachments" bordered>
-            <template #renderItem="{ item }">
-              <a-list-item>
-                <PaperClipOutlined />
-                <span style="margin-left:8px">{{ item.name || 'Attachment' }}</span>
-              </a-list-item>
-            </template>
-          </a-list>
-        </div>
-      </a-drawer>
-
-      <!-- NOTES DRAWER (per-lesson note map) -->
-      <a-drawer v-model:open="notesOpen" title="My notes" placement="right" :width="420">
-        <a-typography-text type="secondary" v-if="!currentLesson">Open a lesson to take notes.</a-typography-text>
-        <template v-else>
-          <a-typography-title :level="5">{{ currentLesson.title }}</a-typography-title>
-          <a-textarea
-            v-model:value="notes[currentLesson.id]"
-            :rows="12"
-            placeholder="Write your personal notes here…"
-            @change="saveNotesMap()"
-          />
-          <div style="margin-top:8px" class="muted">Saved locally.</div>
-        </template>
-      </a-drawer>
-
-      <!-- SHORTCUTS DRAWER -->
-      <a-drawer v-model:open="shortcutsOpen" title="Shortcuts & quick nav" placement="right" width="420">
-        <p><b>Space</b> — Toggle complete</p>
-        <p><b>J / K</b> — Prev / Next lesson</p>
-        <p><b>/</b> — Focus lesson search</p>
-        <a-divider />
-        <a-input-search v-model:value="filterText" placeholder="Search lessons" allow-clear class="mb-2" />
-        <a-tree block-node :tree-data="filteredTreeData" :selectedKeys="[selectedTreeKey]" @select="onSelectNode" />
-      </a-drawer>
-
-      <!-- CHECKOUT DRAWER -->
-      <a-drawer
-        v-model:open="checkoutOpen"
-        :width="isMobile ? '100%' : 520"
-        title="Checkout"
-        placement="right"
-        :destroyOnClose="true"
-      >
-        <a-steps :current="checkoutStep" size="small" class="mb-3" @change="onStepsChange">
-          <a-step title="Summary" />
-          <a-step title="Details" />
-          <a-step title="Payment" />
-          <a-step title="Review" />
-        </a-steps>
-
-        <!-- STEP 0: SUMMARY -->
-        <div v-if="checkoutStep === 0">
-          <a-card :bordered="false">
-            <div class="meta-row"><span>Course</span><span>{{ course.title }}</span></div>
-            <div class="meta-row"><span>Base price</span><span>{{ fmt(course.price) }}</span></div>
-            <div class="meta-row" v-if="course.discount"><span>Course discount</span><span>-{{ course.discount }}%</span></div>
-            <div class="meta-row" v-if="couponPct"><span>Coupon ({{ appliedCoupon }})</span><span>-{{ couponPct }}%</span></div>
-            <a-divider />
-            <div class="meta-row total"><span>Total</span><span>{{ fmt(payablePrice) }}</span></div>
-          </a-card>
-          <div class="mt-2">
-            <a-input
-              v-model:value="couponInput"
-              placeholder="Have a coupon? (SAVE10 / SAVE20)"
-              @pressEnter="applyCoupon"
-            />
-            <a-space class="mt-2">
-              <a-button @click="applyCoupon">Apply</a-button>
-              <a-button v-if="appliedCoupon" type="link" @click="clearCoupon">Remove coupon</a-button>
-            </a-space>
-          </div>
-          <a-space class="mt-3">
-            <a-button @click="toStep(1)">Continue</a-button>
-          </a-space>
-        </div>
-
-        <!-- STEP 1: DETAILS -->
-        <div v-else-if="checkoutStep === 1">
-          <a-form layout="vertical" @finish="()=>toStep(2)" :model="billing">
-            <a-form-item label="Full name" name="name" :rules="[{ required:true, message:'Name required' }]">
-              <a-input v-model:value="billing.name" />
-            </a-form-item>
-            <a-form-item label="Email" name="email" :rules="[{ type:'email', required:true, message:'Valid email required' }]">
-              <a-input v-model:value="billing.email" />
-            </a-form-item>
-            <a-form-item label="Country">
-              <a-input v-model:value="billing.country" placeholder="e.g. Germany" />
-            </a-form-item>
-            <a-form-item label="VAT ID (optional)">
-              <a-input v-model:value="billing.vat" placeholder="DE123…" />
-            </a-form-item>
-            <a-space>
-              <a-button @click="toStep(0)">Back</a-button>
-              <a-button type="primary" html-type="submit">Continue</a-button>
-            </a-space>
-          </a-form>
-        </div>
-
-        <!-- STEP 2: PAYMENT -->
-        <div v-else-if="checkoutStep === 2">
-          <a-alert type="info" show-icon message="Test payment" description="No real payment is processed." class="mb-2"/>
-          <a-form layout="vertical" @finish="()=>toStep(3)" :model="card">
-            <a-form-item label="Card number" name="card" :rules="[{ required:true, message:'Card required' }]">
-              <a-input v-model:value="card.card" placeholder="4242 4242 4242 4242" />
-            </a-form-item>
-            <a-form-item label="Expiry (MM/YY)" name="exp" :rules="[{ required:true, message:'Expiry required' }]">
-              <a-input v-model:value="card.exp" placeholder="12/29" />
-            </a-form-item>
-            <a-form-item label="CVC" name="cvc" :rules="[{ required:true, message:'CVC required' }]">
-              <a-input v-model:value="card.cvc" placeholder="123" />
-            </a-form-item>
-            <a-checkbox v-model:checked="card.terms">
-              I agree to the <a href="#" @click.prevent>Terms</a> and <a href="#" @click.prevent>Refund policy</a>.
-            </a-checkbox>
-            <div class="mt-2">
-              <a-space>
-                <a-button @click="toStep(1)">Back</a-button>
-                <a-button type="primary" html-type="submit" :disabled="!card.terms">Continue</a-button>
-              </a-space>
-            </div>
-          </a-form>
-        </div>
-
-        <!-- STEP 3: REVIEW / PAY -->
-        <div v-else>
-          <a-result
-            v-if="orderPlaced"
-            status="success"
-            title="Payment successful"
-            sub-title="Your course is now unlocked."
-          >
-            <template #extra>
-              <a-button type="primary" @click="finishCheckout">Start learning</a-button>
-            </template>
-          </a-result>
-
-          <template v-else>
-            <a-card :bordered="false">
-              <div class="meta-row"><span>Payer</span><span>{{ billing.name }} · {{ billing.email }}</span></div>
-              <div class="meta-row"><span>Card</span><span>**** **** **** {{ last4(card.card) }}</span></div>
-              <a-divider />
-              <div class="meta-row total"><span>Charge</span><span>{{ fmt(payablePrice) }}</span></div>
+              </div>
             </a-card>
-            <a-space class="mt-3">
-              <a-button @click="toStep(2)">Back</a-button>
-              <a-button type="primary" :loading="placing" @click="placeOrder">Pay {{ fmt(payablePrice) }}</a-button>
-            </a-space>
-          </template>
-        </div>
-      </a-drawer>
+          </a-col>
+        </a-row>
 
-      <!-- MODULE COMPLETE -->
-      <a-modal v-model:open="moduleDoneOpen" title="Module finished 🎉" :footer="null">
-        <a-result status="success" title="Great job!" :sub-title="`You’ve completed ${totalLessons} lessons.`" />
-      </a-modal>
+        <!-- LIST -->
+        <div v-else class="list-wrap">
+          <a-list :data-source="paged" item-layout="horizontal" bordered>
+            <template #renderItem="{ item:c }">
+              <a-list-item :key="c.id">
+                <a-list-item-meta>
+                  <template #avatar>
+                    <div class="list-cover" :style="cover(c)"></div>
+                  </template>
+                  <template #title>
+                    <div class="list-title">
+                      <span>{{ c.title }}</span>
+                      <a-tag v-if="c.category" color="blue" style="margin-left:8px">{{ c.category }}</a-tag>
+                      <a-tag v-if="c.difficulty" color="gold">{{ c.difficulty }}</a-tag>
+                      <a-tag v-if="isPurchased(c)" color="green">Purchased</a-tag>
+                      <a-tag v-else-if="isFree(c)" color="green">Free</a-tag>
+                      <a-tag v-else-if="c.discount" color="red">{{ c.discount }}% off</a-tag>
+                    </div>
+                  </template>
+                  <template #description>
+                    <div class="list-desc">
+                      <span><FieldTimeOutlined /> {{ totalMinutes(c) }} min</span>
+                      <span>• {{ totalLessons(c) }} lessons</span>
+                    </div>
+                  </template>
+                </a-list-item-meta>
+
+                <template #actions>
+                  <div class="list-actions">
+                    <span class="list-price">
+                      <template v-if="isFree(c)">Free</template>
+                      <template v-else>
+                        {{ fmt(payablePrice(c)) }}
+                        <del v-if="c.discount" class="muted small" style="margin-left:6px">{{ fmt(c.price) }}</del>
+                      </template>
+                    </span>
+                    <a-space>
+                      <a-button @click="openCourse(c)">View</a-button>
+                      <a-button type="primary" @click="isPurchased(c) ? openCourse(c) : addToCart(c)">
+                        <template v-if="isPurchased(c)">Continue</template>
+                        <template v-else>Buy</template>
+                      </a-button>
+                    </a-space>
+                  </div>
+                </template>
+              </a-list-item>
+            </template>
+          </a-list>
+        </div>
+
+        <!-- PAGINATION -->
+        <div class="pagi" v-if="filtered.length > pageSize">
+          <a-pagination
+            v-model:current="page"
+            :total="filtered.length"
+            :pageSize="pageSize"
+            show-size-changer
+            :pageSizeOptions="['8','12','16','24','32']"
+            @change="onPaginate"
+            @showSizeChange="onSizeChange"
+          />
+        </div>
+      </div>
+
+      <!-- SKELETON -->
+      <div v-else class="results">
+        <a-row :gutter="[16,16]">
+          <a-col v-for="i in 8" :key="i" :xs="24" :sm="12" :md="12" :lg="8" :xl="6">
+            <a-card :loading="true" :body-style="{padding:'12px'}">
+              <div style="height:150px;background:#f0f2f5;border-radius:8px"></div>
+            </a-card>
+          </a-col>
+        </a-row>
+      </div>
     </a-layout>
   </a-config-provider>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed, h, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { theme, message } from 'ant-design-vue'
-import {
-  PlayCircleOutlined, ArrowLeftOutlined, ArrowRightOutlined, UndoOutlined,
-  CheckCircleTwoTone, FileTextOutlined, MessageOutlined, PaperClipOutlined,
-  FilePdfOutlined, FieldTimeOutlined, LockOutlined, CheckOutlined,
-  BulbOutlined, CreditCardOutlined, ShoppingCartOutlined, LinkOutlined
-} from '@ant-design/icons-vue'
+import { BulbOutlined, FieldTimeOutlined } from '@ant-design/icons-vue'
 
-/** ---------- Types ---------- */
-type QuizOption = { text: string; correct: boolean }
-type QuizQuestion = { id: string; text: string; type: 'mcq'|'tf'|'short'; options?: QuizOption[] }
-type Resource = { id?: string; name?: string; title?: string; kind?: 'pdf'|'file'|'link'; url: string }
-type Lesson = {
+type Lesson = { id: string; duration?: number; preview?: boolean }
+type ModuleT = { lessons?: Lesson[] }
+type Course = {
   id: string
   title: string
-  type: 'video'|'reading'|'quiz'|'assignment'
-  duration?: number
-  content?: string
-  videoUrl?: string
-  rubric?: string
-  resources?: Resource[]
-  attachments?: any[]
-  tags?: string[]
-  prerequisites?: string[]
-  unlockAt?: string|number|Date
-  completed?: boolean
-  preview?: boolean
-  quiz?: { questions: QuizQuestion[] }
-}
-type ModuleT = { title: string; lessons: Lesson[] }
-type CourseT = {
-  id?: string | number
-  title: string
-  category: string
-  difficulty: 'Beginner'|'Intermediate'|'Advanced'|string
-  description: string
+  category?: string
+  difficulty?: string
+  description?: string
   price: number
-  discount: number
-  modules: ModuleT[]
-  files: any[]
+  discount?: number
+  coverUrl?: string
+  modules?: ModuleT[]
 }
 
-/** ---------- Demo data (seed) ---------- */
-const course = reactive<CourseT>({
-  title: 'Advanced Vue 3 Workshop',
-  category: 'Programming',
-  difficulty: 'Intermediate',
-  description: 'Learn Composition API, reactivity, and Ant Design Vue by building a production-grade dashboard.',
-  price: 69,
-  discount: 20,
-  modules: [
-    {
-      title: 'Getting Started',
-      lessons: [
-        { id:'m0l0', title:'Welcome & Setup', type:'video', duration:8, videoUrl:'https://www.youtube.com/watch?v=dQw4w9WgXcQ', content:'What you’ll learn and how to setup.', preview:true },
-        { id:'m0l1', title:'Project Tour', type:'reading', duration:12, content:'Tour the project structure.', preview:true },
-      ]
-    },
-    {
-      title: 'Composition API Deep Dive',
-      lessons: [
-        { id:'m1l0', title:'Refs vs Reactives', type:'reading', duration:18, content:'Understanding reactivity.' },
-        { id:'m1l1', title:'Computed & Watch', type:'video', duration:15, videoUrl:'https://www.youtube.com/watch?v=9bZkp7q19f0' },
-        { id:'m1l2', title:'Checkpoint', type:'quiz', duration:7, quiz:{questions:[
-          { id:'q1', text:'Pick the correct option', type:'mcq', options:[{text:'A',correct:true},{text:'B',correct:false}]},
-          { id:'q2', text:'Vue uses Virtual DOM (T/F)', type:'tf' },
-          { id:'q3', text:'One word: reactive primitive in Vue?', type:'short' }
-        ]}},
-        { id:'m1l3', title:'Mini Assignment', type:'assignment', duration:20, content:'Build a tiny feature.', rubric:'Completeness / Correctness / Clarity', prerequisites:['m1l2'] },
-      ]
-    }
-  ],
-  files: []
-})
-
-/** ---------- Theme / Dark mode ---------- */
+/** ------------------------------------
+ * Dark toggle (UI preference)
+ -------------------------------------*/
 const DARK_KEY = 'byway:theme:dark'
 const isDark = ref(false)
 function toggleDark(){ isDark.value = !isDark.value; localStorage.setItem(DARK_KEY, JSON.stringify(isDark.value)) }
 
-/** ---------- Sider / Outline ---------- */
-const siderCollapsed = ref(false)
-const filterText = ref('')
-const filterInputRef = ref<any>(null)
-const expandedKeys = ref<string[]>([])
-const selectedTreeKey = ref<string>('')
+/** ------------------------------------
+ * Data fetching from GraphQL
+ -------------------------------------*/
+const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:4000/api/teach-internal/graphql'
 
-const treeData = computed(() =>
-  course.modules.map((m, mi) => ({
-    key: `m-${mi}`,
-    title: m.title || `Module ${mi+1}`,
-    selectable: false,
-    children: (m.lessons || []).map((l, li) => ({
-      key: `l-${mi}-${li}`,
-      title: h('span', { class:'lesson-node' }, [
-        l.completed ? h(CheckCircleTwoTone, { twoToneColor:'#52c41a', style:'margin-right:6px' }) : null,
-        h('span', l.title),
-        l.preview ? h('span', { class:'preview-pill' }, 'Preview') : null
-      ]),
-      isLeaf: true
-    }))
-  }))
-)
-
-const filteredTreeData = computed(() => {
-  const q = filterText.value.trim().toLowerCase()
-  if (!q) return treeData.value
-  return treeData.value
-    .map((m:any) => {
-      const kids = (m.children || []).filter((c:any) => {
-        const label = Array.isArray(c.title?.children) ? (c.title.children[1] || '').toLowerCase() : (c.title || '').toLowerCase()
-        return label.includes(q)
-      })
-      if (kids.length) return { ...m, children: kids, key: m.key }
-      if ((m.title || '').toLowerCase().includes(q)) return { ...m }
-      return null
-    })
-    .filter(Boolean) as any[]
-})
-
-function onSelectNode(keys: any) {
-  const key = keys?.[0]
-  if (!key) return
-  selectedTreeKey.value = key
-  const mi = Number(String(key).split('-')[1])
-  const li = Number(String(key).split('-')[2])
-  if (Number.isFinite(mi) && Number.isFinite(li)) {
-    setCurrent(mi, li)
-  }
-}
-
-/** ---------- Current lesson / progress ---------- */
-const currentModuleIndex = ref(0)
-const currentLessonIndex = ref(0)
-const currentModule = computed<ModuleT|undefined>(() => course.modules[currentModuleIndex.value])
-const currentLesson  = computed<Lesson|undefined>(() => currentModule.value?.lessons?.[currentLessonIndex.value])
-
-const totalLessons = computed(() => course.modules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0))
-const completedCount = computed(() => course.modules.reduce((acc, m) => acc + (m.lessons?.filter(l => l.completed)?.length || 0), 0))
-const progressPercent = computed(() => totalLessons.value ? Math.round((completedCount.value / totalLessons.value)*100) : 0)
-
-function flatIndex(mi:number, li:number) {
-  let idx = 0
-  for (let i=0; i<course.modules.length; i++) {
-    if (i < mi) idx += course.modules[i].lessons?.length || 0
-  }
-  return idx + li
-}
-function setFromFlatIndex(idx:number) {
-  let acc = 0
-  for (let mi=0; mi<course.modules.length; mi++) {
-    const len = course.modules[mi].lessons?.length || 0
-    if (idx < acc + len) {
-      setCurrent(mi, idx - acc); return
-    }
-    acc += len
-  }
-}
-function setCurrent(mi:number, li:number) {
-  currentModuleIndex.value = mi
-  currentLessonIndex.value = li
-  selectedTreeKey.value = `l-${mi}-${li}`
-  localStorage.setItem(resumeKey.value, JSON.stringify({ mi, li }))
-}
-
-const resumeKey = computed(()=>`byway-course:${course.id || course.title || 'draft'}:resume`)
-function resumeLast() {
-  const raw = localStorage.getItem(resumeKey.value)
-  if (raw) { try { const { mi, li } = JSON.parse(raw); setCurrent(mi, li); return } catch{} }
-  if (totalLessons.value>0) setCurrent(0,0)
-}
-const resumeLabel = computed(() => {
-  const raw = localStorage.getItem(resumeKey.value)
-  if (!raw) return totalLessons.value ? 'start' : '—'
+const loading = ref(false)
+const courses = ref<Course[]>([])
+async function loadCourses() {
+  loading.value = true
   try {
-    const { mi, li } = JSON.parse(raw)
-    const l = course.modules[mi]?.lessons?.[li]
-    return l ? l.title : 'start'
-  } catch { return 'start' }
-})
-
-const hasPrev = computed(() => flatIndex(currentModuleIndex.value, currentLessonIndex.value) > 0)
-const hasNext = computed(() => flatIndex(currentModuleIndex.value, currentLessonIndex.value) < totalLessons.value - 1)
-
-/** ---------- Tabs / notes (list) / Q&A ---------- */
-const activeTab = ref('overview')
-type NoteItem = { id:string; lessonId:string; text:string; ts:number }
-const notesArr = ref<NoteItem[]>([])
-const noteText = ref('')
-const qaText = ref('')
-type Qa = { id:string; lessonId?:string; q:string; a?:string; ts:number }
-const qas = ref<Qa[]>([{ id:'q1', q:'How do I share a component library?', a:'Use a local package + alias import in Vite.', ts: Date.now()-86400000 }])
-const lessonNotes = computed(()=> notesArr.value.filter(n => n.lessonId === currentLesson.value?.id))
-const qaFiltered  = computed(()=> qas.value.filter(q => !currentLesson.value || q.lessonId === currentLesson.value.id || !q.lessonId))
-function addNote(){ if (!currentLesson.value || !noteText.value.trim()) return; notesArr.value.unshift({ id:uid(), lessonId: currentLesson.value.id, text: noteText.value.trim(), ts: Date.now() }); noteText.value=''; saveNotesArr() }
-function delNote(id:string){ notesArr.value = notesArr.value.filter(n=>n.id!==id); saveNotesArr() }
-function addQuestion(){ if (!qaText.value.trim()) return; qas.value.unshift({ id: uid(), lessonId: currentLesson.value?.id, q: qaText.value.trim(), ts: Date.now() }); qaText.value='' }
-
-/** ---------- Per-lesson notes map for drawer ---------- */
-const notes = reactive<Record<string, string>>({})
-const notesArrKey = computed(()=>`byway-course:${course.id || course.title || 'draft'}:notes-list`)
-const notesMapKey = computed(()=>`byway-course:${course.id || course.title || 'draft'}:notes-map`)
-function saveNotesArr(){ localStorage.setItem(notesArrKey.value, JSON.stringify(notesArr.value)) }
-function saveNotesMap(){ localStorage.setItem(notesMapKey.value, JSON.stringify(notes)) }
-
-/** ---------- Pricing / coupons / checkout ---------- */
-const PURCHASE_KEY = computed(()=>`byway-course:${course.id || course.title || 'draft'}:purchased`)
-const COUPON_KEY   = computed(()=>`byway-course:${course.id || course.title || 'draft'}:coupon`)
-const coupons: Record<string, number> = { SAVE10: 10, SAVE20: 20 }
-const appliedCoupon = ref<string | null>(null)
-const couponInput = ref('')
-const couponPct = computed(()=> appliedCoupon.value ? (coupons[appliedCoupon.value.toUpperCase()]||0) : 0)
-
-const baseDiscounted = computed(()=> course.price * (1 - (course.discount||0)/100))
-const payablePrice = computed(()=> round2(baseDiscounted.value * (1 - couponPct.value/100)))
-const effectiveDiscountPct = computed(()=>{
-  if (!course.price) return 0
-  return Math.max(0, Math.round(100 - (payablePrice.value / course.price) * 100))
-})
-function applyCoupon(){
-  const c = (couponInput.value||'').toUpperCase().trim()
-  if (!c) return
-  if (!coupons[c]) { message.error('Invalid coupon'); return }
-  appliedCoupon.value = c
-  localStorage.setItem(COUPON_KEY.value, c)
-  message.success(`Applied ${c}`)
-}
-function clearCoupon(){ appliedCoupon.value = null; localStorage.removeItem(COUPON_KEY.value) }
-
-const purchased = ref(false)
-function markPurchased(){
-  purchased.value = true
-  localStorage.setItem(PURCHASE_KEY.value, '1')
-  message.success('Course unlocked!')
-}
-
-/** ---------- Checkout drawer logic with guarded navigation ---------- */
-const checkoutOpen = ref(false)
-const checkoutStep = ref(0)
-const placing = ref(false)
-const orderPlaced = ref(false)
-const viewportWidth = ref(1024)
-const isMobile = computed(()=> viewportWidth.value <= 768)
-
-const billing = reactive({ name:'', email:'', country:'', vat:'' })
-const card = reactive({ card:'', exp:'', cvc:'', terms:false })
-
-function openCheckout(){ checkoutOpen.value = true; checkoutStep.value = 0 }
-function toStep(i:number){
-  if (i < checkoutStep.value) { checkoutStep.value = i; return }
-  if (canAdvanceTo(i)) checkoutStep.value = i
-  else message.warning('Please complete the previous step first.')
-}
-function onStepsChange(next:number){ toStep(next) }
-
-/** Step validation rules */
-const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-function validateSummary(){ return true }
-function validateDetails(){
-  if (!billing.name || billing.name.trim().length < 2) return false
-  if (!emailRe.test(billing.email||'')) return false
-  return true
-}
-function luhnOk(num:string){
-  const d = (num||'').replace(/\D/g,'')
-  if (!d) return false
-  let sum=0, alt=false
-  for (let i=d.length-1;i>=0;i--){
-    let n = parseInt(d[i],10)
-    if (alt){ n*=2; if (n>9) n-=9 }
-    sum+=n; alt=!alt
+    const query = `
+      query Courses {
+        courses {
+          id title category difficulty description price discount coverUrl
+          modules { lessons { id duration preview } }
+        }
+      }`
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ query }),
+    })
+    const { data, errors } = await res.json()
+    if (errors) throw new Error(errors[0]?.message || 'GraphQL error')
+    courses.value = data?.courses || []
+  } catch (e:any) {
+    console.warn('Falling back to demo seed:', e?.message || e)
+    // Fallback demo data if API missing (keeps page usable)
+    courses.value = demoSeed
+  } finally {
+    loading.value = false
   }
-  return sum%10===0
 }
-function expOk(exp:string){
-  const m = (exp||'').match(/^\s*(\d{2})\s*\/\s*(\d{2})\s*$/)
-  if (!m) return false
-  const mm = +m[1], yy = +m[2]
-  if (mm<1 || mm>12) return false
-  const year = 2000 + yy
-  const lastDay = new Date(year, mm, 0)
-  const now = new Date()
-  return lastDay >= new Date(now.getFullYear(), now.getMonth(), 1)
+function reload(){ loadCourses() }
+
+/** Demo fallback (minimal) */
+const demoSeed: Course[] = [
+  {
+    id: 'c1',
+    title: 'Advanced Vue 3 Workshop',
+    category: 'Programming',
+    difficulty: 'Intermediate',
+    description: 'Build a production-grade dashboard with Vue 3.',
+    price: 69, discount: 20,
+    coverUrl: '',
+    modules: [{ lessons:[{id:'l1', duration:8},{id:'l2', duration:12}] }]
+  },
+  {
+    id: 'c2',
+    title: 'Shopware for Developers',
+    category: 'E-commerce',
+    difficulty: 'Advanced',
+    description: 'Extend Shopware with plugins and headless storefronts.',
+    price: 99, discount: 0,
+    coverUrl: '',
+    modules: [{ lessons:[{id:'l1', duration:20},{id:'l2', duration:15},{id:'l3', duration:30}] }]
+  },
+  {
+    id: 'c3',
+    title: 'GraphQL + Prisma Basics',
+    category: 'Programming',
+    difficulty: 'Beginner',
+    description: 'CRUD, resolvers, paging, and auth with Prisma.',
+    price: 0, discount: 0,
+    coverUrl: '',
+    modules: [{ lessons:[{id:'l1', duration:10},{id:'l2', duration:10}] }]
+  }
+]
+
+/** ------------------------------------
+ * Filters, sort, view mode, pagination
+ -------------------------------------*/
+const q = ref('')
+const category = ref<string | undefined>()
+const difficulty = ref<string | undefined>()
+const onlyFree = ref(false)
+const onlyDiscounted = ref(false)
+const onlyPurchased = ref(false)
+const sort = ref<'popular'|'newest'|'price-asc'|'price-desc'|'length-desc'>('popular')
+const viewMode = ref<'grid'|'list'>(loadViewMode())
+
+function loadViewMode(){
+  try { return (localStorage.getItem('byway:viewmode') as any) || 'grid' } catch { return 'grid' }
 }
-function cvcOk(cvc:string){ const d=(cvc||'').replace(/\D/g,''); return d.length===3 || d.length===4 }
-function validatePayment(){
-  if (!card.card || !luhnOk(card.card)) return false
-  if (!expOk(card.exp)) return false
-  if (!cvcOk(card.cvc)) return false
-  if (!card.terms) return false
-  return true
+function saveViewMode(){
+  try { localStorage.setItem('byway:viewmode', viewMode.value) } catch {}
 }
-function canAdvanceTo(target:number){
-  if (target <= 0) return true
-  if (target === 1) return validateSummary()
-  if (target === 2) return validateSummary() && validateDetails()
-  if (target >= 3) return validateSummary() && validateDetails() && validatePayment()
-  return false
+watchEffect(saveViewMode)
+function noop(){}
+
+/** Derived sets */
+const categories = computed(() => Array.from(new Set(courses.value.map(c => c.category).filter(Boolean))) as string[])
+const difficulties = computed(() => Array.from(new Set(courses.value.map(c => c.difficulty).filter(Boolean))) as string[])
+
+/** Purchased detection (same keying as detail page) */
+function purchasedKey(c: Course){ return `byway-course:${c.id || c.title || 'draft'}:purchased` }
+function isPurchased(c: Course){ return localStorage.getItem(purchasedKey(c)) === '1' }
+
+/** Price helpers */
+function isFree(c: Course){ return (c.price || 0) <= 0 }
+function baseDiscounted(c: Course){ return c.price * (1 - (c.discount || 0)/100) }
+function payablePrice(c: Course){ return round2(baseDiscounted(c)) }
+
+/** Metrics */
+function totalLessons(c: Course){
+  return (c.modules || []).reduce((acc, m) => acc + (m.lessons?.length || 0), 0)
+}
+function totalMinutes(c: Course){
+  return (c.modules || []).flatMap(m => m.lessons || []).reduce((s, l) => s + (l.duration || 0), 0)
 }
 
-function placeOrder(){
-  if (!canAdvanceTo(3)) { message.error('Payment details invalid'); return }
-  placing.value = true
-  setTimeout(()=>{ placing.value=false; orderPlaced.value = true; markPurchased() }, 700)
-}
-function finishCheckout(){
-  orderPlaced.value = false
-  checkoutOpen.value = false
-  goStartOrNext()
-}
+/** Filtering + sorting */
+const filtered = computed(() => {
+  const term = q.value.trim().toLowerCase()
+  return courses.value.filter(c => {
+    if (category.value && c.category !== category.value) return false
+    if (difficulty.value && c.difficulty !== difficulty.value) return false
+    if (onlyFree.value && !isFree(c)) return false
+    if (onlyDiscounted.value && !(c.discount && c.discount > 0)) return false
+    if (onlyPurchased.value && !isPurchased(c)) return false
 
-/** ---------- Locking & grading ---------- */
-const PASS_RATIO = 0.6
-function isLocked(l: Lesson){
-  if (!purchased.value && !l.preview) return true
-  if (l.unlockAt) {
-    const t = new Date(l.unlockAt as any).getTime()
-    if (!isNaN(t) && Date.now() < t) return true
-  }
-  if (l.prerequisites?.length) {
-    const doneIds = new Set<string>()
-    course.modules.forEach(m => m.lessons.forEach(x => x.completed && doneIds.add(x.id)))
-    const unmet = l.prerequisites.some(pid => !doneIds.has(String(pid)))
-    if (unmet) return true
-  }
-  return false
-}
-function lockedReason(l: Lesson){
-  if (!purchased.value && !l.preview) return 'Purchase required.'
-  if (l.unlockAt) {
-    const t = new Date(l.unlockAt as any)
-    if (!isNaN(t.getTime()) && Date.now() < t.getTime()) return `Unlocks at ${t.toLocaleString()}`
-  }
-  if (l.prerequisites?.length) return 'Complete the prerequisite lessons first.'
-  return 'Locked'
-}
-
-const quizAnswers = ref<Record<string, Record<string, any>>>({})
-const quizScores = ref<Record<string, { score:number; total:number; passed:boolean }>>({})
-function getAnswer(lessonId:string, qid:string){ return quizAnswers.value?.[lessonId]?.[qid] ?? '' }
-function setAnswer(lessonId:string, qid:string, val:any){ if (!quizAnswers.value[lessonId]) quizAnswers.value[lessonId]={}; quizAnswers.value[lessonId][qid]=val }
-function gradeQuiz(l: Lesson){
-  const qs = l.quiz?.questions || []
-  let score = 0, total = 0
-  const answers = quizAnswers.value[l.id] || {}
-  for (const q of qs) {
-    total++
-    if (q.type === 'mcq') {
-      const chosen = answers[q.id]
-      if (typeof chosen === 'number' && q.options?.[chosen]?.correct) score++
-    } else {
-      if (answers[q.id] !== undefined && answers[q.id] !== '') score++
+    if (term) {
+      const hay = `${c.title} ${c.category||''} ${c.difficulty||''} ${c.description||''}`.toLowerCase()
+      if (!hay.includes(term)) return false
     }
-  }
-  const passed = total ? score/total >= PASS_RATIO : true
-  quizScores.value[l.id] = { score, total, passed }
-  if (passed) {
-    const target = findLessonById(l.id); if (target) target.completed = true
-    message.success(`Quiz passed: ${score}/${total}`)
-  } else {
-    message.warning(`Quiz score: ${score}/${total} (need ${(PASS_RATIO*100)|0}% )`)
-  }
-  persist()
-}
-function gradeCurrentQuiz(){ if (currentLesson.value) gradeQuiz(currentLesson.value) }
-
-/** ---------- Misc helpers ---------- */
-const totalMinutes = computed(()=>{
-  return course.modules.flatMap(m=>m.lessons||[]).reduce((s,l)=> s + (l.duration||0), 0)
-})
-const subTitle = computed(()=> `${completedCount.value}/${totalLessons.value} lessons completed • ${progressPercent.value}%`)
-const estimatedTime = computed(()=>{
-  const minutes = totalMinutes.value
-  const h = Math.floor(minutes/60), m = minutes%60
-  return h ? `${h}h ${m}m` : `${m}m`
-})
-const coverUrl = computed(()=>{
-  const f = course.files?.[0]; return f?.url || f?.thumbUrl || ''
-})
-const coverStyle = computed(()=> ({ backgroundImage: coverUrl.value ? `url('${coverUrl.value}')` : 'linear-gradient(135deg,#111,#334155)' }))
-
-const normalizedCourseFiles = computed(()=> (course.files || []).map((f:any,i:number)=>({
-  id:`f-${i}`,
-  name: f.name || 'Course asset',
-  kind: (String(f.name||'').toLowerCase().endsWith('.pdf') ? 'pdf' : 'file') as 'pdf'|'file',
-  url: f.url || f.thumbUrl || '#'
-})))
-const mergedResources = computed(()=> (currentLesson.value?.resources || []).concat(normalizedCourseFiles.value))
-
-function isActive(mi:number, li:number){ return mi===currentModuleIndex.value && li===currentLessonIndex.value }
-function embedUrl(url:string){
-  if (/youtube\.com|youtu\.be/.test(url)) {
-    const id = url.match(/(?:v=|be\/)([A-Za-z0-9_-]{6,})/)?.[1]
-    return id ? `https://www.youtube.com/embed/${id}?rel=0` : url
-  }
-  return url
-}
-const ytEmbed = embedUrl
-function safeHtml(html:string){ return html }
-function download(r:{name?:string;title?:string;url:string}){ message.success(`Downloading ${(r.name||r.title||'file')}…`) }
-
-function toggleDone(lessonId: string){
-  const l = findLessonById(lessonId)
-  if (!l) return
-  l.completed = !l.completed
-  message.success(l.completed ? 'Marked as done' : 'Marked as not done')
-  persist()
-}
-function onToggleComplete(){ if (!currentLesson.value) return; message.success(currentLesson.value.completed ? 'Marked as done' : 'Marked as not done'); persist() }
-function undoComplete(){ if (!currentLesson.value) return; currentLesson.value.completed = false; message.info('Reverted completion'); persist() }
-function goPrev(){ if (!hasPrev.value) return; setFromFlatIndex(flatIndex(currentModuleIndex.value, currentLessonIndex.value)-1) }
-function goNext(){ if (!hasNext.value) return; setFromFlatIndex(flatIndex(currentModuleIndex.value, currentLessonIndex.value)+1) }
-function goStartOrNext(){ const next = firstAvailableIncomplete() || course.modules[0]?.lessons?.[0]; if (next) goToById(next.id) }
-const nextCta = computed(()=> firstAvailableIncomplete() ? 'Continue' : 'Review')
-function firstAvailableIncomplete(){
-  for (const m of course.modules) {
-    for (const l of m.lessons) {
-      if (!isLocked(l) && !l.completed) return l
-    }
-  }
-  for (const m of course.modules) for (const l of m.lessons) if (!isLocked(l)) return l
-  return null
-}
-function goToById(id:string){
-  for (let mi=0; mi<course.modules.length; mi++){
-    const li = course.modules[mi].lessons.findIndex(l=>l.id===id)
-    if (li>=0){ setCurrent(mi, li); return }
-  }
-}
-function findLessonById(id:string){ for (const m of course.modules){ const l=m.lessons.find(x=>x.id===id); if(l) return l } return null }
-
-function assignmentSubmitted(lessonId: string){ return !!assignmentLinks.value[lessonId] }
-const assignmentLinks = ref<Record<string, string>>({})
-function submitAssignment(lessonId: string){
-  if (!assignmentLinks.value[lessonId]) return message.error('Please add a link.')
-  const l = findLessonById(lessonId); if (l) l.completed = true
-  message.success('Assignment submitted'); persist()
-}
-
-/** ---------- Persistence ---------- */
-const progressKey = computed(()=>`byway-course:${course.id || course.title || 'draft'}:progress`)
-function persist(){
-  const snapshot = course.modules.map(m => (m.lessons||[]).map(l => !!l.completed))
-  localStorage.setItem(progressKey.value, JSON.stringify(snapshot))
-  saveNotesArr(); saveNotesMap()
-}
-function restoreProgress(){
-  const raw = localStorage.getItem(progressKey.value); if (raw) {
-    try {
-      const arr:boolean[][] = JSON.parse(raw)
-      arr.forEach((row, mi)=> row.forEach((val, li)=>{
-        const l = course.modules[mi]?.lessons?.[li]; if (l) l.completed = val
-      }))
-    } catch {}
-  }
-  const listRaw = localStorage.getItem(notesArrKey.value); if (listRaw){ try{ notesArr.value = JSON.parse(listRaw) } catch {} }
-  const mapRaw = localStorage.getItem(notesMapKey.value); if (mapRaw){ try{ Object.assign(notes, JSON.parse(mapRaw)) } catch {} }
-}
-
-/** ---------- Lifecycle ---------- */
-const shortcutsOpen = ref(false)
-const resourcesOpen = ref(false)
-const notesOpen = ref(false)
-const moduleDoneOpen = ref(false)
-
-function onKey(e: KeyboardEvent){
-  if (e.key === '/' && !e.metaKey && !e.ctrlKey){ e.preventDefault(); filterInputRef.value?.focus?.() }
-  if (e.key.toLowerCase() === 'j'){ goNext() }
-  if (e.key.toLowerCase() === 'k'){ goPrev() }
-  if (e.key === ' ' && !['INPUT','TEXTAREA'].includes((e.target as HTMLElement)?.tagName)){ e.preventDefault(); if (currentLesson.value) toggleDone(currentLesson.value.id) }
-}
-function onResize(){ if (typeof window !== 'undefined') viewportWidth.value = window.innerWidth }
-
-onMounted(()=>{
-  try{ isDark.value = JSON.parse(localStorage.getItem(DARK_KEY) || 'false') } catch {}
-  purchased.value = localStorage.getItem(PURCHASE_KEY.value) === '1'
-  const savedCoupon = localStorage.getItem(COUPON_KEY.value); if (savedCoupon) appliedCoupon.value = savedCoupon
-  restoreProgress()
-  resumeLast()
-  expandedKeys.value = course.modules.map((_,i)=>`m-${i}`)
-  if (typeof window !== 'undefined'){
-    onResize()
-    window.addEventListener('resize', onResize)
-    window.addEventListener('keydown', onKey)
-  }
-})
-onBeforeUnmount(()=>{
-  if (typeof window !== 'undefined'){
-    window.removeEventListener('resize', onResize)
-    window.removeEventListener('keydown', onKey)
-  }
+    return true
+  })
 })
 
-/** ---------- Small utils ---------- */
-function uid(){ return Math.random().toString(36).slice(2,9) }
+const sorted = computed(() => {
+  const list = [...filtered.value]
+  switch (sort.value) {
+    case 'price-asc': list.sort((a,b)=> payablePrice(a)-payablePrice(b)); break
+    case 'price-desc': list.sort((a,b)=> payablePrice(b)-payablePrice(a)); break
+    case 'length-desc': list.sort((a,b)=> totalMinutes(b)-totalMinutes(a)); break
+    case 'newest': list.sort((a,b)=> (b.id||'').localeCompare(a.id||'')); break // replace with createdAt if available
+    default: /* popular */ list.sort((a,b)=> totalLessons(b)-totalLessons(a)); break
+  }
+  return list
+})
+
+/** Pagination */
+const page = ref(1)
+const pageSize = ref(12)
+const paged = computed(() => {
+  const start = (page.value - 1) * pageSize.value
+  return sorted.value.slice(start, start + pageSize.value)
+})
+function onPaginate(p:number){ page.value = p; scrollTop() }
+function onSizeChange(p:number, size:number){ page.value = 1; pageSize.value = size; scrollTop() }
+function scrollTop(){ try{ window.scrollTo({ top:0, behavior:'smooth' }) } catch {} }
+
+/** Card helpers */
+function cover(c: Course){
+  if (c.coverUrl) return { backgroundImage: `url('${c.coverUrl}')` }
+  // gradient fallback
+  return { backgroundImage: 'linear-gradient(135deg,#1e293b,#0ea5e9)' }
+}
+
+/** Actions */
+function addToCart(c: Course){ message.success(`Added "${c.title}" to cart (demo).`) }
+function openCourse(c: Course){
+  // If you have a named route, replace with router.push({ name:'course-internal', params:{ id:c.id }})
+  window.location.href = `/course/${encodeURIComponent(c.id)}`
+}
+
+/** Utils */
 function round2(n:number){ return Math.round(n*100)/100 }
 function fmt(n:number){ return n.toLocaleString(undefined, { style:'currency', currency:'EUR' }) }
-function last4(cardNum:string){ const d = (cardNum||'').replace(/\s+/g,''); return d.slice(-4) || '0000' }
-function addToCart(){ message.success('Added to cart (demo).') }
-function goBack(){ history.back() }
+
+/** Mount */
+onMounted(()=>{
+  try{ isDark.value = JSON.parse(localStorage.getItem(DARK_KEY) || 'false') } catch {}
+  loadCourses()
+})
 </script>
 
 <style scoped>
-.course-internal { min-height: 100vh; background:#f6f8fb; }
+.course-listing { min-height: 100vh; background:#f6f8fb; }
 .is-dark { background:#0b1220; }
-.is-dark .header, .is-dark .content, .is-dark .lesson-sider, .is-dark .ant-card { background:#0f172a !important; color:#cbd5e1; }
-.is-dark .sider { background:#0a1423; }
-.is-dark .muted { color:#94a3b8; }
-.is-dark .ant-typography, .is-dark .ant-statistic { color:#cbd5e1; }
-.is-dark .ant-list-item-meta-title a, .is-dark .ant-list-item-meta-title { color:#e2e8f0; }
-
-.sider { background:#0b1b2b; color:#cbd5e1; }
-.cover { height: 160px; background-size: cover; background-position:center; position:relative; }
-.cover-gradient { position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.0),rgba(0,0,0,.55)); }
-.cover-meta { position:absolute; left:16px; right:16px; bottom:12px; color:#fff; }
-.cover-title { font-weight:700; font-size:16px; line-height:1.2; }
-.cover-tags { margin-top:8px; display:flex; gap:6px; flex-wrap:wrap; }
-
-.sider-body { padding: 12px 12px 16px; }
-.sider-actions { margin-top: 8px; }
-.mt-2 { margin-top: 12px; }
-.mt-3 { margin-top: 16px; }
-.mb-2 { margin-bottom: 12px; }
-.mb-3 { margin-bottom: 16px; }
-
 .header { background:#fff; padding: 12px 20px; border-bottom:1px solid #eef2f7; }
-.content { padding: 20px; background:#f6f8fb; }
+.is-dark .header { background:#0f172a; border-color:#17233a; color:#cbd5e1; }
 
-.player-actions { margin-top:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
-.muted { color:#64748b; }
-.meta-row { display:flex; justify-content:space-between; margin:6px 0; }
-.meta-row.total { font-weight:700; }
-.price-row { display:flex; align-items:center; gap:10px; }
-.price { font-weight:800; font-size:20px; }
+.filters { padding: 16px 20px 8px; }
+.right-controls { display:flex; justify-content:flex-end; }
+.chips { display:flex; gap:12px; align-items:center; margin-top:10px; }
+
+.results { padding: 16px 20px 28px; }
+
+.course-card { border-radius: 12px; overflow:hidden; }
+.course-card .cover {
+  height: 150px; background-size: cover; background-position:center;
+  border-radius: 8px; position: relative; margin-bottom: 10px;
+}
+.course-card .badge { position:absolute; left:10px; top:10px; display:flex; gap:6px; }
+.purchased-tag { position:absolute; right:10px; top:10px; }
+
+.course-card .title {
+  font-weight: 700; font-size: 16px; line-height: 1.2; margin-bottom: 6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.course-card .tags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom: 4px; }
+.course-card .stats { color:#64748b; font-size: 12px; margin-bottom: 8px; display:flex; gap:6px; }
+.course-card .price-row { display:flex; align-items:center; gap:10px; margin-bottom: 8px; }
+.price { font-weight:800; font-size:18px; }
+.muted { color:#94a3b8; }
 .small { font-size:12px; }
+.actions { display:flex; justify-content:space-between; }
 
-.lesson-node { display:flex; align-items:center; gap:6px; }
-.preview-pill { margin-left:8px; font-size:11px; padding:2px 6px; border-radius:10px; background:#e6fffb; color:#08979c; }
-.is-dark .preview-pill { background:#073042; color:#86e7f0; }
+.list-wrap :deep(.ant-list-item-meta-avatar) { margin-right: 16px; }
+.list-cover { width: 120px; height: 72px; border-radius: 8px; background-size: cover; background-position:center; }
+.list-title { display:flex; align-items:center; gap:6px; font-weight:700; }
+.list-desc { color:#64748b; display:flex; gap:8px; }
+.list-actions { display:flex; align-items:center; gap:12px; }
+.list-price { font-weight:700; margin-right:8px; }
 
-.tab-pad { padding: 8px 0; }
-.answer { background:#f6f8fb; padding:8px 10px; border-radius:6px; }
-.is-dark .answer { background:#162235; }
+.pagi { margin-top: 16px; display:flex; justify-content:center; }
 
-.player { width:100%; aspect-ratio:16/9; background:#000; display:flex; align-items:center; justify-content:center; border-radius:8px; overflow:hidden; }
-.video-wrap { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; }
-.video-wrap iframe { position:absolute; top:0; left:0; width:100%; height:100%; }
-.player-iframe { width:100%; height:100%; border:0; } /* from HEAD */
-.video-fallback { background:#f5f5f5; border-radius:8px; padding:8px 12px; word-break:break-all; }
-.is-dark .video-fallback { background:#0f172a; }
-
-.mini-lesson.done :deep(.ant-list-item-meta-title){ text-decoration: line-through; color:#94a3b8; }
-.mini-lesson.active { background:#f0f9ff; border-radius:6px; }
-.is-dark .mini-lesson.active { background:#0b1f37; }
-
-.lesson-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:8px; }
-.lesson-title { margin: 0; }
-
-.lesson-sider { background: #fff; border-radius: 8px; padding: 12px; margin-right: 12px; }
-.is-dark .lesson-sider { background:#0f172a; }
-
-.quiz-item .q-text { margin-bottom: 8px; font-weight: 600; }
-.mcq-row { padding: 6px 0; }
-
-.sider :deep(.ant-tree){ background:transparent; color:#cbd5e1; }
-.sider :deep(.ant-tree-treenode-selected) { background: rgba(255,255,255,0.08) !important; }
-
-.is-dark :deep(.ant-input), .is-dark :deep(.ant-select-selector), .is-dark :deep(.ant-textarea){ background:#0b1426; color:#cbd5e1; }
+.is-dark .ant-card, .is-dark .results, .is-dark .filters { background:#0b1220; color:#cbd5e1; }
+.is-dark .course-card .stats, .is-dark .list-desc { color:#94a3b8; }
 </style>

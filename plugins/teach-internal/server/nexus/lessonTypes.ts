@@ -1,4 +1,4 @@
-import { objectType, extendType, stringArg, booleanArg, intArg, nonNull, floatArg, arg } from 'nexus'
+import { objectType, extendType, stringArg, intArg, nonNull, arg } from 'nexus'
 
 export const Lesson = objectType({
   name: 'Lesson',
@@ -7,29 +7,24 @@ export const Lesson = objectType({
     t.string('moduleId')
     t.string('title')
     t.string('type')
-    t.int('duration')
-    t.string('content')
+    t.nullable.int('duration')
+    t.nullable.string('content')
     t.nullable.string('videoUrl')
     t.nullable.string('rubric')
     t.boolean('preview')
-    t.nullable.field('metadata', { type: 'JSON' })
+    t.nullable.field('metadata', { type: 'JSON' }) // <- lab, quiz, resources, etc.
     t.field('createdAt', { type: 'DateTime' })
-    t.field('Module', { type: 'Module' })
   },
 })
 
 export const LessonQuery = extendType({
   type: 'Query',
   definition(t) {
-    t.list.field('lessons', {
+    t.list.field('lessonsByModule', {
       type: 'Lesson',
-      resolve: (_, __, ctx) => ctx.prisma.lesson.findMany(),
-    })
-
-    t.field('lesson', {
-      type: 'Lesson',
-      args: { id: nonNull(stringArg()) },
-      resolve: (_, { id }, ctx) => ctx.prisma.lesson.findUnique({ where: { id } }),
+      args: { moduleId: nonNull(stringArg()) },
+      resolve: (_, { moduleId }, ctx) =>
+        ctx.prisma.lesson.findMany({ where: { moduleId } }),
     })
   },
 })
@@ -47,10 +42,9 @@ export const LessonMutation = extendType({
         content: stringArg(),
         videoUrl: stringArg(),
         rubric: stringArg(),
-        preview: booleanArg(),
         metadata: arg({ type: 'JSON' }),
       },
-      resolve: (_, args, ctx) => ctx.prisma.lesson.create({ data: args }),
+      resolve: (_, args, ctx) => ctx.prisma.lesson.create({ data: args as any }),
     })
 
     t.field('updateLesson', {
@@ -63,11 +57,21 @@ export const LessonMutation = extendType({
         content: stringArg(),
         videoUrl: stringArg(),
         rubric: stringArg(),
-        preview: booleanArg(),
         metadata: arg({ type: 'JSON' }),
       },
-      resolve: (_, { id, ...data }, ctx) =>
-        ctx.prisma.lesson.update({ where: { id }, data }),
+      resolve: async (_, { id, ...data }, ctx) =>
+        ctx.prisma.lesson.update({
+          where: { id },
+          data: {
+            ...(data.title !== undefined ? { title: data.title } : {}),
+            ...(data.type !== undefined ? { type: data.type } : {}),
+            ...(data.duration !== undefined ? { duration: data.duration } : {}),
+            ...(data.content !== undefined ? { content: data.content } : {}),
+            ...(data.videoUrl !== undefined ? { videoUrl: data.videoUrl } : {}),
+            ...(data.rubric !== undefined ? { rubric: data.rubric } : {}),
+            ...(data.metadata !== undefined ? { metadata: data.metadata as any } : {}),
+          },
+        }),
     })
 
     t.field('deleteLesson', {

@@ -1,651 +1,860 @@
 <template>
-  <a-layout class="module-learn-layout">
-    <!-- HEADER -->
-    <a-page-header
-      class="page-header"
-      :title="module.title || 'Module'"
-      :sub-title="courseTitle"
-      @back="goBack"
-    >
-      <template #tags>
-        <a-tag v-for="t in module.objectives" :key="t">{{ t }}</a-tag>
-        <a-tag v-if="totalMinutes" color="blue"><FieldTimeOutlined /> {{ totalMinutes }} min</a-tag>
-      </template>
-      <template #extra>
-        <a-space>
-          <a-button @click="notesOpen = true"><FileTextOutlined /> Notes</a-button>
-          <a-button @click="resourcesOpen = true"><PaperClipOutlined /> Resources</a-button>
-          <a-button type="primary" @click="goStartOrNext">
-            <PlayCircleOutlined /> {{ nextCta }}
-          </a-button>
-        </a-space>
-      </template>
-    </a-page-header>
-
-    <!-- BODY -->
-    <a-layout class="body">
-      <!-- SIDEBAR -->
-      <a-layout-sider
-        width="320"
-        collapsible
-        v-model:collapsed="collapsed"
-        class="lesson-sider"
+  <a-config-provider :theme="{ algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm }">
+    <a-layout :class="['student-wrap', isDark ? 'is-dark' : '']">
+      <!-- HEADER -->
+      <a-page-header
+        class="page-header"
+        :title="course.title || 'Course'"
+        :sub-title="moduleT?.title || (hasModules ? 'Choose a module' : 'Overview')"
       >
-        <div class="sider-top" v-if="!collapsed">
-          <a-progress
-            type="circle"
-            :percent="progressPercent"
-            :width="86"
-          />
-          <div class="sider-meta">
-            <div class="pct">{{ progressPercent }}% complete</div>
-            <div class="count">{{ doneCount }} / {{ module.lessons.length }} lessons</div>
-          </div>
-        </div>
+        <template #tags>
+          <a-tag color="blue">{{ course.category || '—' }}</a-tag>
+          <a-tag color="gold">{{ course.difficulty || '—' }}</a-tag>
+          <a-tag v-if="totalMinutes" color="blue"><FieldTimeOutlined /> {{ totalMinutes }} min</a-tag>
+        </template>
+        <template #extra>
+          <a-space wrap>
+            <a-progress type="circle" :percent="progressPercent" :size="32" />
+            <a-select
+              v-if="hasModules"
+              :value="selectedModuleId"
+              style="min-width: 220px"
+              placeholder="Select module"
+              :disabled="loadingModule"
+              @change="switchModule"
+            >
+              <a-select-option
+                v-for="m in modules"
+                :key="m.id"
+                :value="m.id"
+              >
+                {{ m.title }}
+                <span class="muted">· {{ m.lessonCount ?? '—' }} lessons</span>
+              </a-select-option>
+            </a-select>
+            <a-tooltip title="Toggle dark">
+              <a-button shape="circle" @click="isDark = !isDark"><BulbOutlined /></a-button>
+            </a-tooltip>
+            <a-button type="primary" @click="resumeLast" :disabled="!lessons.length">
+              <template #icon><PlayCircleOutlined /></template>
+              Resume
+            </a-button>
+          </a-space>
+        </template>
+      </a-page-header>
 
-        <a-divider v-if="!collapsed" style="margin:12px 0" />
-
-        <div class="lesson-list">
-<a-list :data-source="module.lessons">
-  <template #renderItem="{ item, index }">
-    <RenderLessonItem
-      :item="item"
-      :index="index"
-      :locked="isLocked(item)"
-      :done="isDone(item.id)"
-      :is-active="currentId === item.id"
-      @select="goTo"
-    />
-  </template>
-</a-list>
-
-        </div>
-      </a-layout-sider>
-
-      <!-- CONTENT -->
-      <a-layout-content class="content">
-        <template v-if="current">
-          <!-- Locked gate -->
-          <a-result
-            v-if="isLocked(current)"
-            status="warning"
-            title="This lesson is locked"
-            :sub-title="lockedReason(current)"
-          >
-            <template #extra>
-              <a-button type="primary" @click="goStartOrNext">Go to next available</a-button>
-            </template>
-          </a-result>
-
-          <template v-else>
-            <div class="lesson-head">
-              <div class="lh-left">
-                <a-tag>{{ current.type }}</a-tag>
-                <h2 class="lesson-title">{{ current.title || 'Untitled lesson' }}</h2>
-                <div class="muted">
-                  <FieldTimeOutlined /> {{ Number(current.duration) || 0 }} min
+      <a-layout>
+        <!-- LEFT -->
+        <a-layout-sider width="320" class="left-sider" collapsible v-model:collapsed="siderCollapsed">
+          <div class="sider-inner">
+            <div class="cover" :style="coverStyle">
+              <div class="cover-gradient"></div>
+              <div class="cover-meta" v-if="!siderCollapsed">
+                <div class="cover-title">{{ course.title || 'Course' }}</div>
+                <div class="cover-tags">
+                  <a-tag v-if="course.category" color="blue">{{ course.category }}</a-tag>
+                  <a-tag v-if="course.difficulty" color="gold">{{ course.difficulty }}</a-tag>
                 </div>
-              </div>
-              <div class="lh-right">
-                <a-space>
-                  <a-button @click="notesOpen = true"><FileTextOutlined /> Notes</a-button>
-                  <a-button @click="resourcesOpen = true"><PaperClipOutlined /> Resources</a-button>
-                  <a-button
-                    :type="isDone(current.id) ? 'default' : 'primary'"
-                    @click="toggleDone(current.id)"
-                  >
-                    <template v-if="isDone(current.id)">
-                      <CheckCircleTwoTone two-tone-color="#52c41a" /> Completed
-                    </template>
-                    <template v-else>
-                      <CheckOutlined /> Mark complete
-                    </template>
-                  </a-button>
-                </a-space>
               </div>
             </div>
 
-            <!-- VIEWER -->
-            <a-card class="viewer" :bordered="false">
-              <!-- VIDEO -->
-              <template v-if="current.type === 'video'">
-                <div v-if="ytEmbed(current.videoUrl)" class="video-wrap">
-                  <iframe
-                    :src="ytEmbed(current.videoUrl)"
-                    frameborder="0"
-                    allowfullscreen
-                    title="Lesson video"
+            <a-select
+              v-if="hasModules"
+              class="mt-2"
+              size="small"
+              :value="selectedModuleId"
+              :disabled="loadingModule"
+              style="width:100%"
+              @change="switchModule"
+            >
+              <a-select-option v-for="m in modules" :key="m.id" :value="m.id">
+                {{ m.title }}
+              </a-select-option>
+            </a-select>
+
+            <a-input-search v-model:value="filter" placeholder="Search lessons" allow-clear class="mt-2" />
+
+            <a-empty v-if="!currentModuleReady" description="Pick a module to see its lessons" class="mt-2" />
+            <a-list
+              v-else
+              class="mt-2"
+              size="small"
+              :data-source="filteredLessons"
+              :row-key="(l) => l.id"
+            >
+              <template #renderItem="{ item: l, index: i }">
+                <a-list-item
+                  :class="['lesson-row', currentIndex === i && 'active']"
+                  @click="select(i)"
+                >
+                  <a-list-item-meta
+                    :title="l.title || 'Untitled lesson'"
+                    :description="(l.type || '—') + (l.duration ? ` · ${l.duration} min` : '')"
                   />
-                </div>
-                <div v-else class="video-fallback">
-                  <a-typography-paragraph>
-                    Video URL: <a :href="current.videoUrl" target="_blank">{{ current.videoUrl || '—' }}</a>
-                  </a-typography-paragraph>
-                </div>
-                <a-divider>Notes</a-divider>
-                <a-typography-paragraph style="white-space:pre-wrap">{{ current.content }}</a-typography-paragraph>
+                  <template #actions>
+                    <a-tag v-if="isCompleted(l.id)" color="green">Done</a-tag>
+                    <a-tag v-else-if="isLocked(l)" color="red"><LockOutlined /> Locked</a-tag>
+                    <a-tag v-else-if="l.preview" color="cyan">Preview</a-tag>
+                  </template>
+                </a-list-item>
               </template>
+            </a-list>
+          </div>
+        </a-layout-sider>
 
-              <!-- READING -->
-              <template v-else-if="current.type === 'reading'">
-                <a-typography-paragraph style="white-space:pre-wrap">
-                  {{ current.content || 'No content provided.' }}
-                </a-typography-paragraph>
-              </template>
-
-              <!-- ASSIGNMENT -->
-              <template v-else-if="current.type === 'assignment'">
-                <a-typography-paragraph style="white-space:pre-wrap">
-                  {{ current.content || 'No brief provided.' }}
-                </a-typography-paragraph>
-                <a-alert v-if="current.rubric" type="info" show-icon :message="'Rubric'" :description="current.rubric" style="margin:12px 0" />
-                <a-form layout="vertical" @finish="submitAssignment(current.id)">
-                  <a-form-item label="Submit a link to your work">
-                    <a-input v-model:value="assignmentLinks[current.id]" placeholder="https://…" />
-                  </a-form-item>
-                  <a-space>
-                    <a-button type="primary" html-type="submit">Submit</a-button>
-                    <a-typography-text type="secondary" v-if="assignmentSubmitted(current.id)">
-                      Submitted ✔
-                    </a-typography-text>
-                  </a-space>
-                </a-form>
-              </template>
-
-              <!-- QUIZ -->
-              <template v-else-if="current.type === 'quiz'">
-                <a-alert
-                  type="info"
-                  show-icon
-                  message="Checkpoint"
-                  description="Answer MCQs for a score. True/False and Short are self-check (counted as answered)."
-                  style="margin-bottom:12px"
-                />
-                <div v-for="(q, qIdx) in (current.quiz?.questions || [])" :key="q.id" class="quiz-item">
-                  <a-card :title="`Q${qIdx+1}`" size="small" style="margin-bottom:8px">
-                    <div class="q-text">{{ q.text || 'Question' }}</div>
-
-                    <!-- MCQ -->
-                    <div v-if="q.type === 'mcq'">
-<a-radio-group
-  :value="getAnswer(current.id, q.id)"
-  @update:value="setAnswer(current.id, q.id, $event)"
-  style="width:100%"
->
-  <div v-for="(opt, oi) in q.options" :key="oi" class="mcq-row">
-    <a-radio :value="oi">{{ opt.text || `Option ${oi + 1}` }}</a-radio>
-  </div>
-</a-radio-group>
-
+        <!-- CENTER -->
+        <a-layout-content class="content">
+          <!-- Overview -->
+          <template v-if="!currentModuleReady">
+            <a-card :loading="loadingCourse" title="Course overview">
+              <p class="muted">Browse modules and jump in — everything runs in this page.</p>
+              <a-empty v-if="!hasModules && !loadingCourse" description="No modules yet" />
+              <a-row :gutter="16" v-else>
+                <a-col v-for="m in modules" :key="m.id" :xs="24" :sm="12" :md="8">
+                  <a-card hoverable class="mt-2" @click="switchModule(m.id)">
+                    <b>{{ m.title }}</b>
+                    <div class="muted">
+                      {{ m.lessonCount ?? 0 }} lessons
+                      <template v-if="m.minutes"> · ~{{ m.minutes }} min</template>
                     </div>
-
-                    <!-- True/False -->
-<!-- True/False -->
-<div v-else-if="q.type === 'tf'">
-  <a-radio-group :value="getAnswer(current.id, q.id)"">
-    <a-radio value="T">True</a-radio>
-    <a-radio value="F">False</a-radio>
-  </a-radio-group>
-</div>
-
-<!-- Short -->
-<div v-else>
-  <a-input
-    @update:value="setAnswer(current.id, q.id, $event)""
-    placeholder="Your answer"
-  />
-</div>
-
                   </a-card>
-                </div>
+                </a-col>
+              </a-row>
+            </a-card>
+          </template>
 
-                <a-space>
-                  <a-button type="primary" @click="gradeCurrentQuiz">Submit quiz</a-button>
-                  <a-typography-text v-if="quizScores[current.id]">
-                    Score: {{ quizScores[current.id].score }}/{{ quizScores[current.id].total }}
-                    <span v-if="quizScores[current.id].passed"> — Passed ✔</span>
-                  </a-typography-text>
-                </a-space>
-              </template>
+          <!-- Lesson viewer -->
+          <template v-else>
+            <a-spin :spinning="loadingModule">
+              <a-card v-if="currentLesson" :title="currentLesson.title || 'Lesson'">
+                <template #extra>
+                  <a-space>
+                    <a-tag>{{ currentLesson.type }}</a-tag>
+                    <a-tag v-if="currentLesson.preview" color="cyan">Preview</a-tag>
+                    <span class="muted"><FieldTimeOutlined /> {{ currentLesson.duration || 0 }} min</span>
+                  </a-space>
+                </template>
+
+                <!-- Locked -->
+                <a-result
+                  v-if="isLocked(currentLesson) && !currentLesson.preview"
+                  status="warning"
+                  title="This lesson is locked"
+                >
+                  <template #subTitle>
+                    <div class="muted">
+                      <div v-if="currentLesson.prerequisites?.length">
+                        Complete prerequisite lesson(s):
+                        <ul class="mt-1">
+                          <li v-for="pid in currentLesson.prerequisites" :key="pid">
+                            <span :class="['preq', isCompleted(pid) && 'ok']">
+                              {{ labelForLesson(pid) || pid }}
+                              <template v-if="isCompleted(pid)"> ✓</template>
+                            </span>
+                          </li>
+                        </ul>
+                      </div>
+                      <div v-if="unlockAtDate(currentLesson)">
+                        Unlocks at: {{ unlockAtDate(currentLesson) }}
+                      </div>
+                    </div>
+                  </template>
+                </a-result>
+
+                <!-- Content -->
+                <template v-else>
+                  <!-- VIDEO -->
+                  <div v-if="currentLesson.type === 'video'">
+                    <div v-if="ytEmbed(currentLesson.videoUrl)" class="video-wrap">
+                      <iframe :src="ytEmbed(currentLesson.videoUrl)" frameborder="0" allowfullscreen />
+                    </div>
+                    <div v-else class="video-fallback">
+                      <a-typography-paragraph>
+                        Video URL:
+                        <a :href="currentLesson.videoUrl" target="_blank">{{ currentLesson.videoUrl || '—' }}</a>
+                      </a-typography-paragraph>
+                    </div>
+                    <a-divider>Notes</a-divider>
+                    <a-typography-paragraph style="white-space: pre-wrap">
+                      {{ currentLesson.content }}
+                    </a-typography-paragraph>
+                  </div>
+
+                  <!-- READING -->
+                  <div v-else-if="currentLesson.type === 'reading'">
+                    <a-typography-paragraph style="white-space: pre-wrap">
+                      {{ currentLesson.content || 'No content' }}
+                    </a-typography-paragraph>
+                  </div>
+
+                  <!-- ASSIGNMENT -->
+                  <div v-else-if="currentLesson.type === 'assignment'">
+                    <a-alert type="info" show-icon :message="'Assignment brief'" class="mb-1" />
+                    <a-typography-paragraph style="white-space: pre-wrap">
+                      {{ currentLesson.content || 'No brief' }}
+                    </a-typography-paragraph>
+                    <a-alert
+                      v-if="currentLesson.rubric"
+                      type="success"
+                      show-icon
+                      :message="'Rubric'"
+                      :description="currentLesson.rubric"
+                    />
+                    <a-divider />
+                    <a-space>
+                      <a-button type="primary" @click="openSubmitDrawer">Submit assignment</a-button>
+                      <a-button @click="markComplete(currentLesson, true)" :disabled="isCompleted(currentLesson.id)">
+                        Mark complete
+                      </a-button>
+                    </a-space>
+                  </div>
+
+                  <!-- QUIZ -->
+                  <div v-else-if="currentLesson.type === 'quiz'">
+                    <a-alert type="info" show-icon message="Answer the questions and submit." class="mb-2" />
+                    <div v-for="(q, qi) in (currentLesson.quiz?.questions || [])" :key="q.id" class="quiz-q">
+                      <b>Q{{ qi + 1 }}</b>: {{ q.text || '(empty)' }}
+                      <div v-if="q.type === 'mcq'" class="mt-1">
+                        <a-checkbox-group
+                          v-model:value="quizState[q.id]"
+                          :options="(q.options || []).map((o, oi) => ({ label: o.text || `Option ${oi+1}`, value: oi }))"
+                        />
+                      </div>
+                      <div v-else-if="q.type === 'tf'" class="mt-1">
+                        <a-radio-group v-model:value="quizState[q.id]">
+                          <a-radio :value="true">True</a-radio>
+                          <a-radio :value="false">False</a-radio>
+                        </a-radio-group>
+                      </div>
+                      <div v-else class="mt-1">
+                        <a-input v-model:value="quizState[q.id]" placeholder="Your answer" />
+                      </div>
+                      <a-divider class="my-1" />
+                    </div>
+                    <a-space>
+                      <a-button type="primary" @click="submitQuiz" :loading="quizSubmitting">Submit quiz</a-button>
+                      <a-button @click="markComplete(currentLesson, true)" :disabled="isCompleted(currentLesson.id)">
+                        Mark complete
+                      </a-button>
+                    </a-space>
+                  </div>
+
+                  <!-- LAB -->
+                  <div v-else-if="currentLesson.type === 'lab'">
+                    <a-alert
+                      type="info"
+                      show-icon
+                      message="Interactive lab"
+                      description="Your lab environment opens in a new tab/window."
+                      class="mb-1"
+                    />
+                    <a-space>
+                      <a-button type="primary" @click="openLab(currentLesson)">Open lab</a-button>
+                      <a-button @click="markComplete(currentLesson, true)" :disabled="isCompleted(currentLesson.id)">
+                        Mark complete
+                      </a-button>
+                    </a-space>
+                  </div>
+
+                  <!-- FALLBACK -->
+                  <div v-else>
+                    <a-typography-text type="secondary">Unsupported lesson type.</a-typography-text>
+                  </div>
+                </template>
+
+                <a-divider />
+                <div class="nav-actions">
+                  <a-space wrap>
+                    <a-button
+                      v-if="currentLesson"
+                      :type="isCompleted(currentLesson.id) ? 'default' : 'primary'"
+                      @click="toggleComplete(currentLesson)"
+                    >
+                      <template #icon><CheckOutlined /></template>
+                      {{ isCompleted(currentLesson.id) ? 'Mark as incomplete' : 'Mark as complete' }}
+                    </a-button>
+                    <a-button @click="prevLesson" :disabled="currentIndex <= 0">Previous</a-button>
+                    <a-button type="primary" @click="nextLesson" :disabled="currentIndex >= lessons.length - 1">
+                      Next <ArrowRightOutlined />
+                    </a-button>
+                  </a-space>
+                </div>
+              </a-card>
+
+              <a-empty v-else description="No lessons found" />
+            </a-spin>
+          </template>
+        </a-layout-content>
+
+        <!-- RIGHT -->
+        <a-layout-sider width="300" class="right-sider" collapsible v-model:collapsed="rightCollapsed">
+          <div class="right-inner">
+            <a-card size="small" title="Progress">
+              <a-steps size="small" direction="vertical" :current="currentIndex">
+                <a-step
+                  v-for="(l, i) in lessons"
+                  :key="l.id"
+                  :title="l.title || `Lesson ${i+1}`"
+                  :description="l.duration ? `${l.duration} min` : ''"
+                  :status="isCompleted(l.id) ? 'finish' : (i === currentIndex ? 'process' : 'wait')"
+                />
+              </a-steps>
             </a-card>
 
-            <!-- RESOURCES inline (quick access) -->
-            <div v-if="(current.resources && current.resources.length) || (current.attachments && current.attachments.length)" class="resources-inline">
-              <a-divider>Resources</a-divider>
-              <ul class="res-list" v-if="current.resources?.length">
-                <li v-for="(r, i) in current.resources" :key="i">
-                  <a :href="r.url" target="_blank">{{ r.title || r.url }}</a>
-                </li>
-              </ul>
-              <div v-if="current.attachments?.length" class="muted">
-                {{ current.attachments.length }} attachment(s) available (see drawer)
-              </div>
-            </div>
+            <a-card v-if="currentLesson" size="small" class="mt-2" title="Resources">
+              <a-empty v-if="!currentLesson.resources?.length" description="No resources" />
+              <a-list v-else size="small" :data-source="currentLesson.resources">
+                <template #renderItem="{ item }">
+                  <a-list-item>
+                    <a :href="item.url" target="_blank">{{ item.title || item.name || 'Resource' }}</a>
+                  </a-list-item>
+                </template>
+              </a-list>
+            </a-card>
 
-            <!-- NAV -->
-            <div class="lesson-nav">
-              <a-space>
-                <a-button :disabled="!prevId" @click="goTo(prevId)"><ArrowLeftOutlined /> Previous</a-button>
-                <a-button :disabled="!nextId" type="primary" @click="goTo(nextId)">Next <ArrowRightOutlined /></a-button>
-              </a-space>
-            </div>
-          </template>
-        </template>
+            <a-card v-if="currentLesson" size="small" class="mt-2" title="Attachments">
+              <a-empty v-if="!currentLesson.attachments?.length" description="No attachments" />
+              <a-list v-else size="small" :data-source="currentLesson.attachments">
+                <template #renderItem="{ item }">
+                  <a-list-item>
+                    <a :href="item.url" target="_blank">{{ item.name || 'Attachment' }}</a>
+                  </a-list-item>
+                </template>
+              </a-list>
+            </a-card>
+          </div>
+        </a-layout-sider>
+      </a-layout>
 
-        <a-empty v-else description="No lessons in this module" />
-      </a-layout-content>
+      <!-- Assignment submit drawer -->
+      <a-drawer v-model:open="submitOpen" title="Submit assignment" placement="right" width="420">
+        <a-form layout="vertical" @finish="submitAssignment">
+          <a-form-item label="Notes">
+            <a-textarea v-model:value="submitForm.notes" :rows="4" />
+          </a-form-item>
+          <a-form-item label="Link to work (URL)">
+            <a-input v-model:value="submitForm.url" placeholder="https://…" />
+          </a-form-item>
+          <a-space>
+            <a-button @click="submitOpen = false">Cancel</a-button>
+            <a-button type="primary" html-type="submit" :loading="submitting">Submit</a-button>
+          </a-space>
+        </a-form>
+      </a-drawer>
     </a-layout>
-
-    <!-- RESOURCES DRAWER -->
-    <a-drawer v-model:open="resourcesOpen" title="Resources & Attachments" placement="right" :width="420">
-      <div v-if="current">
-        <a-typography-title :level="5">For: {{ current.title || 'Lesson' }}</a-typography-title>
-        <a-divider />
-        <a-typography-title :level="5">Links</a-typography-title>
-        <a-empty v-if="!current.resources?.length" description="No links" />
-        <a-list v-else :data-source="current.resources" bordered>
-          <template #renderItem="{ item }">
-            <a-list-item>
-              <a :href="item.url" target="_blank">
-                <LinkOutlined /> {{ item.title || item.url }}
-              </a>
-            </a-list-item>
-          </template>
-        </a-list>
-
-        <a-divider />
-        <a-typography-title :level="5">Attachments</a-typography-title>
-        <a-empty v-if="!current.attachments?.length" description="No attachments" />
-        <a-list v-else :data-source="current.attachments" bordered>
-          <template #renderItem="{ item }">
-            <a-list-item>
-              <PaperClipOutlined />
-              <span style="margin-left:8px">{{ item.name || 'Attachment' }}</span>
-            </a-list-item>
-          </template>
-        </a-list>
-      </div>
-    </a-drawer>
-
-    <!-- NOTES DRAWER -->
-    <a-drawer v-model:open="notesOpen" title="My notes" placement="right" :width="420">
-      <a-typography-text type="secondary" v-if="!current">Open a lesson to take notes.</a-typography-text>
-      <template v-else>
-        <a-typography-title :level="5">{{ current.title }}</a-typography-title>
-        <a-textarea
-          v-model:value="notes[current.id]"
-          :rows="12"
-          placeholder="Write your personal notes here…"
-          @change="persist()"
-        />
-        <div style="margin-top:8px" class="muted">Saved locally.</div>
-      </template>
-    </a-drawer>
-
-    <!-- MODULE COMPLETE -->
-    <a-modal v-model:open="moduleDoneOpen" title="Module finished 🎉" :footer="null">
-      <a-result
-        status="success"
-        title="Great job!"
-        :sub-title="`You’ve completed ${module.lessons.length} lessons.`"
-      />
-    </a-modal>
-  </a-layout>
+  </a-config-provider>
 </template>
 
 <script setup lang="ts">
-import RenderLessonItem from '../components/RenderLessonItem.vue';
-import { ref, reactive, computed, watch, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onMounted, reactive, ref, watch, onBeforeUnmount } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { theme, message } from 'ant-design-vue'
 import {
-  PlayCircleOutlined,
-  CheckOutlined,
-  CheckCircleTwoTone,
-  LockOutlined,
-  FieldTimeOutlined,
-  PaperClipOutlined,
-  FileTextOutlined,
-  ArrowLeftOutlined,
-  ArrowRightOutlined,
-  ReadOutlined,
-  VideoCameraOutlined,
-  QuestionCircleOutlined,
-  LinkOutlined,
-  BookOutlined,
+  BulbOutlined, FieldTimeOutlined, PlayCircleOutlined, LockOutlined,
+  CheckOutlined, ArrowRightOutlined
 } from '@ant-design/icons-vue'
-import { message } from 'ant-design-vue'
-const getAnswer = (lessonId: string, qid: string) => {
-  return quizAnswers.value?.[lessonId]?.[qid] ?? ''
-}
 
-const setAnswer = (lessonId: string, qid: string, val: any) => {
-  if (!quizAnswers.value[lessonId]) quizAnswers.value[lessonId] = {}
-  quizAnswers.value[lessonId][qid] = val
-}
-
-/** ---------- Types (mirror your builder) ---------- */
+/** ---------- Types ---------- */
 type QuizOption = { text: string; correct: boolean }
-type QuizQuestion = { id: string; text: string; type: 'mcq'|'tf'|'short'; options: QuizOption[] }
+type QuizQuestion = { id: string; text: string; type: 'mcq' | 'tf' | 'short'; options?: QuizOption[] }
+type Resource = { id?: string; name?: string; title?: string; kind?: 'pdf' | 'file' | 'link'; url: string }
 type Lesson = {
   id: string
+  moduleId?: string
   title: string
-  type: 'video'|'reading'|'quiz'|'assignment'
-  duration: number
+  type: 'video' | 'reading' | 'quiz' | 'assignment' | 'lab' | string
+  duration?: number
   content?: string
   videoUrl?: string
   rubric?: string
-  resources: { title: string; url: string }[]
-  attachments: any[]
-  tags: string[]
-  prerequisites: (string|number)[]
-  unlockAt?: any
+  resources?: Resource[]
+  attachments?: { name?: string; url?: string }[]
+  tags?: string[]
+  prerequisites?: string[]
+  unlockAt?: string | number | Date
+  preview?: boolean
   quiz?: { questions: QuizQuestion[] }
 }
-type ModuleData = {
+type ModuleT = { id: string; courseId?: string; title: string; lessons: Lesson[] }
+type CourseT = {
+  id: string
   title: string
-  description?: string
-  objectives: string[]
-  isPublic: boolean
-  unlockAt?: any
-  lessons: Lesson[]
+  category: string
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced' | string
+  coverUrl?: string
 }
-
-/** ---------- Route & Local ---------- */
-const route = useRoute()
-const teacherId = (route.params as any).teacher_id || 'teacher'
-const courseId = (route.params as any).course_id || (route.query as any).course_id || 'course'
-const moduleId = (route.params as any).module_id || 'module'
-const courseTitle = ref('Advanced Vue 3 Workshop') // adapt if you have real data
-
-const STORAGE_DRAFT_KEY = `byway:module-draft:${teacherId}:${courseId}` // reusing builder draft if present
-const STORAGE_PROGRESS_KEY = `byway:module-progress:${courseId}:${moduleId}`
+type ModuleLite = { id: string; title: string; lessonCount?: number; minutes?: number }
+type ProgressRow = { lessonId: string; completed: boolean; updatedAt?: string }
 
 /** ---------- State ---------- */
-const collapsed = ref(false)
-const resourcesOpen = ref(false)
-const notesOpen = ref(false)
-const moduleDoneOpen = ref(false)
+const isDark = ref(false)
+const siderCollapsed = ref(false)
+const rightCollapsed = ref(false)
+const filter = ref('')
+const route = useRoute()
+const router = useRouter()
 
-const module = reactive<ModuleData>({
-  title: '',
-  description: '',
-  objectives: [],
-  isPublic: true,
-  unlockAt: null as any,
-  lessons: [],
-})
+// Endpoints (use runtimeConfig in real app if you have it)
+const STUDENTS_API = 'http://localhost:4000/api/students-internal/graphql'
+const TEACH_API    = 'http://localhost:4000/api/teach-internal/graphql'
 
-const currentId = ref<string | null>(null)
+const loadingCourse = ref(false)
+const loadingModule = ref(false)
 
-/** learner state */
-const done = ref<Record<string, boolean>>({})
-const notes = ref<Record<string, string>>({})
-const quizAnswers = ref<Record<string, Record<string, any>>>({}) // lessonId -> questionId -> answer
-const quizScores = ref<Record<string, { score: number; total: number; passed: boolean }>>({})
-const assignmentLinks = ref<Record<string, string>>({})
+const course = reactive<CourseT>({ id: '', title: '', category: '', difficulty: 'Beginner', coverUrl: '' })
+const modules = ref<ModuleLite[]>([])
+const lessons = ref<Lesson[]>([])
+const moduleT = ref<ModuleT | null>(null)
+const currentIndex = ref(0)
 
-/** ---------- Derived ---------- */
-const totalMinutes = computed(() =>
-  module.lessons.reduce((t, l) => t + (Number(l.duration) || 0), 0)
-)
-const doneCount = computed(() => Object.values(done.value).filter(Boolean).length)
-const progressPercent = computed(() =>
-  module.lessons.length ? Math.round((doneCount.value / module.lessons.length) * 100) : 0
-)
-const current = computed<Lesson | null>(() => module.lessons.find(l => l.id === currentId.value) || null)
-const currentIdx = computed(() => module.lessons.findIndex(l => l.id === currentId.value))
-const prevId = computed(() => (currentIdx.value > 0 ? module.lessons[currentIdx.value - 1].id : null))
-const nextId = computed(() => (currentIdx.value >= 0 && currentIdx.value < module.lessons.length - 1
-  ? module.lessons[currentIdx.value + 1].id : null))
-
-const nextCta = computed(() => {
-  const next = firstAvailableIncomplete()
-  if (!next) return 'Start'
-  return currentId.value === next.id ? 'Continue' : (doneCount.value ? 'Continue' : 'Start')
+const progress = reactive<{ completedLessonIds: string[]; lastLessonId?: string }>({
+  completedLessonIds: [],
+  lastLessonId: undefined
 })
 
 /** ---------- Helpers ---------- */
-const isDone = (id: string) => !!done.value[id]
+const selectedModuleId = computed(() => String(route.params.module_id || ''))
+const hasModules = computed(() => modules.value.length > 0)
+const currentModuleReady = computed(() => !!moduleT.value && lessons.value.length > 0)
 
 const ytEmbed = (url?: string) => {
-  if (!url) return null
-  const m = url.match(/(?:youtu\.be\/|v=)([A-Za-z0-9_\-]{6,})/)
-  return m ? `https://www.youtube.com/embed/${m[1]}?rel=0` : null
+  if (!url) return ''
+  if (/youtube\.com|youtu\.be/.test(url)) {
+    const id = url.match(/(?:v=|be\/)([A-Za-z0-9_-]{6,})/)?.[1]
+    return id ? `https://www.youtube.com/embed/${id}?rel=0` : ''
+  }
+  return ''
 }
+const unlockAtDate = (l: Lesson) => (l.unlockAt ? new Date(l.unlockAt).toLocaleString() : '')
 
-const isLocked = (l: Lesson) => {
-  // Unlock date
-  if (l.unlockAt) {
-    const t = new Date(l.unlockAt as any).getTime()
-    if (!isNaN(t) && Date.now() < t) return true
-  }
-  // Prerequisites
-  if (l.prerequisites?.length) {
-    const unmet = l.prerequisites.some(pid => !done.value[String(pid)])
-    if (unmet) return true
-  }
+/** ---------- Derived ---------- */
+const currentLesson = computed(() => lessons.value[currentIndex.value])
+const totalMinutes = computed(() => lessons.value.reduce((s, l) => s + (l.duration || 0), 0))
+const progressPercent = computed(() =>
+  lessons.value.length ? Math.round((progress.completedLessonIds.length / lessons.value.length) * 100) : 0
+)
+const coverStyle = computed(() => ({
+  backgroundImage: course.coverUrl ? `url('${course.coverUrl}')` : 'linear-gradient(135deg,#111,#334155)'
+}))
+const filteredLessons = computed(() => {
+  const q = filter.value.trim().toLowerCase()
+  if (!q) return lessons.value
+  return lessons.value.filter(l =>
+    (l.title || '').toLowerCase().includes(q) ||
+    (l.type || '').toLowerCase().includes(q)
+  )
+})
+
+/** ---------- Progress helpers ---------- */
+const isCompleted = (lessonId: string) => progress.completedLessonIds.includes(lessonId)
+const labelForLesson = (id: string) => lessons.value.find(l => l.id === id)?.title || ''
+function isLocked(l: Lesson): boolean {
+  if (l.preview) return false
+  if (l.unlockAt && new Date(l.unlockAt).getTime() > Date.now()) return true
+  if (l.prerequisites?.length) return !l.prerequisites.every(pid => isCompleted(pid))
   return false
 }
 
-const lockedReason = (l: Lesson) => {
-  if (l.unlockAt) {
-    const t = new Date(l.unlockAt as any)
-    if (!isNaN(t.getTime()) && Date.now() < t.getTime()) {
-      return `Unlocks at ${t.toLocaleString()}`
-    }
-  }
-  if (l.prerequisites?.length) return 'Complete the prerequisite lessons first.'
-  return 'Locked'
-}
-
-const firstAvailableIncomplete = () => {
-  return module.lessons.find(l => !isLocked(l) && !isDone(l.id)) || module.lessons.find(l => !isLocked(l)) || null
-}
-
-const goTo = (id: string | null) => {
-  if (!id) return
-  currentId.value = id
-}
-
-const goStartOrNext = () => {
-  const target = firstAvailableIncomplete() || module.lessons[0]
-  if (target) goTo(target.id)
-}
-
-const toggleDone = (id: string) => {
-  done.value[id] = !done.value[id]
-  persist()
-  if (Object.values(done.value).every(Boolean) && module.lessons.length) {
-    moduleDoneOpen.value = true
-  }
-}
-
-/** Quiz grading: MCQ exact match; TF/short count as answered */
-const PASS_RATIO = 0.6
-const gradeQuiz = (l: Lesson) => {
-  const qs = l.quiz?.questions || []
-  let score = 0
-  let total = 0
-  const answers = quizAnswers.value[l.id] || {}
-  for (const q of qs) {
-    if (q.type === 'mcq') {
-      total++
-      const chosen = answers[q.id]
-      if (typeof chosen === 'number' && q.options?.[chosen]?.correct) score++
-    } else {
-      // consider answered if any value present
-      total++
-      if (answers[q.id] !== undefined && answers[q.id] !== '') score++
-    }
-  }
-  const passed = total ? score / total >= PASS_RATIO : true
-  quizScores.value[l.id] = { score, total, passed }
-  if (passed) {
-    done.value[l.id] = true
-    message.success(`Quiz passed: ${score}/${total}`)
-  } else {
-    message.warning(`Quiz score: ${score}/${total} (need ${(PASS_RATIO*100)|0}% )`)
-  }
-  persist()
-}
-
-const gradeCurrentQuiz = () => { if (current.value) gradeQuiz(current.value) }
-
-const assignmentSubmitted = (lessonId: string) => !!assignmentLinks.value[lessonId]
-const submitAssignment = (lessonId: string) => {
-  if (!assignmentLinks.value[lessonId]) return message.error('Please add a link.')
-  done.value[lessonId] = true
-  message.success('Assignment submitted')
-  persist()
-}
-
-/** ---------- Persistence ---------- */
-const persist = () => {
-  if (typeof window === 'undefined') return
-  const payload = {
-    done: done.value,
-    notes: notes.value,
-    quizAnswers: quizAnswers.value,
-    quizScores: quizScores.value,
-    assignmentLinks: assignmentLinks.value,
-    currentId: currentId.value,
-  }
-  localStorage.setItem(STORAGE_PROGRESS_KEY, JSON.stringify(payload))
-}
-
-const loadPersist = () => {
-  if (typeof window === 'undefined') return
-  const raw = localStorage.getItem(STORAGE_PROGRESS_KEY)
-  if (!raw) return
-  try {
-    const parsed = JSON.parse(raw)
-    done.value = parsed.done || {}
-    notes.value = parsed.notes || {}
-    quizAnswers.value = parsed.quizAnswers || {}
-    quizScores.value = parsed.quizScores || {}
-    assignmentLinks.value = parsed.assignmentLinks || {}
-    currentId.value = parsed.currentId || null
-  } catch {}
-}
-
-/** Seed module from builder draft (dev) or fallback */
-const hydrateModule = () => {
-  // If you provide real module data, assign it here instead
-  if (process.client) {
-    const draft = localStorage.getItem(STORAGE_DRAFT_KEY)
-    if (draft) {
-      try {
-        const parsed = JSON.parse(draft)
-        // keep only fields we use
-        module.title = parsed.title || 'Module'
-        module.description = parsed.description || ''
-        module.objectives = parsed.objectives || []
-        module.isPublic = parsed.isPublic ?? true
-        module.unlockAt = parsed.unlockAt ?? null
-        module.lessons = Array.isArray(parsed.lessons) ? parsed.lessons : []
-      } catch {}
-    }
-  }
-  // if empty, create a small demo structure
-  if (!module.lessons.length) {
-    module.title = 'Sample Module'
-    module.objectives = ['intro', 'practice']
-    module.lessons = [
-      { id: 'l1', title: 'Welcome', type: 'video', duration: 5, videoUrl: 'https://youtu.be/dQw4w9WgXcQ', content: 'What you’ll learn today.', resources: [], attachments: [], tags: [], prerequisites: [] },
-      { id: 'l2', title: 'Concept Notes', type: 'reading', duration: 10, content: 'Key definitions and examples.', resources: [], attachments: [], tags: [], prerequisites: [] },
-      { id: 'l3', title: 'Checkpoint', type: 'quiz', duration: 7, resources: [], attachments: [], tags: [], prerequisites: [], quiz: { questions: [
-        { id:'q1', text:'Pick the correct option', type:'mcq', options:[{text:'A',correct:true},{text:'B',correct:false}]}
-      ]}},
-      { id: 'l4', title: 'Mini Assignment', type: 'assignment', duration: 20, content: 'Build a tiny feature.', rubric: 'Completeness / Correctness / Clarity', resources: [], attachments: [], tags: [], prerequisites: ['l3'] },
-    ] as Lesson[]
-  }
-
-  // Choose initial lesson
-  const initial = firstAvailableIncomplete() || module.lessons[0]
-  if (initial && !currentId.value) currentId.value = initial.id
-}
-
-/** ---------- Renderers ---------- */
-
-/** ---------- Lifecycle ---------- */
-onMounted(() => {
-  hydrateModule()
-  loadPersist()
+/** ---------- Networking ---------- */
+let aborters = new Set<AbortController>()
+onBeforeUnmount(() => {
+  aborters.forEach(a => a.abort())
+  aborters.clear()
 })
 
-watch([done, notes, quizAnswers, quizScores, assignmentLinks, currentId], persist, { deep: true })
+async function fetchGraphQL<T = any>(
+  query: string,
+  variables?: Record<string, any>,
+  endpoint = STUDENTS_API,
+  timeoutMs = 15000,
+): Promise<T> {
+  const controller = new AbortController()
+  aborters.add(controller)
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const resp = await fetch(endpoint, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, variables }),
+      signal: controller.signal,
+    })
+    const json = await resp.json().catch(() => ({}))
+    if (!resp.ok) throw new Error(json?.errors?.[0]?.message || resp.statusText || 'Request failed')
+    if (json.errors?.length) throw new Error(json.errors[0]?.message || 'GraphQL error')
+    return json.data as T
+  } finally {
+    clearTimeout(timer)
+    aborters.delete(controller)
+  }
+}
 
-/** ---------- Nav ---------- */
-const goBack = () => history.back()
+const GQL = {
+  // students-internal
+  myCourses: `
+    query MyCourses($studentId:String!) {
+      myCourses(studentId:$studentId) {
+        id
+        studentId
+        courseId
+        completed
+        progress
+        course { id title category difficulty coverUrl }
+      }
+    }
+  `,
+  myProgress: `
+    query MyProgress($studentId:String!) {
+      myProgress(studentId:$studentId) {
+        id
+        studentId
+        lessonId
+        completed
+        score
+        updatedAt
+      }
+    }
+  `,
+  updateProgress: `
+    mutation UpdateProgress($studentId:String!, $lessonId:String!, $completed:Boolean!, $score:Int) {
+      updateProgress(studentId:$studentId, lessonId:$lessonId, completed:$completed, score:$score) {
+        id
+        lessonId
+        completed
+        updatedAt
+      }
+    }
+  `,
+  // teach-internal
+  modulesByCourse: `
+    query ModulesByCourse($courseId:String!) {
+      modulesByCourse(courseId:$courseId) {
+        id
+        title
+        lessons { id duration title type content videoUrl rubric metadata moduleId }
+      }
+    }
+  `,
+}
+
+/** ---------- Progress derivation ---------- */
+function progressFromRows(rows: ProgressRow[], lessonIds: string[]) {
+  const completedLessonIds = rows
+    .filter(r => r.completed && lessonIds.includes(r.lessonId))
+    .map(r => r.lessonId)
+
+  const last = rows
+    .filter(r => lessonIds.includes(r.lessonId))
+    .sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())[0]
+
+  return { completedLessonIds, lastLessonId: last?.lessonId }
+}
+
+function normalizeLesson(src: any): Lesson {
+  const md = src?.metadata || {}
+  return {
+    id: src?.id,
+    moduleId: src?.moduleId,
+    title: src?.title || '',
+    type: src?.type || 'reading',
+    duration: src?.duration ?? undefined,
+    content: src?.content || '',
+    videoUrl: src?.videoUrl || '',
+    rubric: src?.rubric || '',
+    tags: md.tags || [],
+    prerequisites: md.prerequisites || [],
+    unlockAt: md.unlockAt || undefined,
+    preview: !!md.preview,
+    resources: md.resources || [],
+    attachments: md.attachments || [],
+    quiz: md.quiz || { questions: [] },
+  }
+}
+
+/** ---------- Loaders ---------- */
+async function loadCourseOverview(studentId: string, courseId: string) {
+  loadingCourse.value = true
+  try {
+    // 1) Enrollment / basic course info
+    const myCoursesData = await fetchGraphQL<{
+      myCourses: Array<{ courseId: string; course: CourseT }>
+    }>(GQL.myCourses, { studentId }, STUDENTS_API)
+
+    const sc = (myCoursesData?.myCourses || []).find(c => c.courseId === courseId)
+    if (sc?.course) Object.assign(course, sc.course)
+
+    // 2) Modules + lesson shells
+    const teach = await fetchGraphQL<{
+      modulesByCourse: Array<{ id: string; title: string; lessons: Array<{ id: string; duration?: number }> }>
+    }>(GQL.modulesByCourse, { courseId }, TEACH_API)
+
+    modules.value = (teach?.modulesByCourse || []).map(m => ({
+      id: m.id,
+      title: m.title,
+      lessonCount: m.lessons?.length || 0,
+      minutes: (m.lessons || []).reduce((s, l) => s + (l.duration || 0), 0),
+    }))
+
+    // 3) Progress rows → global progress over course
+    const prog = await fetchGraphQL<{ myProgress: ProgressRow[] }>(GQL.myProgress, { studentId }, STUDENTS_API)
+    const allLessonIds = (teach?.modulesByCourse || []).flatMap(m => m.lessons?.map(l => l.id) || [])
+    const derived = progressFromRows(prog?.myProgress || [], allLessonIds)
+
+    progress.completedLessonIds = [...derived.completedLessonIds]
+    progress.lastLessonId = derived.lastLessonId
+  } catch (e: any) {
+    modules.value = []
+    message.warning(e?.message || 'Failed to load course overview')
+    console.warn('[StudentCourse] overview failed:', e?.message)
+  } finally {
+    loadingCourse.value = false
+  }
+}
+
+async function loadModule(studentId: string, courseId: string, moduleId: string) {
+  loadingModule.value = true
+  try {
+    // Ensure modules list
+    if (!modules.value.length) {
+      const teachMods = await fetchGraphQL<{ modulesByCourse: any[] }>(
+        GQL.modulesByCourse, { courseId }, TEACH_API
+      )
+      modules.value = (teachMods?.modulesByCourse || []).map((m: any) => ({
+        id: m.id,
+        title: m.title,
+        lessonCount: m.lessons?.length || 0,
+        minutes: (m.lessons || []).reduce((s:number, l:any) => s + (l.duration || 0), 0),
+      }))
+    }
+
+    // Load full module
+    const teach = await fetchGraphQL<{ modulesByCourse: any[] }>(
+      GQL.modulesByCourse, { courseId }, TEACH_API
+    )
+    const mod = (teach?.modulesByCourse || []).find((m:any) => m.id === moduleId)
+    if (!mod) throw new Error('Module not found')
+
+    moduleT.value = { id: mod.id, title: mod.title, courseId, lessons: [] }
+    lessons.value = (mod.lessons || []).map(normalizeLesson)
+
+    // Progress for this module scope
+    const prog = await fetchGraphQL<{ myProgress: ProgressRow[] }>(GQL.myProgress, { studentId }, STUDENTS_API)
+    const lessonIds = (mod.lessons || []).map((l:any) => l.id)
+    const derived = progressFromRows(prog?.myProgress || [], lessonIds)
+
+    progress.completedLessonIds = [...derived.completedLessonIds]
+    progress.lastLessonId = derived.lastLessonId
+
+    // Ensure selection
+    if (lessons.value.length && currentIndex.value >= lessons.value.length) currentIndex.value = 0
+    if (!currentLesson.value && lessons.value.length) select(0)
+  } catch (e: any) {
+    moduleT.value = null
+    lessons.value = []
+    message.warning(e?.message || 'Failed to load module')
+    console.warn('[StudentModule] load failed:', e?.message)
+    const fallback = modules.value[0]?.id
+    if (fallback && moduleId !== fallback) {
+      await router.replace({ params: { ...route.params, module_id: fallback } })
+    }
+  } finally {
+    loadingModule.value = false
+  }
+}
+
+/** ---------- Mutations & actions ---------- */
+async function apiUpdateProgress(lessonId: string, completed: boolean) {
+  const studentId = String(route.params.student_id || route.params.studentId || '')
+  const courseId  = String(route.params.course_id || route.params.courseId || '')
+  const moduleId  = String(route.params.module_id || route.params.moduleId || '')
+
+  await fetchGraphQL(
+    GQL.updateProgress,
+    { studentId, lessonId, completed, score: null },
+    STUDENTS_API
+  )
+
+  // Refresh progress for current module scope
+  const teach = await fetchGraphQL<{ modulesByCourse: any[] }>(GQL.modulesByCourse, { courseId }, TEACH_API)
+  const mod = (teach?.modulesByCourse || []).find((m:any) => m.id === moduleId)
+  const lessonIds = (mod?.lessons || []).map((l:any) => l.id) || []
+
+  const prog = await fetchGraphQL<{ myProgress: ProgressRow[] }>(GQL.myProgress, { studentId }, STUDENTS_API)
+  const derived = progressFromRows(prog?.myProgress || [], lessonIds)
+
+  progress.completedLessonIds = [...derived.completedLessonIds]
+  progress.lastLessonId = derived.lastLessonId
+}
+
+function select(i: number) {
+  currentIndex.value = i
+  // ping updatedAt for heuristic "last" without changing completion
+  const l = lessons.value[i]
+  if (l?.id) apiUpdateProgress(l.id, isCompleted(l.id)).catch(() => {})
+}
+function prevLesson() { if (currentIndex.value > 0) select(currentIndex.value - 1) }
+function nextLesson() { if (currentIndex.value < lessons.value.length - 1) select(currentIndex.value + 1) }
+
+function resumeLast() {
+  if (progress.lastLessonId) {
+    const idx = lessons.value.findIndex(l => l.id === progress.lastLessonId)
+    if (idx >= 0) return select(idx)
+  }
+  const idx = lessons.value.findIndex(l => !isLocked(l) || l.preview)
+  if (idx >= 0) select(idx)
+}
+
+async function toggleComplete(l: Lesson) { await markComplete(l, !isCompleted(l.id)) }
+async function markComplete(l: Lesson, done: boolean) {
+  try {
+    await apiUpdateProgress(l.id, done)
+    // optimistic UX
+    if (done) {
+      if (!isCompleted(l.id)) progress.completedLessonIds.push(l.id)
+    } else {
+      const i = progress.completedLessonIds.indexOf(l.id)
+      if (i >= 0) progress.completedLessonIds.splice(i, 1)
+    }
+    message.success(done ? 'Marked complete' : 'Marked incomplete')
+  } catch (e: any) {
+    message.error(e?.message || 'Failed to update progress')
+  }
+}
+
+const quizState = reactive<Record<string, any>>({})
+const quizSubmitting = ref(false)
+async function submitQuiz() {
+  if (!currentLesson.value?.quiz?.questions?.length) return
+  quizSubmitting.value = true
+  try {
+    let total = 0, ok = 0
+    for (const q of currentLesson.value.quiz!.questions) {
+      total++
+      let correct = false
+      if (q.type === 'mcq') {
+        const ans: number[] = Array.isArray(quizState[q.id]) ? quizState[q.id] : []
+        const correctIdx = (q.options || []).map((o, i) => (o.correct ? i : -1)).filter(i => i >= 0)
+        correct = ans.sort().join(',') === correctIdx.sort().join(',')
+      } else if (q.type === 'tf') {
+        correct = true // treat as acknowledged
+      } else {
+        correct = !!String(quizState[q.id] || '').trim().length
+      }
+      if (correct) ok++
+    }
+    // store quiz summary by touching updatedAt via updateProgress (no backend changes)
+    await apiUpdateProgress(currentLesson.value.id, isCompleted(currentLesson.value.id))
+    message.success(`Submitted quiz. Score (approx): ${ok}/${total}`)
+  } catch (e:any) {
+    message.error(e?.message || 'Quiz submit failed')
+  } finally {
+    quizSubmitting.value = false
+  }
+}
+
+const submitOpen = ref(false)
+const submitting = ref(false)
+const submitForm = reactive<{ notes: string; url: string }>({ notes: '', url: '' })
+function openSubmitDrawer(){ submitOpen.value = true }
+async function submitAssignment() {
+  if (!currentLesson.value) return
+  submitting.value = true
+  try {
+    // touch updatedAt (no backend changes)
+    await apiUpdateProgress(currentLesson.value.id, isCompleted(currentLesson.value.id))
+    submitOpen.value = false
+    submitForm.notes = ''; submitForm.url = ''
+    message.success('Assignment submitted')
+  } catch (e:any) {
+    message.error(e?.message || 'Submit failed')
+  } finally {
+    submitting.value = false
+  }
+}
+
+/** Lab hook */
+function openLab(l: Lesson) {
+  window.open(`/labs/${course.id}/${l.id}`, '_blank', 'noopener')
+}
+
+/** ---------- Routing ---------- */
+async function switchModule(nextId: string) {
+  if (!nextId || nextId === selectedModuleId.value) return
+  await router.replace({ params: { ...route.params, module_id: nextId } })
+}
+
+/** ---------- Lifecycle ---------- */
+onMounted(async () => {
+  const studentId = String(route.params.student_id || route.params.studentId || '')
+  const courseId  = String(route.params.course_id || route.params.courseId || '')
+  const moduleId  = String(route.params.module_id || route.params.moduleId || '')
+
+  await loadCourseOverview(studentId, courseId)
+
+  if (!moduleId || (hasModules.value && !modules.value.some(m => m.id === moduleId))) {
+    const pick = progress.lastLessonId
+      ? modules.value.find(m => m.id)?.id
+      : modules.value[0]?.id
+    if (pick) await router.replace({ params: { ...route.params, module_id: pick } })
+  } else {
+    await loadModule(studentId, courseId, moduleId)
+  }
+})
+
+watch(() => route.params.module_id, async (next, prev) => {
+  if (next === prev) return
+  const studentId = String(route.params.student_id || route.params.studentId || '')
+  const courseId  = String(route.params.course_id || route.params.courseId || '')
+  const moduleId  = String(next || '')
+  if (!moduleId) {
+    moduleT.value = null
+    lessons.value = []
+    return
+  }
+  if (hasModules.value && !modules.value.some(m => m.id === moduleId)) {
+    const fallback = modules.value[0]?.id
+    if (fallback) await router.replace({ params: { ...route.params, module_id: fallback } })
+    return
+  }
+  await loadModule(studentId, courseId, moduleId)
+})
 </script>
 
 <style scoped>
-.module-learn-layout {
-  min-height: 100vh;
-  background: #fafafa;
-}
-.page-header {
-  background: #fff;
-  border-radius: 8px;
-  padding: 12px 24px;
-  margin: 16px;
-}
-.body {
-  margin: 0 16px 16px;
-  background: transparent;
-}
-.lesson-sider {
-  background: #fff;
-  border-radius: 8px;
-  padding: 12px;
-  margin-right: 12px;
-}
-.sider-top {
-  display: flex; align-items: center; gap: 12px; padding: 6px 6px 12px;
-}
-.sider-meta .pct { font-weight: 600; }
-.sider-meta .count { color: rgba(0,0,0,.45); }
+.student-wrap { min-height: 100vh; background: #f6f8fb; }
+.is-dark { background: #0b1220; }
+.page-header { background: #fff; border-bottom: 1px solid #eef2f7; }
+.is-dark .page-header { background: #0f172a; }
 
-.lesson-list {
-  max-height: calc(100vh - 260px);
-  overflow: auto;
-  padding-right: 4px;
-}
+.left-sider, .right-sider { background: transparent; }
+.sider-inner, .right-inner { padding: 12px; }
 
-.lesson-row { cursor: pointer; }
-.lr-wrap { display:flex; align-items:center; justify-content:space-between; width:100%; }
-.lr-wrap.active { background: #f5faff; border-radius: 6px; }
-.lr-left { display:flex; align-items:center; gap:8px; padding:8px; }
-.lr-title { font-weight: 600; }
-.lr-type { text-transform: capitalize; }
-.lr-min { color: rgba(0,0,0,.45); display:flex; align-items:center; gap:4px; }
+.cover { height: 140px; background-size: cover; background-position: center; position: relative; border-radius: 10px; overflow: hidden; }
+.cover-gradient { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.55)); }
+.cover-meta { position: absolute; left: 12px; right: 12px; bottom: 10px; color: #fff; }
+.cover-title { font-weight: 700; font-size: 15px; }
+.cover-tags { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }
 
-.content {
-  background: #fff;
-  border-radius: 8px;
-  padding: 16px;
-  min-height: calc(100vh - 120px);
-}
+.content { padding: 16px; }
+.lesson-row { border-radius: 8px; cursor: pointer; transition: background .15s ease; }
+.lesson-row:hover { background: #f3f7ff; }
+.lesson-row.active { background: #eef7ff; }
+.is-dark .lesson-row.active { background: #0b1f37; }
 
-.lesson-head {
-  display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:8px;
-}
-.lesson-title { margin: 0; }
-.muted { color: rgba(0,0,0,.45); }
+.mt-1 { margin-top: 8px; }
+.mt-2 { margin-top: 12px; }
+.mb-1 { margin-bottom: 8px; }
+.my-1 { margin: 8px 0; }
 
-.viewer { margin-top: 8px; }
-.video-wrap { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; }
-.video-wrap iframe { position:absolute; top:0; left:0; width:100%; height:100%; }
-.video-fallback { background:#f5f5f5; border-radius:8px; padding:8px 12px; word-break:break-all; }
+.video-wrap { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 10px; }
+.video-wrap iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+.video-fallback { background: #f5f5f5; border-radius: 8px; padding: 8px 12px; word-break: break-all; }
+.is-dark .video-fallback { background: #0f172a; }
 
-.resources-inline { margin-top: 8px; }
-.res-list { padding-left: 18px; }
+.muted { color: #64748b; }
+.preq.ok { text-decoration: line-through; }
 
-.lesson-nav {
-  margin-top: 12px;
-  display:flex; justify-content:flex-end;
-}
+.nav-actions { display: flex; justify-content: space-between; align-items: center; }
 
-.quiz-item .q-text { margin-bottom: 8px; font-weight: 600; }
-.mcq-row { padding: 6px 0; }
+.quiz-q { padding: 8px 0; }
 </style>

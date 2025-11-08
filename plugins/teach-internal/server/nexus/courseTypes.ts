@@ -1,37 +1,19 @@
+// src/graphql/courseTypes.ts
 import { objectType, extendType, stringArg, floatArg, nonNull } from 'nexus'
 
 export const Course = objectType({
   name: 'Course',
   definition(t) {
-t.field('course', {
-  type: 'Course',
-  args: { id: nonNull(stringArg()) },
-  async resolve(_, { id }, ctx) {
-    const course = await ctx.prisma.course.findUnique({
-      where: { id },
-      include: {
-        modules: {
-          include: {
-            lessons: true, // ✅ always populate lessons array
-          },
-        },
-      },
-    })
-
-    return course
-  },
-})
-
     t.string('id')
     t.string('teacherId')
     t.string('title')
-    t.string('category')
-    t.string('difficulty')
-    t.string('description')
+    t.nullable.string('category')
+    t.nullable.string('difficulty')
+    t.nullable.string('description')
     t.float('price')
     t.float('discount')
-    t.nullable.string('coverUrl') 
-   t.list.field('modules', { type: 'Module' })   
+    t.nullable.string('coverUrl')
+    t.list.field('modules', { type: 'Module' })
     t.field('createdAt', { type: 'DateTime' })
     t.field('updatedAt', { type: 'DateTime' })
   },
@@ -42,20 +24,21 @@ export const CourseQuery = extendType({
   definition(t) {
     t.list.field('courses', {
       type: 'Course',
-      resolve: (_, __, ctx) => ctx.prisma.course.findMany({ include: { modules: true } }),
+      resolve: (_, __, ctx) =>
+        ctx.prisma.course.findMany({
+          include: { modules: { include: { lessons: true } } },
+        }),
     })
 
     t.field('course', {
       type: 'Course',
       args: { id: nonNull(stringArg()) },
-async resolve(_, { id }, ctx) {
-        return await ctx.prisma.course.findUnique({
+      async resolve(_, { id }, ctx) {
+        return ctx.prisma.course.findUnique({
           where: { id },
-          include: {
-            modules: true, // Module resolver will handle lessons
-          },
+          include: { modules: { include: { lessons: true } } },
         })
-      }
+      },
     })
   },
 })
@@ -90,15 +73,14 @@ export const CourseMutation = extendType({
         discount: floatArg(),
         coverUrl: stringArg(),
       },
-      resolve: (_, { id, ...data }, ctx) =>
+      resolve: async (_, { id, ...data }, ctx) =>
         ctx.prisma.course.update({ where: { id }, data }),
     })
 
     t.field('deleteCourse', {
       type: 'Course',
       args: { id: nonNull(stringArg()) },
-      resolve: (_, { id }, ctx) =>
-        ctx.prisma.course.delete({ where: { id } }),
+      resolve: (_, { id }, ctx) => ctx.prisma.course.delete({ where: { id } }),
     })
   },
 })
