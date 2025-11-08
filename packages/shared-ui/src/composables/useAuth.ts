@@ -10,6 +10,13 @@ if (typeof window !== 'undefined') {
   const savedUser = localStorage.getItem('user')
   if (savedUser) user.value = JSON.parse(savedUser)
 }
+watchEffect(() => {
+  if (typeof window !== 'undefined') {
+    token.value = localStorage.getItem('token')
+    const saved = localStorage.getItem('user')
+    user.value = saved ? JSON.parse(saved) : null
+  }
+})
 
 export function useAuth() {
   const router = useRouter()

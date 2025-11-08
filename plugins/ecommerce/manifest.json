@@ -1,0 +1,7 @@
+{
+  "name": "authentication",
+  "routes": [
+    { "path": "/checkout/success", "file": "nuxt/pages/checkout/success.vue" },
+    { "path": "/checkout/cancel", "file": "nuxt/pages/checkout/cancel.vue" }
+  ]
+}

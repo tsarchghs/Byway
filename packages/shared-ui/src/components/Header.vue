@@ -85,7 +85,7 @@
           <span><strong>Total:</strong></span>
           <span><strong>{{ euro(total) }}</strong></span>
         </div>
-        <a-button type="primary" block size="large">Checkout</a-button>
+        <a-button type="primary" block size="large" @click="checkout">Checkout</a-button>
       </template>
 
       <template v-else>
@@ -99,75 +99,130 @@
 </template>
 
 <script setup lang="ts">
-import { ref, h, onMounted, watch } from 'vue'
-import { ShoppingCartOutlined, UserOutlined } from '@ant-design/icons-vue'
+import { ref, h, onMounted, watch, computed } from 'vue'
+import { ShoppingCartOutlined, UserOutlined, DeleteOutlined } from '@ant-design/icons-vue'
+import { List, message } from 'ant-design-vue'
 import { useAuth } from '@shared/composables/useAuth'
 
 const q = ref('')
 const openCart = ref(false)
-const cartItems = ref<any[]>([])
+const cartItems = ref<Array<{id:string; title:string; price:number; image?:string; quantity?:number}>>([])
 const total = ref(0)
 
 const auth = useAuth()
 const user = computed(() => auth.user.value)
 const isLoggedIn = computed(() => auth.isLoggedIn.value)
 
-function logout() {
-  auth.logout()
-}
+const CART_KEY = 'byway:cart'
+const EC_API = 'http://localhost:4000/api/ecommerce/graphql'
 
-// --- Helpers ---
+function logout() { auth.logout() }
+
 function loadCart() {
   try {
-    const raw = localStorage.getItem('byway:cart')
+    const raw = localStorage.getItem(CART_KEY)
     const parsed = raw ? JSON.parse(raw) : []
-    cartItems.value = parsed
-    total.value = parsed.reduce((sum: number, i: any) => sum + i.price, 0)
+    cartItems.value = parsed.map((i:any)=>({ ...i, quantity: i.quantity || 1 }))
+    total.value = cartItems.value.reduce((sum, i) => sum + i.price * (i.quantity || 1), 0)
   } catch {
     cartItems.value = []
     total.value = 0
   }
 }
+function saveCart() {
+  try { localStorage.setItem(CART_KEY, JSON.stringify(cartItems.value)) } catch {}
+}
 
 function euro(v: number) {
-  return new Intl.NumberFormat('de-DE', {
-    style: 'currency',
-    currency: 'EUR'
-  }).format(v)
+  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(v)
+}
+
+function removeItem(id: string) {
+  cartItems.value = cartItems.value.filter(i => i.id !== id)
+  saveCart(); loadCart()
 }
 
 function renderCartItem(item: any) {
-  return h('a-list-item', {}, {
+  return h(List.Item, {}, {
     default: () =>
-      h('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
-        h('img', {
-          src: item.image || '/course-thumb.jpg',
-          alt: 'Course thumbnail',
-          style: 'width:48px;height:48px;object-fit:cover;border-radius:6px;'
-        }),
-        h('div', null, [
-          h('div', { style: 'font-weight:500' }, item.title),
-          h(
-            'div',
-            { style: 'color:rgba(0,0,0,.45);font-size:13px' },
-            euro(item.price)
-          )
-        ])
+      h('div', { style: 'display:flex;align-items:center;gap:10px;width:100%;justify-content:space-between;' }, [
+        h('div', { style:'display:flex;align-items:center;gap:10px;' }, [
+          h('img', {
+            src: item.image || '/course-thumb.jpg',
+            alt: 'Course thumbnail',
+            style: 'width:48px;height:48px;object-fit:cover;border-radius:6px;'
+          }),
+          h('div', null, [
+            h('div', { style: 'font-weight:500' }, item.title),
+            h('div', { style: 'color:rgba(0,0,0,.45);font-size:13px' }, euro(item.price))
+          ])
+        ]),
+        h('a', { onClick: () => removeItem(item.id), style:'color:#ff4d4f' }, h(DeleteOutlined))
       ])
   })
+}
+async function gfetch<T>(query: string, variables?: Record<string, any>): Promise<T> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+
+  // ✅ ensure we use the freshest token from localStorage
+  const tokenStr = auth.token.value || localStorage.getItem('token')
+  if (tokenStr) headers.Authorization = `Bearer ${tokenStr}`
+
+  const r = await fetch(EC_API, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ query, variables })
+  })
+
+  const j = await r.json()
+  if (j.errors?.length) throw new Error(j.errors[0].message || 'GraphQL error')
+  return j.data as T
+}
+
+
+const MUTATION_CREATE_CHECKOUT = `
+  mutation Create($items:[EcCartItemInput!]!, $coupon:String, $studentId:String, $email:String, $successUrl:String!, $cancelUrl:String!) {
+    createCheckout(items:$items, coupon:$coupon, studentId:$studentId, email:$email, successUrl:$successUrl, cancelUrl:$cancelUrl) {
+      sessionId url orderId
+    }
+  }
+`
+
+async function checkout() {
+  if (!cartItems.value.length) return message.info('Your cart is empty')
+  // If not logged in, you can still pass studentId for dev, or redirect to login:
+  const studentId = auth.isLoggedIn.value ? undefined : (localStorage.getItem('byway:dev-studentId') || undefined)
+
+  const items = cartItems.value.map(i => ({ courseId: i.id, quantity: i.quantity || 1 }))
+  try {
+    const data = await gfetch<{ createCheckout: { url: string } }>(
+      MUTATION_CREATE_CHECKOUT,
+      {
+        items,
+        // Optional coupon flow: read from session/local if you want
+        coupon: null,
+        studentId,                // omit if authenticated
+        email: auth.user.value?.email || undefined,
+        successUrl: 'http://localhost:3000/checkout/success',
+        cancelUrl: 'http://localhost:3000/checkout/cancel'
+      }
+    )
+    // Redirect to Stripe
+    window.location.href = data.createCheckout.url
+  } catch (e:any) {
+    message.error(e?.message || 'Checkout failed')
+  }
 }
 
 // --- Lifecycle ---
 onMounted(() => {
   loadCart()
-  // refresh when drawer opens
   watch(openCart, (val) => val && loadCart())
-  // sync with other tabs
-  window.addEventListener('storage', (e) => {
-    if (e.key === 'byway:cart') loadCart()
-  })
+  window.addEventListener('storage', (e) => { if (e.key === CART_KEY) loadCart() })
 })
 </script>
+
+
 
 
 <style scoped>
