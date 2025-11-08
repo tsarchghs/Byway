@@ -1,6 +1,6 @@
 {
-  "name": "authentication",
+  "name": "course-detail",
   "routes": [
-    { "path": "/courses-detail", "file": "nuxt/pages/courses-detail.vue" }
+    { "path": "/course-detail/[course_id]", "file": "nuxt/pages/courses-detail.vue" }
   ]
 }

@@ -28,7 +28,7 @@ import { message } from 'ant-design-vue'
 import Header from '../../../../packages/shared-ui/src/components/Header.vue'
 import SignInForm from './SignInForm.vue'
 import SignUpForm from './SignUpForm.vue'
-import { useAuth } from '../../../../packages/shared-ui/src/composables/useAuth'
+import { useAuth } from '@shared/composables/composables/useAuth'
 import { useMutation } from '@vue/apollo-composable'
 import { gql } from '@apollo/client/core'
 // Apollo & GraphQL

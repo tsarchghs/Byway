@@ -1,10 +1,12 @@
 // Nuxt 4.2 host config
 import { defineNuxtConfig } from 'nuxt/config'
 import path from 'node:path'
+import { dirname, resolve } from 'path'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 export default defineNuxtConfig({
     alias: {
     '@shared-ui': '../../packages/shared-ui/src',
+    '@shared': resolve(__dirname, '../../packages/shared-ui/src')
   },
   vite: {
     plugins: [vueJsx()]

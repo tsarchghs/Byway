@@ -22,6 +22,7 @@
         placeholder="Search courses..."
         allow-clear
         style="width: 260px"
+        aria-label="Search courses"
       />
 
       <!-- 🎓 Teach -->
@@ -30,13 +31,13 @@
       <!-- ⚙️ Actions -->
       <div class="actions">
         <!-- 🛒 Cart -->
-        <a-badge :count="cart.items.length" show-zero>
+        <a-badge :count="cartItems.length" show-zero>
           <a-button
             type="text"
             shape="circle"
-            @click="openCart = true"
-            aria-label="Cart"
+            aria-label="Open cart"
             class="cart-btn"
+            @click="openCart = true"
           >
             <ShoppingCartOutlined style="font-size:20px" />
           </a-button>
@@ -73,26 +74,22 @@
       width="360"
       title="Your Cart"
     >
-      <template v-if="cart.items.length > 0">
+      <template v-if="cartItems.length > 0">
         <a-list
-          :data-source="cart.items"
+          :data-source="cartItems"
           item-layout="horizontal"
           :renderItem="renderCartItem"
         />
         <a-divider />
-        <div
-          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"
-        >
+        <div class="cart-total-row">
           <span><strong>Total:</strong></span>
-          <span><strong>{{ euro(cart.total) }}</strong></span>
+          <span><strong>{{ euro(total) }}</strong></span>
         </div>
         <a-button type="primary" block size="large">Checkout</a-button>
       </template>
 
       <template v-else>
-        <div
-          style="text-align:center;padding:48px 0;color:rgba(0,0,0,.45)"
-        >
+        <div class="empty-cart">
           <ShoppingCartOutlined style="font-size:40px;margin-bottom:12px" />
           <div>Your cart is empty</div>
         </div>
@@ -102,16 +99,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, h, computed } from 'vue'
+import { ref, h, onMounted, watch } from 'vue'
 import { ShoppingCartOutlined, UserOutlined } from '@ant-design/icons-vue'
-import { useCart } from '../composables/useCart'
-import { useAuth } from '../composables/useAuth'
+import { useAuth } from '@shared/composables/useAuth'
 
 const q = ref('')
 const openCart = ref(false)
-const cart = useCart()
-const auth = useAuth()
+const cartItems = ref<any[]>([])
+const total = ref(0)
 
+const auth = useAuth()
 const user = computed(() => auth.user.value)
 const isLoggedIn = computed(() => auth.isLoggedIn.value)
 
@@ -119,33 +116,59 @@ function logout() {
   auth.logout()
 }
 
+// --- Helpers ---
+function loadCart() {
+  try {
+    const raw = localStorage.getItem('byway:cart')
+    const parsed = raw ? JSON.parse(raw) : []
+    cartItems.value = parsed
+    total.value = parsed.reduce((sum: number, i: any) => sum + i.price, 0)
+  } catch {
+    cartItems.value = []
+    total.value = 0
+  }
+}
+
+function euro(v: number) {
+  return new Intl.NumberFormat('de-DE', {
+    style: 'currency',
+    currency: 'EUR'
+  }).format(v)
+}
+
 function renderCartItem(item: any) {
   return h('a-list-item', {}, {
     default: () =>
       h('div', { style: 'display:flex;align-items:center;gap:10px;' }, [
         h('img', {
-          src: item.image,
-          style: 'width:48px;height:48px;object-fit:cover;border-radius:6px;',
+          src: item.image || '/course-thumb.jpg',
+          alt: 'Course thumbnail',
+          style: 'width:48px;height:48px;object-fit:cover;border-radius:6px;'
         }),
         h('div', null, [
           h('div', { style: 'font-weight:500' }, item.title),
           h(
             'div',
             { style: 'color:rgba(0,0,0,.45);font-size:13px' },
-            `€${item.price.toFixed(2)}`
-          ),
-        ]),
-      ]),
+            euro(item.price)
+          )
+        ])
+      ])
   })
 }
 
-function euro(v: number) {
-  return new Intl.NumberFormat('de-DE', {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(v)
-}
+// --- Lifecycle ---
+onMounted(() => {
+  loadCart()
+  // refresh when drawer opens
+  watch(openCart, (val) => val && loadCart())
+  // sync with other tabs
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'byway:cart') loadCart()
+  })
+})
 </script>
+
 
 <style scoped>
 .byway-header {
@@ -153,7 +176,9 @@ function euro(v: number) {
   border-bottom: 1px solid #f0f0f0;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
   padding: 0 24px;
+  position: relative;
 }
+
 .header-inner {
   display: flex;
   align-items: center;
@@ -163,6 +188,8 @@ function euro(v: number) {
   margin: 0 auto;
   gap: 1rem;
 }
+
+/* Logo */
 .logo {
   display: flex;
   align-items: center;
@@ -178,6 +205,8 @@ function euro(v: number) {
   font-weight: 600;
   color: #001529;
 }
+
+/* Navigation */
 .nav {
   flex: 1;
   display: flex;
@@ -186,10 +215,13 @@ function euro(v: number) {
 .nav-link {
   color: #000;
   text-decoration: none;
+  transition: color 0.2s ease;
 }
 .nav-link:hover {
   color: #1677ff;
 }
+
+/* Actions */
 .actions {
   display: flex;
   align-items: center;
@@ -200,5 +232,18 @@ function euro(v: number) {
 }
 .cart-btn:hover {
   transform: scale(1.1);
+}
+
+/* Cart drawer elements */
+.cart-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.empty-cart {
+  text-align: center;
+  padding: 48px 0;
+  color: rgba(0, 0, 0, 0.45);
 }
 </style>
