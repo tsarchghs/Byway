@@ -40,6 +40,10 @@ export class BywayClient {
     this.orders = new OrderService(this.http);
     this.payments = new PaymentService(this.http);
   }
+    withToken(token?: string) {
+    this.http.setToken(token);
+    return this;
+  }
 }
 
 export const sdk = new BywayClient();

@@ -177,7 +177,12 @@ const rules: Record<string, Rule[]> = {
 
 /** GraphQL */
 const API_URL = 'http://localhost:4000/api/teach-internal/graphql'
-function getAuthHeaders(){ return { 'Content-Type':'application/json' } as Record<string,string> }
+function getAuthHeaders(){
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  return headers
+}
 async function fetchGraphQL<T=any>(query: string, variables?: Record<string, any>): Promise<T> {
   const resp = await fetch(API_URL, {
     method: 'POST',

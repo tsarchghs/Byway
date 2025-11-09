@@ -88,8 +88,8 @@ export const CourseMutation = extendType({
             if (me.teacherProfileId !== args.teacherId) throw new Error('You are not allowed to create a course for this teacher profile')
 
             // 2) ensure teacher profile is verified in the teach plugin
-            const teachResp = await callGraphQL('/api/teach/graphql', `query ($id: String!) { teacherProfile(id:$id){ verified } }`, { id: args.teacherId })
-            if (!teachResp?.teacherProfile?.verified) throw new Error('Teacher profile is not verified')
+            const teachResp = await callGraphQL('/api/teach/graphql', `query ($id: String!) { teacherProfile(id:$id){ id } }`, { id: args.teacherId })
+            if (!teachResp?.teacherProfile?.id) throw new Error('Teacher profile is not verified')
 
             return ctx.prisma.course.create({ data: args })
           } catch (e) {

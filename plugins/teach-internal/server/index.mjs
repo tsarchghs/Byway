@@ -14,17 +14,49 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret'
 
 
 // === Zod route validators (auto-generated) ===
+// === Zod route validators (auto-generated, fixed) ===
+export const ZCourseCreate = z.object({
+  title: z.string(),
+  teacherId: z.string(),
+  category: z.any().optional(),
+  difficulty: z.any().optional(),
+})
 
-export const ZCourseCreate = z.object({{'title: z.string(), teacherId: z.string(), category: z.any().optional(), difficulty: z.any().optional()'}})
-export const ZCourseUpdate = z.object({{'id: z.any().optional(), title: z.any().optional(), teacherId: z.any().optional(), category: z.any().optional(), difficulty: z.any().optional()'}})
+export const ZCourseUpdate = z.object({
+  id: z.any().optional(),
+  title: z.any().optional(),
+  teacherId: z.any().optional(),
+  category: z.any().optional(),
+  difficulty: z.any().optional(),
+})
 
+export const ZModuleCreate = z.object({
+  courseId: z.string(),
+  title: z.string(),
+  order: z.any().optional(),
+})
 
-export const ZModuleCreate = z.object({{'courseId: z.string(), title: z.string(), order: z.any().optional()'}})
-export const ZModuleUpdate = z.object({{'id: z.any().optional(), courseId: z.any().optional(), title: z.any().optional(), order: z.any().optional()'}})
+export const ZModuleUpdate = z.object({
+  id: z.any().optional(),
+  courseId: z.any().optional(),
+  title: z.any().optional(),
+  order: z.any().optional(),
+})
 
+export const ZLessonCreate = z.object({
+  moduleId: z.string(),
+  title: z.string(),
+  content: z.any().optional(),
+  order: z.any().optional(),
+})
 
-export const ZLessonCreate = z.object({{'moduleId: z.string(), title: z.string(), content: z.any().optional(), order: z.any().optional()'}})
-export const ZLessonUpdate = z.object({{'id: z.any().optional(), moduleId: z.any().optional(), title: z.any().optional(), content: z.any().optional(), order: z.any().optional()'}})
+export const ZLessonUpdate = z.object({
+  id: z.any().optional(),
+  moduleId: z.any().optional(),
+  title: z.any().optional(),
+  content: z.any().optional(),
+  order: z.any().optional(),
+})
 
 export async function register(app) {
   const router = express.Router()
