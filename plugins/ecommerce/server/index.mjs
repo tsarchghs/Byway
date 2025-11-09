@@ -1,3 +1,5 @@
+import { z } from 'zod'
+import { PrismaClient } from '/mnt/data/Byway/Byway/plugins/ecommerce/server/db/generated/client/index.js';
 import express from 'express'
 import cors from 'cors'
 import jwt from 'jsonwebtoken'
@@ -15,8 +17,32 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret'
   // Optional admin token that must be supplied to call the /reconcile endpoint
 const RECONCILE_ADMIN_TOKEN = process.env.RECONCILE_ADMIN_TOKEN || ''
 
+
+// === Zod route validators (auto-generated) ===
+
+export const ZOrderCreate = z.object({{'studentId: z.string(), status: z.any().optional()'}})
+export const ZOrderUpdate = z.object({{'id: z.any().optional(), studentId: z.any().optional(), status: z.any().optional()'}})
+
+
+export const ZOrderItemCreate = z.object({{'orderId: z.string(), courseId: z.string(), quantity: z.any().optional()'}})
+export const ZOrderItemUpdate = z.object({{'id: z.any().optional(), orderId: z.any().optional(), courseId: z.any().optional(), quantity: z.any().optional()'}})
+
+
+export const ZPaymentCreate = z.object({{'orderId: z.string(), provider: z.any().optional(), status: z.any().optional(), amount: z.number()'}})
+export const ZPaymentUpdate = z.object({{'id: z.any().optional(), orderId: z.any().optional(), provider: z.any().optional(), status: z.any().optional(), amount: z.any().optional()'}})
+
+
+export const ZStudentMirrorCreate = z.object({{'userId: z.any().optional(), displayName: z.any().optional()'}})
+export const ZStudentMirrorUpdate = z.object({{'id: z.any().optional(), userId: z.any().optional(), displayName: z.any().optional()'}})
+
 export async function register(app) {
+  const prisma = new PrismaClient()
+
   const router = express.Router()
+  router.use((req,res,next)=>{
+    if (req.path.startsWith('/graphql') || req.path.includes('/webhook')) return next();
+    return express.json()(req,res,next);
+  })
 
   // CORS before everything else
   router.use(cors({ origin: ['http://localhost:3000'], credentials: true }))
@@ -181,6 +207,149 @@ export async function register(app) {
     }
   })
 
-  app.use('/api/ecommerce', router)
+  
+  // === REST: Orders ===
+  router.get('/orders', async (req, res) => {
+    try {
+      const where: any = {};
+      if (req.query.studentId) where.studentId = String(req.query.studentId);
+      if (req.query.status) where.status = String(req.query.status);
+      const list = await prisma.order.findMany({ where, include: { items: true, payments: true } });
+      res.json({ success: true, data: list });
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+  });
+  router.get('/orders/:id', async (req, res) => {
+    try {
+      const item = await prisma.order.findUnique({ where: { id: req.params.id }, include: { items: true, payments: true } });
+      if (!item) return res.status(404).json({ success: false, error: 'Not found' });
+      res.json({ success: true, data: item });
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+  });
+  router.post('/orders', async (req, res) => {
+    try {
+      const created = await prisma.order.create({ data: req.body || {} });
+      res.status(201).json({ success: true, data: created });
+    } catch (e) { res.status(400).json({ success: false, error: e.message }); }
+  });
+  router.put('/orders/:id', async (req, res) => {
+    try {
+      const updated = await prisma.order.update({ where: { id: req.params.id }, data: req.body || {} });
+      res.json({ success: true, data: updated });
+    } catch (e) { res.status(400).json({ success: false, error: e.message }); }
+  });
+  router.delete('/orders/:id', async (req, res) => {
+    try {
+      await prisma.order.delete({ where: { id: req.params.id } });
+      res.json({ success: true });
+    } catch (e) { res.status(400).json({ success: false, error: e.message }); }
+  });
+
+  // === REST: Payments ===
+  router.get('/payments', async (_req, res) => {
+    try {
+      const list = await prisma.payment.findMany();
+      res.json({ success: true, data: list });
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+  });
+  router.get('/payments/:id', async (req, res) => {
+    try {
+      const item = await prisma.payment.findUnique({ where: { id: req.params.id } });
+      if (!item) return res.status(404).json({ success: false, error: 'Not found' });
+      res.json({ success: true, data: item });
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+  });
+  router.post('/payments', async (req, res) => {
+    try {
+      const created = await prisma.payment.create({ data: req.body || {} });
+      res.status(201).json({ success: true, data: created });
+    } catch (e) { res.status(400).json({ success: false, error: e.message }); }
+  });
+  router.delete('/payments/:id', async (req, res) => {
+    try {
+      await prisma.payment.delete({ where: { id: req.params.id } });
+      res.json({ success: true });
+    } catch (e) { res.status(400).json({ success: false, error: e.message }); }
+  });
+
+  // === REST: StudentMirror ===
+  router.get('/student-mirrors', async (_req, res) => {
+    try {
+      const list = await prisma.studentMirror.findMany();
+      res.json({ success: true, data: list });
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+  });
+  router.get('/student-mirrors/:id', async (req, res) => {
+    try {
+      const item = await prisma.studentMirror.findUnique({ where: { id: req.params.id } });
+      if (!item) return res.status(404).json({ success: false, error: 'Not found' });
+      res.json({ success: true, data: item });
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+  });
+  router.post('/student-mirrors', async (req, res) => {
+    try {
+      const created = await prisma.studentMirror.create({ data: req.body || {} });
+      res.status(201).json({ success: true, data: created });
+    } catch (e) { res.status(400).json({ success: false, error: e.message }); }
+  });
+  router.put('/student-mirrors/:id', async (req, res) => {
+    try {
+      const updated = await prisma.studentMirror.update({ where: { id: req.params.id }, data: req.body || {} });
+      res.json({ success: true, data: updated });
+    } catch (e) { res.status(400).json({ success: false, error: e.message }); }
+  });
+  router.delete('/student-mirrors/:id', async (req, res) => {
+    try {
+      await prisma.studentMirror.delete({ where: { id: req.params.id } });
+      res.json({ success: true });
+    } catch (e) { res.status(400).json({ success: false, error: e.message }); }
+  });
+
+  // === REST: Carts by student ===
+  const API_BASE = process.env.API_BASE_URL || 'http://localhost:4000';
+  router.get('/carts/by-student/:studentId', async (req, res) => {
+    try {
+      const studentId = req.params.studentId;
+      let cart = await prisma.order.findFirst({ where: { studentId, status: 'PENDING' }, include: { items: true, payments: true } });
+      if (!cart) {
+        cart = await prisma.order.create({ data: { studentId, status: 'PENDING' } });
+        cart.items = [];
+        cart.payments = [];
+      }
+      res.json({ success: true, data: cart });
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+  });
+  router.post('/carts/by-student/:studentId/items', async (req, res) => {
+    try {
+      const studentId = req.params.studentId;
+      const { courseId, quantity = 1 } = req.body || {};
+      if (!courseId) return res.status(400).json({ success: false, error: 'courseId required' });
+
+      try {
+        const r = await fetch(`${API_BASE}/plugins/students-internal/api/student-courses?studentId=${encodeURIComponent(studentId)}&courseId=${encodeURIComponent(courseId)}`);
+        const j = await r.json();
+        if (j?.data?.length) return res.status(409).json({ success: false, error: 'Already enrolled' });
+      } catch {}
+
+      let order = await prisma.order.findFirst({ where: { studentId, status: 'PENDING' } });
+      if (!order) {
+        order = await prisma.order.create({ data: { studentId, status: 'PENDING' } });
+      }
+      const existing = await prisma.orderItem.findFirst({ where: { orderId: order.id, courseId } });
+      if (existing) {
+        const updated = await prisma.orderItem.update({ where: { id: existing.id }, data: { quantity: existing.quantity + Number(quantity || 1) } });
+        return res.json({ success: true, data: updated });
+      }
+      const created = await prisma.orderItem.create({ data: { orderId: order.id, courseId, quantity: Number(quantity || 1) } });
+      res.status(201).json({ success: true, data: created });
+    } catch (e) { res.status(400).json({ success: false, error: e.message }); }
+  });
+  router.delete('/carts/by-student/:studentId/items/:orderItemId', async (req, res) => {
+    try {
+      await prisma.orderItem.delete({ where: { id: req.params.orderItemId } });
+      res.json({ success: true });
+    } catch (e) { res.status(400).json({ success: false, error: e.message }); }
+  });
+
+app.use('/api/ecommerce', router)
   console.log('[ecommerce] GraphQL available at /api/ecommerce/graphql')
 }

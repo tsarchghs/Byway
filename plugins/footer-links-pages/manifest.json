@@ -1,6 +1,9 @@
 {
-  "name": "authentication",
+  "name": "footer-links-pages",
   "routes": [
-    { "path": "/faq", "file": "nuxt/pages/faq.vue" }
+    {
+      "path": "/faq",
+      "file": "nuxt/pages/faq.vue"
+    }
   ]
 }

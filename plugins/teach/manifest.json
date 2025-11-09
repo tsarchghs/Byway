@@ -1,6 +1,16 @@
 {
-  "name": "authentication",
+  "name": "teach",
   "routes": [
-    { "path": "/teach", "file": "nuxt/pages/teach.vue" }
-  ]
+    {
+      "path": "/teach",
+      "file": "nuxt/pages/teach.vue"
+    }
+  ],
+  "endpoints": {
+    "GET /api/teachers": true,
+    "GET /api/teachers/:id": true,
+    "POST /api/teachers": true,
+    "PUT /api/teachers/:id": true,
+    "DELETE /api/teachers/:id": true
+  }
 }

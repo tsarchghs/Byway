@@ -1,7 +1,32 @@
 {
-  "name": "authentication",
+  "name": "ecommerce",
   "routes": [
-    { "path": "/checkout/success", "file": "nuxt/pages/checkout/success.vue" },
-    { "path": "/checkout/cancel", "file": "nuxt/pages/checkout/cancel.vue" }
-  ]
+    {
+      "path": "/checkout/success",
+      "file": "nuxt/pages/checkout/success.vue"
+    },
+    {
+      "path": "/checkout/cancel",
+      "file": "nuxt/pages/checkout/cancel.vue"
+    }
+  ],
+  "endpoints": {
+    "GET /api/orders": true,
+    "GET /api/orders/:id": true,
+    "POST /api/orders": true,
+    "PUT /api/orders/:id": true,
+    "DELETE /api/orders/:id": true,
+    "GET /api/payments": true,
+    "GET /api/payments/:id": true,
+    "POST /api/payments": true,
+    "DELETE /api/payments/:id": true,
+    "GET /api/student-mirrors": true,
+    "GET /api/student-mirrors/:id": true,
+    "POST /api/student-mirrors": true,
+    "PUT /api/student-mirrors/:id": true,
+    "DELETE /api/student-mirrors/:id": true,
+    "GET /api/carts/by-student/:studentId": true,
+    "POST /api/carts/by-student/:studentId/items": true,
+    "DELETE /api/carts/by-student/:studentId/items/:orderItemId": true
+  }
 }

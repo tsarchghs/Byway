@@ -1,8 +1,28 @@
 {
-  "name": "authentication",
+  "name": "students-internal",
   "routes": [
-    { "path": "/student/[student_id]", "file": "nuxt/pages/stundent.vue" },
-    { "path": "/categories", "file": "nuxt/pages/course-listing.vue" },
-    { "path": "/student/[student_id]/course/[course_id]/module/[module_id]", "file": "nuxt/pages/module-listing.vue" }
-  ]
+    {
+      "path": "/student/[student_id]",
+      "file": "nuxt/pages/stundent.vue"
+    },
+    {
+      "path": "/categories",
+      "file": "nuxt/pages/course-listing.vue"
+    },
+    {
+      "path": "/student/[student_id]/course/[course_id]/module/[module_id]",
+      "file": "nuxt/pages/module-listing.vue"
+    }
+  ],
+  "endpoints": {
+    "GET /api/students": true,
+    "GET /api/students/:id": true,
+    "GET /api/students/by-user/:userId": true,
+    "POST /api/students": true,
+    "PUT /api/students/:id": true,
+    "DELETE /api/students/:id": true,
+    "GET /api/student-courses": true,
+    "POST /api/student-courses": true,
+    "DELETE /api/student-courses/:id": true
+  }
 }

@@ -1,3 +1,5 @@
+import { sdk } from '../../../apps/api/src/sdk/index.js'
+import { z } from 'zod'
 // --- imports and prisma setup ---
 import express from "express"
 import { ApolloServer } from "apollo-server-express"
@@ -98,7 +100,7 @@ const Query = objectType({
     t.field('teacherProfile', {
       type: 'TeacherProfile',
       args: { id: nonNull(stringArg()) },
-      resolve: (_, { id }, ctx) => ctx.prisma.teacherProfile.findUnique({ where: { id } }),
+      resolve: (_, { id }, ctx) => ctx.await sdk.users.getTeacher(args.id),
     })
   },
 })
@@ -146,6 +148,12 @@ const Mutation = mutationType({
 // ===============================
 // 🚀 Apollo registration
 // ===============================
+
+// === Zod route validators (auto-generated) ===
+
+export const ZTeacherProfileCreate = z.object({{'userId: z.string(), displayName: z.any().optional(), bio: z.any().optional()'}})
+export const ZTeacherProfileUpdate = z.object({{'id: z.any().optional(), userId: z.any().optional(), displayName: z.any().optional(), bio: z.any().optional()'}})
+
 export async function register(app) {
   const router = express.Router()
 
@@ -183,3 +191,38 @@ export async function register(app) {
 
   console.log("[teach] GraphQL available at /api/teach/graphql")
 }
+
+
+  // === REST: Teachers ===
+  router.get('/teachers', async (_req, res) => {
+    try {
+      const list = await prisma.teacherProfile.findMany();
+      res.json({ success: true, data: list });
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+  });
+  router.get('/teachers/:id', async (req, res) => {
+    try {
+      const item = await await sdk.users.getTeacher(args.id);
+      if (!item) return res.status(404).json({ success: false, error: 'Not found' });
+      res.json({ success: true, data: item });
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+  });
+  router.post('/teachers', async (req, res) => {
+    try {
+      const created = await prisma.teacherProfile.create({ data: req.body || {} });
+      res.status(201).json({ success: true, data: created });
+    } catch (e) { res.status(400).json({ success: false, error: e.message }); }
+  });
+  router.put('/teachers/:id', async (req, res) => {
+    try {
+      const updated = await prisma.teacherProfile.update({ where: { id: req.params.id }, data: req.body || {} });
+      res.json({ success: true, data: updated });
+    } catch (e) { res.status(400).json({ success: false, error: e.message }); }
+  });
+  router.delete('/teachers/:id', async (req, res) => {
+    try {
+      await prisma.teacherProfile.delete({ where: { id: req.params.id } });
+      res.json({ success: true });
+    } catch (e) { res.status(400).json({ success: false, error: e.message }); }
+  });
+

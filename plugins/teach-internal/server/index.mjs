@@ -1,3 +1,5 @@
+import { sdk } from '../../../apps/api/src/sdk/index.js'
+import { z } from 'zod'
 import express from 'express'
 import { ApolloServer } from 'apollo-server-express'
 import { schema } from './nexus/index.js'
@@ -9,6 +11,20 @@ import { ensureCodeServer } from './codeServerManager.js'
 
 const prisma = new PrismaClient()
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret'
+
+
+// === Zod route validators (auto-generated) ===
+
+export const ZCourseCreate = z.object({{'title: z.string(), teacherId: z.string(), category: z.any().optional(), difficulty: z.any().optional()'}})
+export const ZCourseUpdate = z.object({{'id: z.any().optional(), title: z.any().optional(), teacherId: z.any().optional(), category: z.any().optional(), difficulty: z.any().optional()'}})
+
+
+export const ZModuleCreate = z.object({{'courseId: z.string(), title: z.string(), order: z.any().optional()'}})
+export const ZModuleUpdate = z.object({{'id: z.any().optional(), courseId: z.any().optional(), title: z.any().optional(), order: z.any().optional()'}})
+
+
+export const ZLessonCreate = z.object({{'moduleId: z.string(), title: z.string(), content: z.any().optional(), order: z.any().optional()'}})
+export const ZLessonUpdate = z.object({{'id: z.any().optional(), moduleId: z.any().optional(), title: z.any().optional(), content: z.any().optional(), order: z.any().optional()'}})
 
 export async function register(app) {
   const router = express.Router()
@@ -57,7 +73,107 @@ router.get('/code-server/:teacherId/:lessonId', async (req, res) => {
     res.status(500).json({ ok: false, error: err.message })
   }
 })
-  app.use('/api/teach-internal', router)
+  
+  // === REST: Courses ===
+  router.get('/courses', async (_req, res) => {
+    try {
+      const list = await await sdk.courses.list();
+      res.json({ success: true, data: list });
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+  });
+  router.get('/courses/:id', async (req, res) => {
+    try {
+      const item = await await sdk.courses.get(args.id);
+      if (!item) return res.status(404).json({ success: false, error: 'Not found' });
+      res.json({ success: true, data: item });
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+  });
+  router.post('/courses', async (req, res) => {
+    try {
+      const created = await prisma.course.create({ data: req.body || {} });
+      res.status(201).json({ success: true, data: created });
+    } catch (e) { res.status(400).json({ success: false, error: e.message }); }
+  });
+  router.put('/courses/:id', async (req, res) => {
+    try {
+      const updated = await prisma.course.update({ where: { id: req.params.id }, data: req.body || {} });
+      res.json({ success: true, data: updated });
+    } catch (e) { res.status(400).json({ success: false, error: e.message }); }
+  });
+  router.delete('/courses/:id', async (req, res) => {
+    try {
+      await prisma.course.delete({ where: { id: req.params.id } });
+      res.json({ success: true });
+    } catch (e) { res.status(400).json({ success: false, error: e.message }); }
+  });
+
+  // === REST: Modules ===
+  router.get('/modules', async (_req, res) => {
+    try {
+      const list = await prisma.module.findMany();
+      res.json({ success: true, data: list });
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+  });
+  router.get('/modules/:id', async (req, res) => {
+    try {
+      const item = await prisma.module.findUnique({ where: { id: req.params.id } });
+      if (!item) return res.status(404).json({ success: false, error: 'Not found' });
+      res.json({ success: true, data: item });
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+  });
+  router.post('/modules', async (req, res) => {
+    try {
+      const created = await prisma.module.create({ data: req.body || {} });
+      res.status(201).json({ success: true, data: created });
+    } catch (e) { res.status(400).json({ success: false, error: e.message }); }
+  });
+  router.put('/modules/:id', async (req, res) => {
+    try {
+      const updated = await prisma.module.update({ where: { id: req.params.id }, data: req.body || {} });
+      res.json({ success: true, data: updated });
+    } catch (e) { res.status(400).json({ success: false, error: e.message }); }
+  });
+  router.delete('/modules/:id', async (req, res) => {
+    try {
+      await prisma.module.delete({ where: { id: req.params.id } });
+      res.json({ success: true });
+    } catch (e) { res.status(400).json({ success: false, error: e.message }); }
+  });
+
+  // === REST: Lessons ===
+  router.get('/lessons', async (_req, res) => {
+    try {
+      const list = await prisma.lesson.findMany();
+      res.json({ success: true, data: list });
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+  });
+  router.get('/lessons/:id', async (req, res) => {
+    try {
+      const item = await prisma.lesson.findUnique({ where: { id: req.params.id } });
+      if (!item) return res.status(404).json({ success: false, error: 'Not found' });
+      res.json({ success: true, data: item });
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+  });
+  router.post('/lessons', async (req, res) => {
+    try {
+      const created = await prisma.lesson.create({ data: req.body || {} });
+      res.status(201).json({ success: true, data: created });
+    } catch (e) { res.status(400).json({ success: false, error: e.message }); }
+  });
+  router.put('/lessons/:id', async (req, res) => {
+    try {
+      const updated = await prisma.lesson.update({ where: { id: req.params.id }, data: req.body || {} });
+      res.json({ success: true, data: updated });
+    } catch (e) { res.status(400).json({ success: false, error: e.message }); }
+  });
+  router.delete('/lessons/:id', async (req, res) => {
+    try {
+      await prisma.lesson.delete({ where: { id: req.params.id } });
+      res.json({ success: true });
+    } catch (e) { res.status(400).json({ success: false, error: e.message }); }
+  });
+
+app.use('/api/teach-internal', router)
 
 app.use(cors({
   origin: ['http://localhost:3000'], // your frontend(s)

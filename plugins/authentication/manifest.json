@@ -1,7 +1,20 @@
 {
   "name": "authentication",
   "routes": [
-    { "path": "/auth/login", "file": "nuxt/pages/all_auth.vue" },
-    { "path": "/auth/signup", "file": "nuxt/pages/all_auth.vue" }
-  ]
+    {
+      "path": "/auth/login",
+      "file": "nuxt/pages/all_auth.vue"
+    },
+    {
+      "path": "/auth/signup",
+      "file": "nuxt/pages/all_auth.vue"
+    }
+  ],
+  "endpoints": {
+    "GET /api/users": true,
+    "GET /api/users/:id": true,
+    "POST /api/users": true,
+    "PUT /api/users/:id": true,
+    "DELETE /api/users/:id": true
+  }
 }
