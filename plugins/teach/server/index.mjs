@@ -100,10 +100,13 @@ const Query = objectType({
     t.field('teacherProfile', {
       type: 'TeacherProfile',
       args: { id: nonNull(stringArg()) },
-      resolve: (_, { id }, ctx) => ctx.await sdk.users.getTeacher(args.id),
+      async resolve(_, { id }, ctx) {
+        return await sdk.users.getTeacher(id)
+      },
     })
   },
 })
+
 
 // ===============================
 // 🔧 Mutations
@@ -151,8 +154,19 @@ const Mutation = mutationType({
 
 // === Zod route validators (auto-generated) ===
 
-export const ZTeacherProfileCreate = z.object({{'userId: z.string(), displayName: z.any().optional(), bio: z.any().optional()'}})
-export const ZTeacherProfileUpdate = z.object({{'id: z.any().optional(), userId: z.any().optional(), displayName: z.any().optional(), bio: z.any().optional()'}})
+// === Zod route validators (auto-generated, fixed) ===
+export const ZTeacherProfileCreate = z.object({
+  userId: z.string(),
+  displayName: z.any().optional(),
+  bio: z.any().optional(),
+})
+
+export const ZTeacherProfileUpdate = z.object({
+  id: z.any().optional(),
+  userId: z.any().optional(),
+  displayName: z.any().optional(),
+  bio: z.any().optional(),
+})
 
 export async function register(app) {
   const router = express.Router()

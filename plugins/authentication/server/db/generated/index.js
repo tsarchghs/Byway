@@ -153,6 +153,7 @@ const config = {
     "db"
   ],
   "activeProvider": "sqlite",
+  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {
@@ -161,8 +162,8 @@ const config = {
       }
     }
   },
-  "inlineSchema": "generator client {\n  provider = \"prisma-client-js\"\n  output   = \"./generated\"\n}\n\ndatasource db {\n  provider = \"sqlite\" // can be Postgres too\n  url      = \"file:./auth.db\" // e.g., file:./auth.db\n}\n\nmodel User {\n  id               String   @id @default(cuid())\n  teacherProfileId String?\n  email            String   @unique\n  password         String\n  firstName        String?\n  lastName         String?\n  createdAt        DateTime @default(now())\n  updatedAt        DateTime @updatedAt\n}\n",
-  "inlineSchemaHash": "b1fa12200756e95550b37a8a4a3f5ee7f7f53117d13a3b510538e8268b0eaab3",
+  "inlineSchema": "generator client {\n  provider = \"prisma-client-js\"\n  output   = \"./generated\"\n}\n\ndatasource db {\n  provider = \"sqlite\" // can be Postgres too\n  url      = \"file:./auth.db\" // e.g., file:./auth.db\n}\n\nmodel User {\n  id               String   @id @default(cuid())\n  teacherProfileId String?\n  email            String   @unique\n  password         String\n  firstName        String?\n  lastName         String?\n  createdAt        DateTime @default(now())\n  updatedAt        DateTime @updatedAt\n\n  @@index([teacherProfileId])\n}\n",
+  "inlineSchemaHash": "96ac56d54f8a0634858750aa2995e087df39bce72d6be542c5423e83b937a9ce",
   "copyEngine": true
 }
 
@@ -171,8 +172,8 @@ const fs = require('fs')
 config.dirname = __dirname
 if (!fs.existsSync(path.join(__dirname, 'schema.prisma'))) {
   const alternativePaths = [
-    "generated",
-    "",
+    "plugins/authentication/server/db/generated",
+    "authentication/server/db/generated",
   ]
   
   const alternativePath = alternativePaths.find((altPath) => {
@@ -202,7 +203,7 @@ Object.assign(exports, Prisma)
 
 // file annotations for bundling tools to include these files
 path.join(__dirname, "libquery_engine-darwin-arm64.dylib.node");
-path.join(process.cwd(), "generated/libquery_engine-darwin-arm64.dylib.node")
+path.join(process.cwd(), "plugins/authentication/server/db/generated/libquery_engine-darwin-arm64.dylib.node")
 // file annotations for bundling tools to include these files
 path.join(__dirname, "schema.prisma");
-path.join(process.cwd(), "generated/schema.prisma")
+path.join(process.cwd(), "plugins/authentication/server/db/generated/schema.prisma")

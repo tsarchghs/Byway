@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { PrismaClient } from '/mnt/data/Byway/Byway/plugins/ecommerce/server/db/generated/client/index.js';
+import { PrismaClient } from './db/generated/client/index.js';
 import express from 'express'
 import cors from 'cors'
 import jwt from 'jsonwebtoken'
@@ -19,21 +19,59 @@ const RECONCILE_ADMIN_TOKEN = process.env.RECONCILE_ADMIN_TOKEN || ''
 
 
 // === Zod route validators (auto-generated) ===
+// === Zod route validators (auto-generated, fixed) ===
+export const ZOrderCreate = z.object({
+  studentId: z.string(),
+  status: z.any().optional(),
+})
 
-export const ZOrderCreate = z.object({{'studentId: z.string(), status: z.any().optional()'}})
-export const ZOrderUpdate = z.object({{'id: z.any().optional(), studentId: z.any().optional(), status: z.any().optional()'}})
+export const ZOrderUpdate = z.object({
+  id: z.any().optional(),
+  studentId: z.any().optional(),
+  status: z.any().optional(),
+})
 
 
-export const ZOrderItemCreate = z.object({{'orderId: z.string(), courseId: z.string(), quantity: z.any().optional()'}})
-export const ZOrderItemUpdate = z.object({{'id: z.any().optional(), orderId: z.any().optional(), courseId: z.any().optional(), quantity: z.any().optional()'}})
+// === Zod route validators (auto-generated, fixed) ===
+export const ZOrderItemCreate = z.object({
+  orderId: z.string(),
+  courseId: z.string(),
+  quantity: z.any().optional(),
+})
 
+export const ZOrderItemUpdate = z.object({
+  id: z.any().optional(),
+  orderId: z.any().optional(),
+  courseId: z.any().optional(),
+  quantity: z.any().optional(),
+})
 
-export const ZPaymentCreate = z.object({{'orderId: z.string(), provider: z.any().optional(), status: z.any().optional(), amount: z.number()'}})
-export const ZPaymentUpdate = z.object({{'id: z.any().optional(), orderId: z.any().optional(), provider: z.any().optional(), status: z.any().optional(), amount: z.any().optional()'}})
+// === Zod route validators (auto-generated, fixed) ===
+export const ZPaymentCreate = z.object({
+  orderId: z.string(),
+  provider: z.any().optional(),
+  status: z.any().optional(),
+  amount: z.number(),
+})
 
+export const ZPaymentUpdate = z.object({
+  id: z.any().optional(),
+  orderId: z.any().optional(),
+  provider: z.any().optional(),
+  status: z.any().optional(),
+  amount: z.any().optional(),
+})
+// === Zod route validators (auto-generated, fixed) ===
+export const ZStudentMirrorCreate = z.object({
+  userId: z.any().optional(),
+  displayName: z.any().optional(),
+})
 
-export const ZStudentMirrorCreate = z.object({{'userId: z.any().optional(), displayName: z.any().optional()'}})
-export const ZStudentMirrorUpdate = z.object({{'id: z.any().optional(), userId: z.any().optional(), displayName: z.any().optional()'}})
+export const ZStudentMirrorUpdate = z.object({
+  id: z.any().optional(),
+  userId: z.any().optional(),
+  displayName: z.any().optional(),
+})
 
 export async function register(app) {
   const prisma = new PrismaClient()
@@ -211,7 +249,7 @@ export async function register(app) {
   // === REST: Orders ===
   router.get('/orders', async (req, res) => {
     try {
-      const where: any = {};
+      const where = {};
       if (req.query.studentId) where.studentId = String(req.query.studentId);
       if (req.query.status) where.status = String(req.query.status);
       const list = await prisma.order.findMany({ where, include: { items: true, payments: true } });

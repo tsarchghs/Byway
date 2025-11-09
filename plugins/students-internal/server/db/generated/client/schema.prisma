@@ -35,7 +35,7 @@ enum LabState {
 
 model Student {
   id             String              @id @default(cuid())
-  userId         String?
+  userId         String?             @unique
   displayName    String?
   courses        StudentCourse[]
   lessonProgress LessonProgress[]
@@ -60,6 +60,7 @@ model StudentCourse {
   student Student @relation(fields: [studentId], references: [id])
 
   @@unique([studentId, courseId])
+  @@index([courseId])
 }
 
 /**

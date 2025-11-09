@@ -1,6 +1,6 @@
 import { sdk } from '../../../apps/api/src/sdk/index.js'
 import { z } from 'zod'
-import { PrismaClient } from '/mnt/data/Byway/Byway/plugins/authentication/server/db/generated/index.js';
+import { PrismaClient } from './db/generated/index.js';
 import express from "express"
 import { ApolloServer } from "apollo-server-express"
 import { schema } from "./nexus/authSchema.js"
@@ -9,9 +9,22 @@ import { createContext } from "./nexus/context.js"
 
 // === Zod route validators (auto-generated) ===
 
-export const ZUserCreate = z.object({{'email: z.string(), password: z.string(), firstName: z.any().optional(), lastName: z.any().optional(), teacherProfileId: z.any().optional()'}})
-export const ZUserUpdate = z.object({{'id: z.any().optional(), email: z.any().optional(), password: z.any().optional(), firstName: z.any().optional(), lastName: z.any().optional(), teacherProfileId: z.any().optional()'}})
+export const ZUserCreate = z.object({
+  email: z.string(),
+  password: z.string(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  teacherProfileId: z.string().optional(),
+})
 
+export const ZUserUpdate = z.object({
+  id: z.string().optional(),
+  email: z.string().optional(),
+  password: z.string().optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  teacherProfileId: z.string().optional(),
+})
 export async function register(app) {
   const prisma = new PrismaClient()
 

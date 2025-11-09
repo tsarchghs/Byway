@@ -158,14 +158,14 @@ export class PrismaClient<
   get course(): Prisma.CourseDelegate<ExtArgs, ClientOptions>;
 
   /**
-   * `ctx.prisma`: Exposes CRUD operations for the **Module** model.
+   * `prisma.module`: Exposes CRUD operations for the **Module** model.
     * Example usage:
     * ```ts
     * // Fetch zero or more Modules
-    * const modules = await ctx.prisma.findMany()
+    * const modules = await prisma.module.findMany()
     * ```
     */
-  get module(): ctx.prismaDelegate<ExtArgs, ClientOptions>;
+  get module(): Prisma.ModuleDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.lesson`: Exposes CRUD operations for the **Lesson** model.
@@ -718,74 +718,74 @@ export namespace Prisma {
       }
       Module: {
         payload: Prisma.$ModulePayload<ExtArgs>
-        fields: ctx.prismaFieldRefs
+        fields: Prisma.ModuleFieldRefs
         operations: {
           findUnique: {
-            args: ctx.prismaFindUniqueArgs<ExtArgs>
+            args: Prisma.ModuleFindUniqueArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$ModulePayload> | null
           }
           findUniqueOrThrow: {
-            args: ctx.prismaFindUniqueOrThrowArgs<ExtArgs>
+            args: Prisma.ModuleFindUniqueOrThrowArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$ModulePayload>
           }
           findFirst: {
-            args: ctx.prismaFindFirstArgs<ExtArgs>
+            args: Prisma.ModuleFindFirstArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$ModulePayload> | null
           }
           findFirstOrThrow: {
-            args: ctx.prismaFindFirstOrThrowArgs<ExtArgs>
+            args: Prisma.ModuleFindFirstOrThrowArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$ModulePayload>
           }
           findMany: {
-            args: ctx.prismaFindManyArgs<ExtArgs>
+            args: Prisma.ModuleFindManyArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$ModulePayload>[]
           }
           create: {
-            args: ctx.prismaCreateArgs<ExtArgs>
+            args: Prisma.ModuleCreateArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$ModulePayload>
           }
           createMany: {
-            args: ctx.prismaCreateManyArgs<ExtArgs>
+            args: Prisma.ModuleCreateManyArgs<ExtArgs>
             result: BatchPayload
           }
           createManyAndReturn: {
-            args: ctx.prismaCreateManyAndReturnArgs<ExtArgs>
+            args: Prisma.ModuleCreateManyAndReturnArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$ModulePayload>[]
           }
           delete: {
-            args: ctx.prismaDeleteArgs<ExtArgs>
+            args: Prisma.ModuleDeleteArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$ModulePayload>
           }
           update: {
-            args: ctx.prismaUpdateArgs<ExtArgs>
+            args: Prisma.ModuleUpdateArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$ModulePayload>
           }
           deleteMany: {
-            args: ctx.prismaDeleteManyArgs<ExtArgs>
+            args: Prisma.ModuleDeleteManyArgs<ExtArgs>
             result: BatchPayload
           }
           updateMany: {
-            args: ctx.prismaUpdateManyArgs<ExtArgs>
+            args: Prisma.ModuleUpdateManyArgs<ExtArgs>
             result: BatchPayload
           }
           updateManyAndReturn: {
-            args: ctx.prismaUpdateManyAndReturnArgs<ExtArgs>
+            args: Prisma.ModuleUpdateManyAndReturnArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$ModulePayload>[]
           }
           upsert: {
-            args: ctx.prismaUpsertArgs<ExtArgs>
+            args: Prisma.ModuleUpsertArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$ModulePayload>
           }
           aggregate: {
-            args: ctx.prismaAggregateArgs<ExtArgs>
+            args: Prisma.ModuleAggregateArgs<ExtArgs>
             result: $Utils.Optional<AggregateModule>
           }
           groupBy: {
-            args: ctx.prismaGroupByArgs<ExtArgs>
+            args: Prisma.ModuleGroupByArgs<ExtArgs>
             result: $Utils.Optional<ModuleGroupByOutputType>[]
           }
           count: {
-            args: ctx.prismaCountArgs<ExtArgs>
+            args: Prisma.ModuleCountArgs<ExtArgs>
             result: $Utils.Optional<ModuleCountAggregateOutputType> | number
           }
         }
@@ -2502,7 +2502,7 @@ export namespace Prisma {
      * @param {ModuleFindUniqueArgs} args - Arguments to find a Module
      * @example
      * // Get one Module
-     * const module = await ctx.prisma.findUnique({
+     * const module = await prisma.module.findUnique({
      *   where: {
      *     // ... provide filter here
      *   }
@@ -2516,7 +2516,7 @@ export namespace Prisma {
      * @param {ModuleFindUniqueOrThrowArgs} args - Arguments to find a Module
      * @example
      * // Get one Module
-     * const module = await ctx.prisma.findUniqueOrThrow({
+     * const module = await prisma.module.findUniqueOrThrow({
      *   where: {
      *     // ... provide filter here
      *   }
@@ -2531,7 +2531,7 @@ export namespace Prisma {
      * @param {ModuleFindFirstArgs} args - Arguments to find a Module
      * @example
      * // Get one Module
-     * const module = await ctx.prisma.findFirst({
+     * const module = await prisma.module.findFirst({
      *   where: {
      *     // ... provide filter here
      *   }
@@ -2547,7 +2547,7 @@ export namespace Prisma {
      * @param {ModuleFindFirstOrThrowArgs} args - Arguments to find a Module
      * @example
      * // Get one Module
-     * const module = await ctx.prisma.findFirstOrThrow({
+     * const module = await prisma.module.findFirstOrThrow({
      *   where: {
      *     // ... provide filter here
      *   }
@@ -2562,13 +2562,13 @@ export namespace Prisma {
      * @param {ModuleFindManyArgs} args - Arguments to filter and select certain fields only.
      * @example
      * // Get all Modules
-     * const modules = await ctx.prisma.findMany()
+     * const modules = await prisma.module.findMany()
      * 
      * // Get first 10 Modules
-     * const modules = await ctx.prisma.findMany({ take: 10 })
+     * const modules = await prisma.module.findMany({ take: 10 })
      * 
      * // Only select the `id`
-     * const moduleWithIdOnly = await ctx.prisma.findMany({ select: { id: true } })
+     * const moduleWithIdOnly = await prisma.module.findMany({ select: { id: true } })
      * 
      */
     findMany<T extends ModuleFindManyArgs>(args?: SelectSubset<T, ModuleFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ModulePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -2578,7 +2578,7 @@ export namespace Prisma {
      * @param {ModuleCreateArgs} args - Arguments to create a Module.
      * @example
      * // Create one Module
-     * const Module = await ctx.prisma.create({
+     * const Module = await prisma.module.create({
      *   data: {
      *     // ... data to create a Module
      *   }
@@ -2592,7 +2592,7 @@ export namespace Prisma {
      * @param {ModuleCreateManyArgs} args - Arguments to create many Modules.
      * @example
      * // Create many Modules
-     * const module = await ctx.prisma.createMany({
+     * const module = await prisma.module.createMany({
      *   data: [
      *     // ... provide data here
      *   ]
@@ -2606,14 +2606,14 @@ export namespace Prisma {
      * @param {ModuleCreateManyAndReturnArgs} args - Arguments to create many Modules.
      * @example
      * // Create many Modules
-     * const module = await ctx.prisma.createManyAndReturn({
+     * const module = await prisma.module.createManyAndReturn({
      *   data: [
      *     // ... provide data here
      *   ]
      * })
      * 
      * // Create many Modules and only return the `id`
-     * const moduleWithIdOnly = await ctx.prisma.createManyAndReturn({
+     * const moduleWithIdOnly = await prisma.module.createManyAndReturn({
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -2630,7 +2630,7 @@ export namespace Prisma {
      * @param {ModuleDeleteArgs} args - Arguments to delete one Module.
      * @example
      * // Delete one Module
-     * const Module = await ctx.prisma.delete({
+     * const Module = await prisma.module.delete({
      *   where: {
      *     // ... filter to delete one Module
      *   }
@@ -2644,7 +2644,7 @@ export namespace Prisma {
      * @param {ModuleUpdateArgs} args - Arguments to update one Module.
      * @example
      * // Update one Module
-     * const module = await ctx.prisma.update({
+     * const module = await prisma.module.update({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -2661,7 +2661,7 @@ export namespace Prisma {
      * @param {ModuleDeleteManyArgs} args - Arguments to filter Modules to delete.
      * @example
      * // Delete a few Modules
-     * const { count } = await ctx.prisma.deleteMany({
+     * const { count } = await prisma.module.deleteMany({
      *   where: {
      *     // ... provide filter here
      *   }
@@ -2677,7 +2677,7 @@ export namespace Prisma {
      * @param {ModuleUpdateManyArgs} args - Arguments to update one or more rows.
      * @example
      * // Update many Modules
-     * const module = await ctx.prisma.updateMany({
+     * const module = await prisma.module.updateMany({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -2694,7 +2694,7 @@ export namespace Prisma {
      * @param {ModuleUpdateManyAndReturnArgs} args - Arguments to update many Modules.
      * @example
      * // Update many Modules
-     * const module = await ctx.prisma.updateManyAndReturn({
+     * const module = await prisma.module.updateManyAndReturn({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -2704,7 +2704,7 @@ export namespace Prisma {
      * })
      * 
      * // Update zero or more Modules and only return the `id`
-     * const moduleWithIdOnly = await ctx.prisma.updateManyAndReturn({
+     * const moduleWithIdOnly = await prisma.module.updateManyAndReturn({
      *   select: { id: true },
      *   where: {
      *     // ... provide filter here
@@ -2724,7 +2724,7 @@ export namespace Prisma {
      * @param {ModuleUpsertArgs} args - Arguments to update or create a Module.
      * @example
      * // Update or create a Module
-     * const module = await ctx.prisma.upsert({
+     * const module = await prisma.module.upsert({
      *   create: {
      *     // ... data to create a Module
      *   },
@@ -2746,7 +2746,7 @@ export namespace Prisma {
      * @param {ModuleCountArgs} args - Arguments to filter Modules to count.
      * @example
      * // Count the number of Modules
-     * const count = await ctx.prisma.count({
+     * const count = await prisma.module.count({
      *   where: {
      *     // ... the filter for the Modules we want to count
      *   }

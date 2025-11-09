@@ -194,6 +194,7 @@ const config = {
     "db"
   ],
   "activeProvider": "sqlite",
+  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {
@@ -202,8 +203,8 @@ const config = {
       }
     }
   },
-  "inlineSchema": "generator client {\n  provider = \"prisma-client-js\"\n  output   = \"./generated/client\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = \"file:./teach_internal.db\"\n}\n\nmodel Course {\n  id          String   @id @default(cuid())\n  teacherId   String // soft link to Authentication.user.id\n  title       String\n  category    String?\n  difficulty  String?\n  description String?\n  price       Float    @default(0)\n  discount    Float    @default(0)\n  coverUrl    String?\n  modules     Module[]\n  createdAt   DateTime @default(now())\n  updatedAt   DateTime @updatedAt\n}\n\nmodel Module {\n  id       String   @id @default(cuid())\n  courseId String\n  title    String\n  lessons  Lesson[]\n  Course   Course   @relation(fields: [courseId], references: [id])\n}\n\nmodel Lesson {\n  id        String   @id @default(cuid())\n  moduleId  String\n  title     String\n  type      String\n  duration  Int?\n  content   String?\n  videoUrl  String?\n  rubric    String?\n  preview   Boolean  @default(false)\n  metadata  Json?\n  createdAt DateTime @default(now())\n  Module    Module   @relation(fields: [moduleId], references: [id])\n}\n",
-  "inlineSchemaHash": "b830551784671c3c5c555c70279b0be5b83bf8d6f5570d49f74787e6f1e2f142",
+  "inlineSchema": "generator client {\n  provider = \"prisma-client-js\"\n  output   = \"./generated/client\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = \"file:./teach_internal.db\"\n}\n\nmodel Course {\n  id          String   @id @default(cuid())\n  teacherId   String // soft link to Authentication.user.id\n  title       String\n  category    String?\n  difficulty  String?\n  description String?\n  price       Float    @default(0)\n  discount    Float    @default(0)\n  coverUrl    String?\n  modules     Module[]\n  createdAt   DateTime @default(now())\n  updatedAt   DateTime @updatedAt\n\n  @@index([teacherId])\n}\n\nmodel Module {\n  id       String   @id @default(cuid())\n  courseId String\n  title    String\n  lessons  Lesson[]\n  Course   Course   @relation(fields: [courseId], references: [id])\n}\n\nmodel Lesson {\n  id        String   @id @default(cuid())\n  moduleId  String\n  title     String\n  type      String\n  duration  Int?\n  content   String?\n  videoUrl  String?\n  rubric    String?\n  preview   Boolean  @default(false)\n  metadata  Json?\n  createdAt DateTime @default(now())\n  Module    Module   @relation(fields: [moduleId], references: [id])\n}\n",
+  "inlineSchemaHash": "1696f8e5ddca626d677faf4e1a063fd2d108e51389533a0971d10ad4e4081dc1",
   "copyEngine": true
 }
 
@@ -212,8 +213,8 @@ const fs = require('fs')
 config.dirname = __dirname
 if (!fs.existsSync(path.join(__dirname, 'schema.prisma'))) {
   const alternativePaths = [
-    "generated/client",
-    "client",
+    "plugins/teach-internal/server/db/generated/client",
+    "teach-internal/server/db/generated/client",
   ]
   
   const alternativePath = alternativePaths.find((altPath) => {
@@ -243,7 +244,7 @@ Object.assign(exports, Prisma)
 
 // file annotations for bundling tools to include these files
 path.join(__dirname, "libquery_engine-darwin-arm64.dylib.node");
-path.join(process.cwd(), "generated/client/libquery_engine-darwin-arm64.dylib.node")
+path.join(process.cwd(), "plugins/teach-internal/server/db/generated/client/libquery_engine-darwin-arm64.dylib.node")
 // file annotations for bundling tools to include these files
 path.join(__dirname, "schema.prisma");
-path.join(process.cwd(), "generated/client/schema.prisma")
+path.join(process.cwd(), "plugins/teach-internal/server/db/generated/client/schema.prisma")

@@ -7673,10 +7673,10 @@ export namespace Prisma {
 
   export type StudentWhereUniqueInput = Prisma.AtLeast<{
     id?: string
+    userId?: string
     AND?: StudentWhereInput | StudentWhereInput[]
     OR?: StudentWhereInput[]
     NOT?: StudentWhereInput | StudentWhereInput[]
-    userId?: StringNullableFilter<"Student"> | string | null
     displayName?: StringNullableFilter<"Student"> | string | null
     createdAt?: DateTimeFilter<"Student"> | Date | string
     updatedAt?: DateTimeFilter<"Student"> | Date | string
@@ -7685,7 +7685,7 @@ export namespace Prisma {
     submissions?: StudentSubmissionListRelationFilter
     labs?: LabInstanceListRelationFilter
     quizzes?: QuizAttemptListRelationFilter
-  }, "id">
+  }, "id" | "userId">
 
   export type StudentOrderByWithAggregationInput = {
     id?: SortOrder

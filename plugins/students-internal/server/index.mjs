@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { PrismaClient } from '/mnt/data/Byway/Byway/plugins/students-internal/server/db/generated/client/index.js';
+import { PrismaClient } from './db/generated/client/index.js'
 // plugins/students-internal/server/index.ts
 import express from 'express'
 import { ApolloServer } from 'apollo-server-express'
@@ -11,12 +11,28 @@ import { prisma } from './db/client.js'
 
 // === Zod route validators (auto-generated) ===
 
-export const ZStudentCreate = z.object({{'userId: z.string(), displayName: z.any().optional()'}})
-export const ZStudentUpdate = z.object({{'id: z.any().optional(), userId: z.any().optional(), displayName: z.any().optional()'}})
+// === Zod route validators (auto-generated, fixed) ===
+export const ZStudentCreate = z.object({
+  userId: z.string(),
+  displayName: z.any().optional(),
+})
 
+export const ZStudentUpdate = z.object({
+  id: z.any().optional(),
+  userId: z.any().optional(),
+  displayName: z.any().optional(),
+})
 
-export const ZStudentCourseCreate = z.object({{'studentId: z.string(), courseId: z.string()'}})
-export const ZStudentCourseUpdate = z.object({{'id: z.any().optional(), studentId: z.any().optional(), courseId: z.any().optional()'}})
+export const ZStudentCourseCreate = z.object({
+  studentId: z.string(),
+  courseId: z.string(),
+})
+
+export const ZStudentCourseUpdate = z.object({
+  id: z.any().optional(),
+  studentId: z.any().optional(),
+  courseId: z.any().optional(),
+})
 
 export async function register(app) {
   const prisma = new PrismaClient()
@@ -73,7 +89,7 @@ export async function register(app) {
   // === REST: Students ===
   router.get('/students', async (req, res) => {
     try {
-      const where: any = {};
+      const where = {};
       if (req.query.userId) where.userId = String(req.query.userId);
       const list = await prisma.student.findMany({ where });
       res.json({ success: true, data: list });
@@ -116,7 +132,7 @@ export async function register(app) {
   // === REST: StudentCourses ===
   router.get('/student-courses', async (req, res) => {
     try {
-      const where: any = {};
+      const where = {};
       if (req.query.studentId) where.studentId = String(req.query.studentId);
       if (req.query.courseId) where.courseId = String(req.query.courseId);
       const list = await prisma.studentCourse.findMany({ where });

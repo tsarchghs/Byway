@@ -131,7 +131,7 @@ exports.Prisma.CourseScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
-exports.ctx.prismaScalarFieldEnum = {
+exports.Prisma.ModuleScalarFieldEnum = {
   id: 'id',
   courseId: 'courseId',
   title: 'title'

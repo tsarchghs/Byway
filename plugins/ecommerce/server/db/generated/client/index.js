@@ -212,6 +212,7 @@ const config = {
     "db"
   ],
   "activeProvider": "sqlite",
+  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {
@@ -230,8 +231,8 @@ const fs = require('fs')
 config.dirname = __dirname
 if (!fs.existsSync(path.join(__dirname, 'schema.prisma'))) {
   const alternativePaths = [
-    "generated/client",
-    "client",
+    "plugins/ecommerce/server/db/generated/client",
+    "ecommerce/server/db/generated/client",
   ]
   
   const alternativePath = alternativePaths.find((altPath) => {
@@ -261,7 +262,7 @@ Object.assign(exports, Prisma)
 
 // file annotations for bundling tools to include these files
 path.join(__dirname, "libquery_engine-darwin-arm64.dylib.node");
-path.join(process.cwd(), "generated/client/libquery_engine-darwin-arm64.dylib.node")
+path.join(process.cwd(), "plugins/ecommerce/server/db/generated/client/libquery_engine-darwin-arm64.dylib.node")
 // file annotations for bundling tools to include these files
 path.join(__dirname, "schema.prisma");
-path.join(process.cwd(), "generated/client/schema.prisma")
+path.join(process.cwd(), "plugins/ecommerce/server/db/generated/client/schema.prisma")
