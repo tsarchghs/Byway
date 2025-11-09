@@ -1,62 +1,27 @@
 {
-  "name": "bloggrs-pluggable",
-  "private": true,
+  "name": "@bloggrs/api",
   "version": "0.1.0",
   "type": "module",
-  "workspaces": [
-    "apps/*",
-    "packages/*",
-    "plugins/*"
-  ],
+  "private": true,
   "scripts": {
-    "dev:web": "pnpm --filter @bloggrs/web dev",
-    "dev:api": "pnpm --filter @bloggrs/api dev",
-    "dev": "concurrently -k -n web,api -c blue,green \"pnpm dev:web\" \"pnpm dev:api\"",
-    "build": "pnpm -r build"
-  },
-  "devDependencies": {
-    "@types/node": "^22.18.13",
-    "@vitejs/plugin-vue": "^6.0.1",
-    "@vitejs/plugin-vue-jsx": "^5.1.1",
-    "@vue/babel-plugin-jsx": "^2.0.1",
-    "@vue/runtime-dom": "^3.5.22",
-    "add": "^2.0.6",
-    "bcryptjs": "^3.0.2",
-    "canvas": "^3.2.0",
-    "concurrently": "^9.0.0",
-    "gifencoder": "^2.0.1",
-    "jsonwebtoken": "^9.0.2",
-    "playwright": "^1.56.1",
-    "pnpm": "^10.20.0",
-    "prisma": "^6.18.0",
-    "vite": "^7.1.12",
-    "vue-tsc": "^3.1.3",
-    "vue-tsx-support": "^3.2.0"
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js"
   },
   "dependencies": {
-    "@ant-design/icons-vue": "^7.0.1",
-    "@graphql-tools/schema": "^10.0.27",
     "@prisma/client": "^6.18.0",
-    "ant-design-vue": "^4.2.6",
     "apollo-server-express": "^3.13.0",
     "bcrypt": "^6.0.0",
-    "body-parser": "^2.2.0",
     "cors": "^2.8.5",
-    "dataloader": "^2.2.3",
-    "dotenv": "^17.2.3",
     "express": "^5.1.0",
-    "express-graphql": "^0.12.0",
-    "graphql": "^16.12.0",
-    "graphql-request": "^7.3.1",
-    "graphql-scalars": "^1.25.0",
-    "graphql-type-json": "^0.3.2",
-    "graphql-yoga": "^5.16.2",
-    "leaflet": "^1.9.4",
-    "nexus": "^1.3.0",
-    "node-fetch": "^3.3.2",
-    "stripe": "^19.3.0",
-    "vue": "^3.5.22",
-    "vue-router": "^4.6.3"
+    "jsonwebtoken": "^9.0.2",
+    "nexus": "^1.3.0"
   },
-  "packageManager": "pnpm@9.11.0+sha512.0a203ffaed5a3f63242cd064c8fb5892366c103e328079318f78062f24ea8c9d50bc6a47aa3567cabefd824d170e78fa2745ed1f16b132e16436146b7688f19b"
+  "devDependencies": {
+    "@types/express": "^5.0.5",
+    "@types/node": "^22.7.5",
+    "prisma": "^6.18.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.2"
+  }
 }
