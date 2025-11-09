@@ -58,6 +58,19 @@ export const resolvers = {
         return !!d?.isEnrolled
       } catch { return false }
     },
+    async verifyCheckout(_: any, args: { sessionId: string }, ctx: any) {
+      try {
+        if (!args.sessionId) return { ok: false }
+        const session = await stripe.checkout.sessions.retrieve(args.sessionId as string)
+        const orderId = session?.metadata?.orderId || null
+        if (!orderId) return { ok: false }
+        const order = await prisma.order.findUnique({ where: { id: orderId } })
+        return { ok: !!order && order.status === 'PAID', orderId: order?.id || null, status: order?.status || 'PENDING' }
+      } catch (e) {
+  console.error('[ecommerce] verifyCheckout error', (e as any)?.message)
+        return { ok: false }
+      }
+    },
     async validateCoupon(_: any, args: { courseId: string; code: string }) {
       const percent = await validateCouponViaTeach(args.courseId, args.code)
       return { percent }
@@ -86,8 +99,27 @@ export const resolvers = {
 console.log('[ecommerce] decoded user:', ctx.user)
 console.log('[ecommerce] args.studentId:', args.studentId)
 
-      const sid = ctx.user.userId || args.studentId
-      if (!sid) throw new Error('Not authenticated (missing JWT or studentId)')
+      // Map caller to a canonical students-internal Student.id so Orders reference the Student row
+      let orderStudentId: string | undefined = undefined
+      if (ctx.token) {
+        try {
+          // Try to find existing Student by auth userId
+          const find = await callGraphQL(STUDENTS_API, `query ($userId: String!) { studentByUserId(userId: $userId) { id } }`, { userId: ctx.user.userId }, ctx.token)
+          if (find?.studentByUserId?.id) {
+            orderStudentId = find.studentByUserId.id
+          } else {
+            // Create a Student record via GraphQL mutation so we have a canonical Student.id
+            const create = await callGraphQL(STUDENTS_API, `mutation ($userId: String!, $displayName: String) { createStudent(userId:$userId, displayName:$displayName){ id } }`, { userId: ctx.user.userId, displayName: ctx.user?.firstName || null }, ctx.token)
+            orderStudentId = create?.createStudent?.id
+          }
+        } catch (e) {
+          console.error('[ecommerce] failed to map auth user to Student:', (e as any)?.message || e)
+          throw new Error('Failed to map authenticated user to Student record')
+        }
+      } else {
+        orderStudentId = args.studentId || undefined
+      }
+      if (!orderStudentId) throw new Error('Not authenticated (missing JWT or studentId)')
 
       // Build line items from TEACH
       const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = []
@@ -97,6 +129,20 @@ console.log('[ecommerce] args.studentId:', args.studentId)
       for (const it of args.items) {
         const q = Math.max(1, it.quantity || 1)
         const course = await getCourseFromTeach(it.courseId)
+        // Prevent duplicate purchases: check if student is already enrolled
+        try {
+          if (ctx.token) {
+            const d = await callGraphQL(STUDENTS_API, `query ($courseId: String!) { isEnrolledMe(courseId: $courseId) }`, { courseId: it.courseId }, ctx.token)
+            if (d?.isEnrolledMe) throw new Error(`Already enrolled in course: ${course.title}`)
+          } else {
+            const d = await callGraphQL(STUDENTS_API, `query ($studentId: String!, $courseId: String!) { isEnrolled(studentId: $studentId, courseId: $courseId) }`, { studentId: orderStudentId, courseId: it.courseId })
+            if (d?.isEnrolled) throw new Error(`Student already enrolled in course: ${course.title}`)
+          }
+        } catch (e: any) {
+          // bubble up meaningful enrollment errors, but hide call failures as generic errors
+          if (e?.message?.startsWith('Already enrolled') || e?.message?.startsWith('Student already enrolled')) throw e
+          throw new Error('Failed to validate enrollment status before checkout')
+        }
         const price = Number(course.price || 0)
         subtotal += price * q
         snapshotItems.push({ courseId: it.courseId, title: course.title, price, quantity: q })
@@ -120,9 +166,30 @@ console.log('[ecommerce] args.studentId:', args.studentId)
       const total = Math.max(0, Math.round((subtotal - discount) * 100) / 100)
 
       // Create pending order
+      // If caller provided a studentId (no JWT) ensure the Student exists in students-internal
+      if (!ctx.token) {
+        try {
+          const sidCheck = await callGraphQL(STUDENTS_API, `query ($studentId: String!) { studentExists(studentId: $studentId) }`, { studentId: orderStudentId })
+          if (!sidCheck?.studentExists) throw new Error('Student not found')
+        } catch (e) {
+          throw new Error((e as any)?.message || 'Failed to validate student before creating order')
+        }
+      }
+      // Ensure local StudentMirror exists in ecommerce DB so we can enforce an internal FK
+      try {
+        await prisma.studentMirror.upsert({
+          where: { id: orderStudentId },
+          update: { displayName: ctx.user?.firstName ?? undefined, userId: ctx.user?.userId ?? undefined },
+          create: { id: orderStudentId, displayName: ctx.user?.firstName ?? undefined, userId: ctx.user?.userId ?? undefined },
+        })
+      } catch (e) {
+        console.warn('[ecommerce] failed to upsert StudentMirror:', (e as any)?.message || e)
+        // not fatal; order creation can still proceed but will fail if DB FK enforces it
+      }
+
       const order = await prisma.order.create({
         data: {
-          studentId: sid,
+          studentId: orderStudentId,
           email: args.email || null,
           currency: 'EUR',
           subtotal,
@@ -151,7 +218,7 @@ console.log('[ecommerce] args.studentId:', args.studentId)
         cancel_url: args.cancelUrl,
         metadata: {
           orderId: order.id,
-          studentId: sid,
+          studentId: orderStudentId,
           jwt: ctx.token || '',
         },
       })

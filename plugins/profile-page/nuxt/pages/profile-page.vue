@@ -1,397 +1,737 @@
 <template>
-  <Header />
-
-  <a-layout class="profile-page">
-    <!-- ===== Left: Profile / Nav ===== -->
-    <a-layout-sider
-      width="320"
-      breakpoint="lg"
-      collapsible
-      v-model:collapsed="collapsed"
-      :collapsedWidth="0"
-      theme="light"
-      style="background:#fff"
+  <div class="profile-page">
+    <!-- ===== PAGE HEADER ===== -->
+    <a-page-header
+      class="profile-header"
+      title="Your Profile"
+      :sub-title="userEmail || 'Welcome to Byway'"
     >
-      <a-card :bordered="false" style="margin: 12px">
-        <div class="center">
-          <a-upload
-            :beforeUpload="beforeUpload"
-            :showUploadList="false"
-            accept="image/*"
-          >
-            <a-avatar :size="120" :src="previewSrc || profile.avatar" />
-            <div style="margin-top:8px">
-              <a-button size="small" :icon="h(UploadOutlined)">Change</a-button>
-            </div>
-          </a-upload>
-        </div>
+      <template #tags>
+        <a-tag color="blue" v-if="isLoggedIn">Logged In</a-tag>
+        <a-tag color="red" v-else>Guest</a-tag>
+      </template>
 
-        <a-typography-title :level="4" style="text-align:center;margin:12px 0 0">
-          {{ profile.name }}
-        </a-typography-title>
-        <a-typography-text type="secondary" style="display:block;text-align:center">
-          {{ profile.title }}
-        </a-typography-text>
-
-        <a-row :gutter="[8,8]" style="margin-top:12px">
-          <a-col :span="8"><a-statistic title="Students" :value="profile.students" /></a-col>
-          <a-col :span="8"><a-statistic title="Reviews" :value="profile.reviews" /></a-col>
-          <a-col :span="8"><a-statistic title="Courses" :value="profile.courses" /></a-col>
-        </a-row>
-
-        <a-space style="margin-top:12px" :size="8" wrap>
-          <a-button @click="shareProfile" :icon="h(ShareAltOutlined)">Share</a-button>
-          <a-button
-            :type="isFollowing ? 'primary' : 'default'"
-            :ghost="!isFollowing"
-            @click="toggleFollow"
-            :icon="h(isFollowing ? CheckOutlined : UserAddOutlined)"
-          >
-            {{ isFollowing ? 'Following' : 'Follow' }}
-          </a-button>
+      <template #extra>
+        <a-space>
+          <a-button v-if="!isLoggedIn" type="primary" href="/auth/login">Log in</a-button>
+          <a-button v-if="isLoggedIn" @click="logout" danger>Logout</a-button>
         </a-space>
-      </a-card>
+      </template>
 
-      <a-menu
-        mode="inline"
-        :selectedKeys="menuKeys"
-        @select="onMenu"
-        style="border-right:0"
-      >
-        <a-menu-item key="profile" :icon="h(UserOutlined)">Profile</a-menu-item>
-        <a-menu-item key="courses" :icon="h(BookOutlined)">My Courses</a-menu-item>
-        <a-menu-item key="teachers" :icon="h(TeamOutlined)">Teachers</a-menu-item>
-        <a-menu-item key="message" :icon="h(MailOutlined)">Message</a-menu-item>
-        <a-menu-item key="reviews" :icon="h(StarOutlined)">My Reviews</a-menu-item>
-      </a-menu>
-    </a-layout-sider>
+      <template #avatar>
+        <a-avatar :size="64" :src="profile.avatar || '/user.png'"/>
+      </template>
 
-    <!-- ===== Right: Content ===== -->
-    <a-layout>
-      <a-page-header :title="headerTitle" style="background:#fff;margin:12px;border:1px solid #f0f0f0;border-radius:8px" />
+      <a-descriptions :column="2" size="small" class="profile-desc">
+        <a-descriptions-item label="Name">
+          {{ profile.name || '—' }}
+        </a-descriptions-item>
+        <a-descriptions-item label="Email">
+          {{ userEmail || '—' }}
+        </a-descriptions-item>
+        <a-descriptions-item label="Member Since">
+          {{ memberSince || '—' }}
+        </a-descriptions-item>
+        <a-descriptions-item label="Role">
+          {{ profile.role || 'Student' }}
+        </a-descriptions-item>
+      </a-descriptions>
+    </a-page-header>
 
-      <a-layout-content style="margin:12px">
-        <!-- Profile tab -->
-        <a-card v-if="activeTab==='profile'" :bordered="true">
-          <a-form layout="vertical" @finish="saveProfile" :model="form" :rules="rules" ref="formRef">
+    <!-- ===== STATS BAR ===== -->
+    <a-card class="stats-card" :bordered="true">
+      <a-row :gutter="[16,16]">
+        <a-col :xs="12" :md="6">
+          <a-statistic title="Enrolled Courses" :value="stats.enrolled" />
+        </a-col>
+        <a-col :xs="12" :md="6">
+          <a-statistic title="Orders" :value="stats.orders" />
+        </a-col>
+        <a-col :xs="12" :md="6">
+          <a-statistic title="Wishlist" :value="stats.wishlist" />
+        </a-col>
+        <a-col :xs="12" :md="6">
+          <a-statistic title="Completed Lessons" :value="stats.completedLessons" />
+        </a-col>
+      </a-row>
+    </a-card>
+
+    <!-- ===== BODY TABS ===== -->
+    <a-card class="body-card" :bordered="true">
+      <a-tabs v-model:activeKey="tabKey">
+        <!-- 1) OVERVIEW -->
+        <a-tab-pane key="overview" tab="Overview">
+          <a-row :gutter="[16,16]">
+            <a-col :xs="24" :lg="12">
+              <a-card title="Recent Courses" :loading="loading.courses">
+                <a-empty v-if="!recentCourses.length" description="No recent courses yet" />
+                <a-list
+                  v-else
+                  item-layout="horizontal"
+                  :data-source="recentCourses"
+                  :renderItem="renderCourseRow"
+                />
+              </a-card>
+            </a-col>
+
+            <a-col :xs="24" :lg="12">
+              <a-card title="Recent Orders" :loading="loading.orders">
+                <a-empty v-if="!recentOrders.length" description="No orders yet" />
+                <a-list
+                  v-else
+                  item-layout="horizontal"
+                  :data-source="recentOrders"
+                  :renderItem="renderOrderRow"
+                />
+              </a-card>
+            </a-col>
+          </a-row>
+        </a-tab-pane>
+
+        <!-- 2) MY COURSES -->
+        <a-tab-pane key="courses" tab="My Courses">
+          <a-alert
+            v-if="!isLoggedIn"
+            type="info"
+            show-icon
+            message="Log in to see your enrolled courses."
+            style="margin-bottom: 12px"
+          />
+          <a-skeleton v-if="loading.courses" active :paragraph="{ rows: 5 }" />
+          <template v-else>
+            <a-empty v-if="!myCourses.length" description="You have no enrollments yet" />
+            <a-row :gutter="[16,16]">
+              <a-col v-for="c in myCourses" :key="c.id" :xs="24" :md="12" :lg="8">
+                <a-card class="course-card" :hoverable="true" @click="goCourse(c.id)">
+                  <a-image :src="c.thumb || '/course-thumb.jpg'" class="course-thumb" :preview="false" />
+                  <div class="course-meta">
+                    <div class="title">{{ c.title }}</div>
+                    <div class="muted">{{ c.category || '—' }} · {{ c.level || 'All levels' }}</div>
+                    <a-progress :percent="c.progress?.percent || 0" size="small" status="active" />
+                    <div class="muted small">
+                      {{ c.progress?.completedLessons || 0 }}/{{ c.progress?.totalLessons || 0 }} lessons
+                    </div>
+                  </div>
+                </a-card>
+              </a-col>
+            </a-row>
+          </template>
+        </a-tab-pane>
+
+        <!-- 3) ORDERS -->
+        <a-tab-pane key="orders" tab="Orders & Invoices">
+          <a-alert
+            v-if="!isLoggedIn"
+            type="info"
+            show-icon
+            message="Log in to see your orders."
+            style="margin-bottom: 12px"
+          />
+          <a-skeleton v-if="loading.orders" active :paragraph="{ rows: 5 }" />
+          <template v-else>
+            <a-empty v-if="!orders.length" description="You don't have any orders yet" />
+            <a-table
+              v-else
+              :data-source="orders"
+              :columns="orderColumns"
+              row-key="id"
+              size="middle"
+              :pagination="{ pageSize: 5 }"
+            >
+              <template #bodyCell="{ column, record }">
+                <template v-if="column.key === 'items'">
+                  <a-space direction="vertical" size="small">
+                    <div v-for="(it, idx) in (record.items || [])" :key="idx" class="muted">
+                      {{ it.title || it.courseId }} × {{ it.quantity || 1 }}
+                    </div>
+                  </a-space>
+                </template>
+                <template v-else-if="column.key === 'total'">
+                  <span>{{ money(record.total || 0, record.currency || 'EUR') }}</span>
+                </template>
+                <template v-else-if="column.key === 'createdAt'">
+                  <span>{{ fmtDate(record.createdAt) }}</span>
+                </template>
+                <template v-else-if="column.key === 'status'">
+                  <a-tag :color="orderStatusColor(record.status)">{{ record.status }}</a-tag>
+                </template>
+              </template>
+            </a-table>
+          </template>
+        </a-tab-pane>
+
+        <!-- 4) BILLING -->
+        <a-tab-pane key="billing" tab="Billing">
+          <a-card title="Payment Methods & Invoices">
+            <a-space direction="vertical" style="width: 100%">
+              <a-typography-paragraph>
+                Manage your payment methods, invoices and subscriptions through the Stripe customer portal.
+              </a-typography-paragraph>
+
+              <a-space>
+                <a-button type="primary" :loading="loading.portal" @click="openBillingPortal">
+                  Open Stripe Portal
+                </a-button>
+                <a-button :loading="loading.portal" @click="createTestInvoice">
+                  Create Test Invoice (dev)
+                </a-button>
+              </a-space>
+
+              <a-alert
+                v-if="portalError"
+                type="error"
+                :message="portalError"
+                show-icon
+                style="margin-top: 8px"
+              />
+            </a-space>
+          </a-card>
+        </a-tab-pane>
+
+        <!-- 5) SETTINGS -->
+        <a-tab-pane key="settings" tab="Settings">
+          <a-form layout="vertical" class="settings-form" @submit.prevent="saveSettings">
             <a-row :gutter="[16,16]">
               <a-col :xs="24" :md="12">
-                <a-form-item label="First Name" name="firstName">
-                  <a-input v-model:value="form.firstName" placeholder="First name" />
+                <a-form-item label="Full Name">
+                  <a-input v-model:value="edit.name" placeholder="Your full name" />
                 </a-form-item>
               </a-col>
               <a-col :xs="24" :md="12">
-                <a-form-item label="Last Name" name="lastName">
-                  <a-input v-model:value="form.lastName" placeholder="Last name" />
+                <a-form-item label="Public Title">
+                  <a-input v-model:value="edit.title" placeholder="e.g. Frontend Developer" />
                 </a-form-item>
               </a-col>
-
               <a-col :xs="24">
-                <a-form-item label="Headline" name="headline">
-                  <a-input v-model:value="form.headline" placeholder="Headline" />
-                </a-form-item>
-              </a-col>
-
-              <a-col :xs="24">
-                <a-form-item label="Description" name="description">
-                  <a-textarea v-model:value="form.description" :rows="4" placeholder="Tell people about you…" />
-                </a-form-item>
-              </a-col>
-
-              <a-col :xs="24" :md="12">
-                <a-form-item label="Language" name="language">
-                  <a-select
-                    v-model:value="form.language"
-                    :options="languages.map(l=>({label:l,value:l}))"
-                    placeholder="Select language"
-                    allow-clear
-                  />
-                </a-form-item>
-              </a-col>
-
-              <a-col :xs="24" :md="12">
-                <a-form-item label="Website">
-                  <a-input v-model:value="links.website" placeholder="https://example.com" />
+                <a-form-item label="Bio">
+                  <a-textarea v-model:value="edit.bio" :rows="4" placeholder="Tell others about you…" />
                 </a-form-item>
               </a-col>
             </a-row>
 
-            <a-divider />
-
-            <a-typography-title :level="5">Avatar Preview</a-typography-title>
-            <a-image
-              v-if="previewSrc"
-              :src="previewSrc"
-              :width="220"
-              style="border-radius:8px;border:1px dashed #d9d9d9"
-            />
-            <a-empty v-else description="Select an image to preview" />
-
-            <a-space style="margin-top:12px">
-              <a-button @click="resetForm">Reset</a-button>
-              <a-button type="primary" html-type="submit" :icon="h(SaveOutlined)">Save Profile</a-button>
-              <a-button @click="saveImage" :icon="h(PictureOutlined)">Save Image</a-button>
+            <a-space>
+              <a-button type="primary" :loading="loading.save" @click="saveSettings">Save</a-button>
+              <a-button @click="resetSettings">Reset</a-button>
             </a-space>
+
+            <a-alert
+              v-if="saveError"
+              :message="saveError"
+              type="error"
+              show-icon
+              style="margin-top: 8px"
+            />
           </a-form>
-        </a-card>
-
-        <!-- Courses tab -->
-        <a-card v-else-if="activeTab==='courses'">
-          <a-row justify="space-between" align="middle" style="margin-bottom:12px">
-            <a-col>
-              <a-typography-title :level="4" style="margin:0">Courses ({{ mockCourses.length }})</a-typography-title>
-            </a-col>
-            <a-col>
-              <a-space wrap>
-                <a-input-search v-model:value="searchQuery" placeholder="Search courses" style="width:220px" />
-                <a-select v-model:value="sortBy" style="width:160px">
-                  <a-select-option value="recent">Recent</a-select-option>
-                  <a-select-option value="popular">Popular</a-select-option>
-                  <a-select-option value="progress">Progress</a-select-option>
-                </a-select>
-                <a-button type="primary" :icon="h(PlusOutlined)" @click="addCourse">Add Course</a-button>
-              </a-space>
-            </a-col>
-          </a-row>
-
-          <a-row :gutter="[16,16]">
-            <a-col v-for="c in filteredCourses" :key="c.id" :xs="24" :sm="12" :md="8">
-              <a-card hoverable @click="openCourse(c.id)">
-                <template #cover>
-                  <img :src="c.image" :alt="c.title" style="height:140px;object-fit:cover" />
-                </template>
-                <a-card-meta :title="c.title" :description="`By ${c.author} • ${c.level} • ${c.hours}h`" />
-                <div style="margin-top:8px">
-                  <a-progress :percent="c.progress" size="small" />
-                </div>
-              </a-card>
-            </a-col>
-          </a-row>
-        </a-card>
-
-        <!-- Messages tab -->
-        <a-card v-else-if="activeTab==='message'">
-          <a-row :gutter="[16,16]">
-            <a-col :xs="24" :md="9">
-              <a-input-search v-model:value="messageSearch" placeholder="Search messages" style="margin-bottom:8px" />
-              <a-list
-                item-layout="horizontal"
-                :data-source="filteredMessages"
-                :render-item="renderMessageItem"
-                :split="true"
-                style="background:#fff"
-              />
-            </a-col>
-
-            <a-col :xs="24" :md="15">
-              <a-card v-if="selectedMessage" :title="selectedMessage.subject">
-                <template #extra>
-                  <a-typography-text type="secondary">{{ selectedMessage.date }}</a-typography-text>
-                </template>
-
-                <a-space align="start" style="margin-bottom:12px">
-                  <a-avatar :src="selectedMessage.avatar" />
-                  <div>
-                    <div class="view-name">{{ selectedMessage.name }}</div>
-                    <a-typography-text type="secondary">{{ selectedMessage.email || '' }}</a-typography-text>
-                  </div>
-                </a-space>
-
-                <a-typography-paragraph>{{ selectedMessage.body }}</a-typography-paragraph>
-
-                <a-form @finish="sendReply" layout="vertical">
-                  <a-form-item label="Reply">
-                    <a-textarea v-model:value="replyText" :rows="4" placeholder="Write your reply…" />
-                  </a-form-item>
-                  <a-button type="primary" html-type="submit">Send Reply</a-button>
-                </a-form>
-              </a-card>
-              <a-empty v-else description="Select a message" />
-            </a-col>
-          </a-row>
-        </a-card>
-
-        <!-- Others -->
-        <a-card v-else>
-          <a-empty :description="`Content for ${activeTab}`" />
-        </a-card>
-      </a-layout-content>
-    </a-layout>
-  </a-layout>
+        </a-tab-pane>
+      </a-tabs>
+    </a-card>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { h, ref, reactive, computed } from 'vue'
-import Header from '../../../../packages/shared-ui/src/components/Header.vue'
-import { message as antdMessage } from 'ant-design-vue'
+/**
+ * Profile Page (Nuxt SFC)
+ * Talks to multiple plugins:
+ * - /api/authentication/graphql     (optional: me, updateProfile)
+ * - /api/students-internal/graphql  (myEnrollments, progress)
+ * - /api/courses-details/graphql    (course(id))
+ * - /api/ecommerce/graphql          (myOrders, createBillingPortal)
+ * - /api/teach-internal/graphql     (optional instructor info if needed)
+ *
+ * Works when some fields are missing by degrading gracefully.
+ * All network calls are done onMounted (client) to avoid SSR 'File' issues.
+ */
+import { ref, reactive, computed, h, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { message } from 'ant-design-vue'
 import {
-  ShareAltOutlined,
-  UserAddOutlined,
-  CheckOutlined,
-  UploadOutlined,
-  SaveOutlined,
-  PictureOutlined,
   UserOutlined,
-  BookOutlined,
-  TeamOutlined,
-  MailOutlined,
-  StarOutlined,
-  PlusOutlined
+  ShoppingCartOutlined,
+  FileTextOutlined,
+  CreditCardOutlined
 } from '@ant-design/icons-vue'
+import { useAuth } from '../../../../packages/shared-ui/src/composables/useAuth'
 
-/** ===== State: profile ===== */
-const profile = reactive({
-  name: 'John Doe',
-  title: 'Product Designer & Teacher',
-  avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=400&auto=format&fit=crop',
-  students: 1200,
-  reviews: 512,
-  courses: 12
+// ===== Endpoints =====
+const AUTH_API     = 'http://localhost:4000/api/authentication/graphql'
+const STUDENTS_API = 'http://localhost:4000/api/students-internal/graphql'
+const COURSES_API  = 'http://localhost:4000/api/courses-details/graphql'
+const EC_API       = 'http://localhost:4000/api/ecommerce/graphql'
+const TEACH_API    = 'http://localhost:4000/api/teach-internal/graphql'  // optional
+
+// ===== Auth / Router =====
+const auth = useAuth()
+const router = useRouter()
+const isLoggedIn = computed(() => auth.isLoggedIn.value)
+const token = computed(() => auth.token.value || '')
+const userEmail = computed(() => auth.user.value?.email || '')
+
+// ===== UI State =====
+const tabKey = ref<'overview'|'courses'|'orders'|'billing'|'settings'>('overview')
+const loading = reactive({
+  profile: false,
+  courses: false,
+  orders:  false,
+  portal:  false,
+  save:    false
 })
-const isFollowing = ref(false)
-const collapsed = ref(false)
-const activeTab = ref<'profile'|'courses'|'teachers'|'message'|'reviews'>('profile')
-const menuKeys = computed(() => [activeTab.value])
+const portalError = ref<string | null>(null)
+const saveError = ref<string | null>(null)
 
-function toggleFollow(){ isFollowing.value = !isFollowing.value; antdMessage.success(isFollowing.value ? 'Following' : 'Unfollowed') }
-function shareProfile(){
-  navigator.clipboard?.writeText(window.location.href)
-  antdMessage.success('Profile link copied')
+// ===== Profile Model =====
+interface Progress {
+  percent: number
+  completedLessons: number
+  totalLessons: number
 }
-function onMenu({ key }: { key: typeof activeTab.value }) { activeTab.value = key }
+interface CourseCard {
+  id: string
+  title: string
+  category?: string
+  level?: string
+  thumb?: string
+  progress?: Progress | null
+}
+interface OrderItem { courseId: string; title?: string; price?: number; quantity?: number }
+interface Order { id: string; status: string; total: number; currency?: string; createdAt: string; items?: OrderItem[] }
 
-/** ===== Header title ===== */
-const headerTitle = computed(() => {
-  switch (activeTab.value) {
-    case 'profile': return 'Profile'
-    case 'courses': return 'My Courses'
-    case 'teachers': return 'Teachers'
-    case 'message': return 'Message'
-    case 'reviews': return 'My Reviews'
+const profile = reactive<{ name?: string; avatar?: string; role?: string }>({})
+const memberSince = ref<string | null>(null)
+
+const myCourses = ref<CourseCard[]>([])
+const orders = ref<Order[]>([])
+
+// Derived (for Overview)
+const recentCourses = computed(() => myCourses.value.slice(0, 5))
+const recentOrders  = computed(() => orders.value.slice(0, 5))
+
+// Stats
+const stats = reactive({
+  enrolled: 0,
+  orders: 0,
+  wishlist: 0,
+  completedLessons: 0
+})
+
+// Settings edit buffer
+const edit = reactive({
+  name: '',
+  title: '',
+  bio: ''
+})
+
+// ===== Utilities =====
+function money(v: number, ccy = 'EUR') {
+  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: ccy }).format(v || 0)
+}
+function fmtDate(s: string) {
+  try { return new Date(s).toLocaleString() } catch { return s }
+}
+function orderStatusColor(status?: string) {
+  const s = (status || '').toLowerCase()
+  if (s.includes('paid') || s.includes('succeeded')) return 'green'
+  if (s.includes('pending') || s.includes('requires')) return 'gold'
+  if (s.includes('failed') || s.includes('canceled')) return 'red'
+  return 'blue'
+}
+function logout() { auth.logout() }
+function goCourse(id: string) { router.push(`/course/${encodeURIComponent(id)}`) }
+
+// ===== GraphQL Fetch Helper =====
+async function gfetch<T>(endpoint: string, query: string, variables?: Record<string, any>): Promise<T> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (token.value) headers.Authorization = `Bearer ${token.value}`
+  const res = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify({ query, variables }) })
+  const json = await res.json()
+  if (json.errors?.length) throw new Error(json.errors[0].message || 'GraphQL error')
+  return json.data as T
+}
+
+// ===== Queries (with conservative assumptions) =====
+const GQL_ME = `
+  query Me {
+    me { id email name createdAt avatar role }
   }
-})
+`
 
-/** ===== Form ===== */
-const formRef = ref()
-const form = reactive({
-  firstName: 'John',
-  lastName: 'Doe',
-  headline: 'Product Designer & Teacher',
-  description: 'I design delightful user experiences.',
-  language: ''
-})
-const rules = {
-  firstName: [{ required: true, message: 'Please enter first name' }],
-  lastName: [{ required: true, message: 'Please enter last name' }],
-}
-const languages = ['English', 'Spanish', 'French', 'German']
-const links = reactive({ website: '' })
+const GQL_MY_ENROLLMENTS = `
+  query MyEnrollments {
+    myEnrollments {
+      id
+      courseId
+      createdAt
+    }
+  }
+`
 
-/** ===== Avatar upload preview ===== */
-const previewSrc = ref<string | null>(profile.avatar)
-function beforeUpload(file: File) {
-  const reader = new FileReader()
-  reader.onload = () => (previewSrc.value = String(reader.result))
-  reader.readAsDataURL(file)
-  return false // prevent auto upload
-}
-function saveProfile(){
-  localStorage.setItem('profileForm', JSON.stringify(form))
-  localStorage.setItem('profileImage', previewSrc.value || '')
-  antdMessage.success('Profile saved')
-}
-function resetForm(){
-  form.firstName = 'John'
-  form.lastName = 'Doe'
-  form.headline = 'Product Designer & Teacher'
-  form.description = 'I design delightful user experiences.'
-  form.language = ''
-  previewSrc.value = profile.avatar
-  localStorage.removeItem('profileForm')
-  localStorage.removeItem('profileImage')
-  antdMessage.info('Form reset')
-}
-function saveImage(){
-  if (!previewSrc.value) return antdMessage.warning('No image selected')
-  localStorage.setItem('profileImage', previewSrc.value)
-  antdMessage.success('Image saved')
-}
+const GQL_PROGRESS_BY_COURSE = `
+  query Progress($courseId: String!) {
+    progress(courseId: $courseId) {
+      percent
+      completedLessons
+      totalLessons
+    }
+  }
+`
 
-/** ===== Courses ===== */
-type Course = {
-  id: string; title: string; author: string; image: string;
-  level: 'Beginner'|'Intermediate'|'Advanced'; hours: number; progress: number;
-  ratings: number; createdAt: number
-}
-const mockCourses: Course[] = [
-  { id:'c1', title:'Beginner’s Guide to Design', author:'Ronald Richards', image:'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=800&auto=format&fit=crop', level:'Beginner', hours:22, progress:36, ratings:1200, createdAt:2 },
-  { id:'c2', title:'Interaction Patterns', author:'Esther Howard', image:'https://images.unsplash.com/photo-1522199710521-72d69614c702?q=80&w=800&auto=format&fit=crop', level:'Intermediate', hours:16, progress:68, ratings:860, createdAt:1 }
-]
-const searchQuery = ref('')
-const sortBy = ref<'recent'|'popular'|'progress'>('recent')
+const GQL_COURSE = `
+  query One($id: String!) {
+    course(id: $id) {
+      id title category difficulty level thumb
+    }
+  }
+`
 
-const filteredCourses = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase()
-  let list = mockCourses.slice()
-  if (q) list = list.filter(c => c.title.toLowerCase().includes(q) || c.author.toLowerCase().includes(q))
-  if (sortBy.value === 'progress') list.sort((a,b)=>b.progress-a.progress)
-  else if (sortBy.value === 'popular') list.sort((a,b)=>b.ratings-a.ratings)
-  else list.sort((a,b)=>b.createdAt-a.createdAt)
-  return list
-})
-function addCourse(){ antdMessage.info('Add course (mock)') }
-function openCourse(id: string){ antdMessage.info(`Open course ${id}`) }
+const GQL_MY_ORDERS = `
+  query MyOrders {
+    myOrders {
+      id
+      status
+      total
+      currency
+      createdAt
+      items { courseId title price quantity }
+    }
+  }
+`
 
-/** ===== Messages ===== */
-const messageSearch = ref('')
-const messages = ref([
-  { id:'m1', name:'Ronald Richards', avatar:'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=400&auto=format&fit=crop', subject:'Re: Your design question', snippet:'Thanks for your question…', body:'Thank you for asking your doubt, I’ll send you a PDF covering your issues. If you have further questions I can help.', date:'18 Mar 2024', read:false },
-  { id:'m2', name:'Devon Lane', avatar:'https://images.unsplash.com/photo-1545996124-1c6f3c6f1f1f?q=80&w=400&auto=format&fit=crop', subject:'Quick follow-up', snippet:'I’ll get back to you…', body:'I’ll get back to you as soon as possible. Thanks for your patience.', date:'18 Mar 2024', read:true }
-])
-const selectedMessage = ref(messages.value[0] || null)
-const replyText = ref('')
+const GQL_BILLING_PORTAL = `
+  mutation Portal($returnUrl:String!) {
+    createBillingPortal(returnUrl:$returnUrl){
+      url
+    }
+  }
+`
 
-const filteredMessages = computed(() => {
-  const q = messageSearch.value.trim().toLowerCase()
-  return !q ? messages.value : messages.value.filter(m =>
-    (m.name + ' ' + m.subject + ' ' + m.snippet).toLowerCase().includes(q)
-  )
-})
-function renderMessageItem(item:any){
-  const click = () => selectMessage(item)
-  return h('div', { onClick: click }, [
-    h('div', { style:'padding:8px;border-radius:8px;cursor:pointer;background:'+(!item.read ? '#e6f4ff' : 'transparent') }, [
-      h('div', { style:'display:flex;gap:10px;align-items:center' }, [
-        h('img', { src:item.avatar, style:'width:36px;height:36px;border-radius:50%;object-fit:cover' }),
-        h('div', null, [
-          h('div', { style:'font-weight:600' }, item.name),
-          h('div', { style:'color:rgba(0,0,0,.65);font-size:12px' }, item.snippet)
-        ]),
-        h('div', { style:'margin-left:auto;color:rgba(0,0,0,.45);font-size:12px' }, item.date)
+const GQL_UPDATE_PROFILE = `
+  mutation UpdateProfile($input: UpdateProfileInput!) {
+    updateProfile(input: $input) {
+      id
+      email
+      name
+      avatar
+      role
+    }
+  }
+`
+
+// ===== Renderers for Lists =====
+function renderCourseRow(item: CourseCard) {
+  return h('div',
+    { class: 'row-wrap', onClick: () => goCourse(item.id) },
+    [
+      h('img', { class: 'row-thumb', src: item.thumb || '/course-thumb.jpg', alt: item.title }),
+      h('div', { class: 'row-main' }, [
+        h('div', { class: 'row-title' }, item.title),
+        h('div', { class: 'muted' }, `${item.category || '—'} · ${item.level || 'All levels'}`),
+        h('div', { class: 'row-inline' }, [
+          h('span', { class: 'muted small' }, `Progress: ${item.progress?.percent ?? 0}%`)
+        ])
       ])
+    ]
+  )
+}
+
+function renderOrderRow(item: Order) {
+  return h('div', { class: 'row-wrap' }, [
+    h('div', { class: 'row-icon' }, [ h(FileTextOutlined) ]),
+    h('div', { class: 'row-main' }, [
+      h('div', { class: 'row-title' }, `Order ${item.id.slice(0, 8)}…`),
+      h('div', { class: 'muted small' }, fmtDate(item.createdAt)),
+      h('div', { class: 'row-inline' }, [
+        h('span', { class: 'muted small' }, (item.items || []).map(i => (i.title || i.courseId)).join(', ') || '—')
+      ])
+    ]),
+    h('div', { class: 'row-right' }, [
+      h('div', { class: 'row-amount' }, money(item.total || 0, item.currency || 'EUR')),
+      h('div', null, [ h('span', null, [ h('span', {
+        class: `status-dot ${orderStatusColor(item.status)}`
+      })]) ])
     ])
   ])
 }
-function selectMessage(m:any){
-  selectedMessage.value = m
-  const idx = messages.value.findIndex(x=>x.id===m.id)
-  if (idx >= 0) messages.value[idx].read = true
-}
-function sendReply(){
-  if (!replyText.value.trim()) return antdMessage.warning('Please enter a reply')
-  antdMessage.success('Reply sent')
-  replyText.value = ''
+
+// ===== Columns for Orders Table =====
+const orderColumns = [
+  { title: 'Order ID', dataIndex: 'id', key: 'id' },
+  { title: 'Created', dataIndex: 'createdAt', key: 'createdAt' },
+  { title: 'Items', dataIndex: 'items', key: 'items' },
+  { title: 'Status', dataIndex: 'status', key: 'status' },
+  { title: 'Total', dataIndex: 'total', key: 'total', align: 'right' }
+]
+
+// ===== Loaders =====
+async function loadProfile() {
+  loading.profile = true
+  try {
+    // Try to get profile from authentication plugin
+    const data = await gfetch<{ me?: any }>(AUTH_API, GQL_ME)
+    const me = data?.me
+    if (me) {
+      profile.name = me.name || ''
+      profile.avatar = me.avatar || ''
+      profile.role = me.role || 'Student'
+      memberSince.value = me.createdAt ? fmtDate(me.createdAt) : null
+      // Pre-fill settings form
+      edit.name = profile.name || ''
+    } else {
+      // Fall back to useAuth info
+      profile.name = auth.user.value?.name || ''
+      profile.avatar = ''
+      profile.role = 'Student'
+      memberSince.value = null
+    }
+  } catch {
+    // Silent degrade — rely on useAuth
+    profile.name = auth.user.value?.name || ''
+    profile.avatar = ''
+    profile.role = 'Student'
+    memberSince.value = null
+  } finally {
+    loading.profile = false
+  }
 }
 
-/** ===== Persist previously saved form/image if present ===== */
-try{
-  const saved = localStorage.getItem('profileForm'); if (saved) Object.assign(form, JSON.parse(saved))
-  const savedImg = localStorage.getItem('profileImage'); if (savedImg) previewSrc.value = savedImg
-}catch(e){}
+async function loadEnrollmentsAndCourses() {
+  loading.courses = true
+  const out: CourseCard[] = []
+  let enrollments: Array<{ courseId: string }> = []
+  try {
+    const data = await gfetch<{ myEnrollments?: any[] }>(STUDENTS_API, GQL_MY_ENROLLMENTS)
+    enrollments = (data?.myEnrollments || []).map(e => ({ courseId: e.courseId }))
+  } catch {
+    // If myEnrollments isn't available, we'll infer from orders (paid items)
+    try {
+      const data = await gfetch<{ myOrders?: Order[] }>(EC_API, GQL_MY_ORDERS)
+      const ids = new Set<string>()
+      ;(data?.myOrders || []).forEach(o => (o.items || []).forEach(i => i.courseId && ids.add(i.courseId)))
+      enrollments = Array.from(ids).map(id => ({ courseId: id }))
+    } catch {
+      enrollments = []
+    }
+  }
+
+  // Hydrate course cards
+  for (const en of enrollments) {
+    try {
+      const cd = await gfetch<{ course?: any }>(COURSES_API, GQL_COURSE, { id: en.courseId })
+      const c = cd?.course
+      if (!c) continue
+
+      // Load progress if available
+      let prog: Progress | null = null
+      try {
+        const pd = await gfetch<{ progress?: Progress }>(STUDENTS_API, GQL_PROGRESS_BY_COURSE, { courseId: en.courseId })
+        prog = pd?.progress || null
+      } catch { prog = null }
+
+      out.push({
+        id: c.id,
+        title: c.title,
+        category: c.category,
+        level: c.level || c.difficulty,
+        thumb: c.thumb,
+        progress: prog
+      })
+    } catch {
+      // skip silently
+    }
+  }
+
+  myCourses.value = out
+  stats.enrolled = out.length
+  stats.completedLessons = out.reduce((n, c) => n + (c.progress?.completedLessons || 0), 0)
+  loading.courses = false
+}
+
+async function loadOrders() {
+  loading.orders = true
+  try {
+    const data = await gfetch<{ myOrders?: Order[] }>(EC_API, GQL_MY_ORDERS)
+    orders.value = (data?.myOrders || []).sort((a, b) => (new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()))
+    stats.orders = orders.value.length
+  } catch {
+    orders.value = []
+    stats.orders = 0
+  } finally {
+    loading.orders = false
+  }
+}
+
+function loadWishlistCount() {
+  try {
+    const raw = localStorage.getItem('byway:wishlist')
+    const arr = raw ? JSON.parse(raw) : []
+    stats.wishlist = Array.isArray(arr) ? arr.length : 0
+  } catch {
+    stats.wishlist = 0
+  }
+}
+
+// ===== Billing =====
+async function openBillingPortal() {
+  portalError.value = null
+  loading.portal = true
+  try {
+    const data = await gfetch<{ createBillingPortal?: { url: string } }>(
+      EC_API,
+      GQL_BILLING_PORTAL,
+      { returnUrl: window.location.origin + '/profile-page' }
+    )
+    const url = data?.createBillingPortal?.url
+    if (!url) throw new Error('No portal URL returned')
+    window.location.href = url
+  } catch (e: any) {
+    portalError.value = e?.message || 'Failed to open billing portal'
+    message.error(portalError.value)
+  } finally {
+    loading.portal = false
+  }
+}
+
+function createTestInvoice() {
+  message.info('This button is a placeholder for a dev/test invoice action.')
+}
+
+// ===== Settings =====
+async function saveSettings() {
+  saveError.value = null
+  loading.save = true
+  try {
+    // Optional — only if your auth plugin supports it
+    const input = {
+      name: edit.name || profile.name || '',
+      title: edit.title || '',
+      bio: edit.bio || ''
+    }
+    const res = await gfetch<{ updateProfile?: any }>(AUTH_API, GQL_UPDATE_PROFILE, { input })
+    if (res?.updateProfile) {
+      profile.name = res.updateProfile.name || profile.name
+      message.success('Profile updated')
+    } else {
+      message.success('Settings saved (local only)')
+    }
+  } catch (e: any) {
+    saveError.value = e?.message || 'Failed to save settings'
+    message.error(saveError.value)
+  } finally {
+    loading.save = false
+  }
+}
+function resetSettings() {
+  edit.name = profile.name || ''
+  edit.title = ''
+  edit.bio = ''
+}
+
+// ===== Lifecycle =====
+onMounted(async () => {
+  loadWishlistCount()
+  await loadProfile()
+  await Promise.all([loadEnrollmentsAndCourses(), loadOrders()])
+})
 </script>
 
 <style scoped>
-.profile-page { background:#f5f5f5; min-height:100vh; }
-.center { display:grid; place-items:center; }
-.view-name { font-weight:600; }
+.profile-page {
+  padding: 16px;
+  background: #fff;
+}
+.profile-header {
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  margin-bottom: 16px;
+}
+.profile-desc :deep(.ant-descriptions-item-label) {
+  width: 120px;
+}
+
+.stats-card, .body-card {
+  max-width: 1200px;
+  margin: 0 auto 16px;
+}
+
+.course-card {
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.course-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+.course-thumb {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.course-meta {
+  margin-top: 10px;
+}
+.title {
+  font-weight: 600;
+  font-size: 15px;
+}
+.muted {
+  color: rgba(0,0,0,.45);
+}
+.small {
+  font-size: 12px;
+}
+
+.row-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+.row-wrap:hover .row-title {
+  color: #1677ff;
+}
+.row-thumb {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.row-main {
+  flex: 1;
+  min-width: 0;
+}
+.row-title {
+  font-weight: 600;
+  transition: color .12s ease;
+}
+.row-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.row-right {
+  text-align: right;
+}
+.row-amount {
+  font-weight: 600;
+}
+.row-icon :deep(svg) {
+  font-size: 24px;
+  color: #1677ff;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-left: 6px;
+  border-radius: 50%;
+}
+.status-dot.green { background: #52c41a; }
+.status-dot.gold  { background: #faad14; }
+.status-dot.red   { background: #ff4d4f; }
+.status-dot.blue  { background: #1677ff; }
+
+.settings-form {
+  max-width: 920px;
+}
 </style>

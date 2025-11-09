@@ -19,6 +19,11 @@ export type PrismaPromise<T> = $Public.PrismaPromise<T>
  */
 export type Order = $Result.DefaultSelection<Prisma.$OrderPayload>
 /**
+ * Model StudentMirror
+ * 
+ */
+export type StudentMirror = $Result.DefaultSelection<Prisma.$StudentMirrorPayload>
+/**
  * Model OrderItem
  * 
  */
@@ -188,6 +193,16 @@ export class PrismaClient<
     * ```
     */
   get order(): Prisma.OrderDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.studentMirror`: Exposes CRUD operations for the **StudentMirror** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more StudentMirrors
+    * const studentMirrors = await prisma.studentMirror.findMany()
+    * ```
+    */
+  get studentMirror(): Prisma.StudentMirrorDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.orderItem`: Exposes CRUD operations for the **OrderItem** model.
@@ -650,6 +665,7 @@ export namespace Prisma {
 
   export const ModelName: {
     Order: 'Order',
+    StudentMirror: 'StudentMirror',
     OrderItem: 'OrderItem',
     Payment: 'Payment'
   };
@@ -670,7 +686,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "order" | "orderItem" | "payment"
+      modelProps: "order" | "studentMirror" | "orderItem" | "payment"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -745,6 +761,80 @@ export namespace Prisma {
           count: {
             args: Prisma.OrderCountArgs<ExtArgs>
             result: $Utils.Optional<OrderCountAggregateOutputType> | number
+          }
+        }
+      }
+      StudentMirror: {
+        payload: Prisma.$StudentMirrorPayload<ExtArgs>
+        fields: Prisma.StudentMirrorFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.StudentMirrorFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StudentMirrorPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.StudentMirrorFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StudentMirrorPayload>
+          }
+          findFirst: {
+            args: Prisma.StudentMirrorFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StudentMirrorPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.StudentMirrorFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StudentMirrorPayload>
+          }
+          findMany: {
+            args: Prisma.StudentMirrorFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StudentMirrorPayload>[]
+          }
+          create: {
+            args: Prisma.StudentMirrorCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StudentMirrorPayload>
+          }
+          createMany: {
+            args: Prisma.StudentMirrorCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.StudentMirrorCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StudentMirrorPayload>[]
+          }
+          delete: {
+            args: Prisma.StudentMirrorDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StudentMirrorPayload>
+          }
+          update: {
+            args: Prisma.StudentMirrorUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StudentMirrorPayload>
+          }
+          deleteMany: {
+            args: Prisma.StudentMirrorDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.StudentMirrorUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.StudentMirrorUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StudentMirrorPayload>[]
+          }
+          upsert: {
+            args: Prisma.StudentMirrorUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StudentMirrorPayload>
+          }
+          aggregate: {
+            args: Prisma.StudentMirrorAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateStudentMirror>
+          }
+          groupBy: {
+            args: Prisma.StudentMirrorGroupByArgs<ExtArgs>
+            result: $Utils.Optional<StudentMirrorGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.StudentMirrorCountArgs<ExtArgs>
+            result: $Utils.Optional<StudentMirrorCountAggregateOutputType> | number
           }
         }
       }
@@ -993,6 +1083,7 @@ export namespace Prisma {
   }
   export type GlobalOmitConfig = {
     order?: OrderOmit
+    studentMirror?: StudentMirrorOmit
     orderItem?: OrderItemOmit
     payment?: PaymentOmit
   }
@@ -1107,6 +1198,37 @@ export namespace Prisma {
    */
   export type OrderCountOutputTypeCountPaymentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: PaymentWhereInput
+  }
+
+
+  /**
+   * Count Type StudentMirrorCountOutputType
+   */
+
+  export type StudentMirrorCountOutputType = {
+    orders: number
+  }
+
+  export type StudentMirrorCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    orders?: boolean | StudentMirrorCountOutputTypeCountOrdersArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * StudentMirrorCountOutputType without action
+   */
+  export type StudentMirrorCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StudentMirrorCountOutputType
+     */
+    select?: StudentMirrorCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * StudentMirrorCountOutputType without action
+   */
+  export type StudentMirrorCountOutputTypeCountOrdersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: OrderWhereInput
   }
 
 
@@ -1360,6 +1482,7 @@ export namespace Prisma {
     status?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    student?: boolean | StudentMirrorDefaultArgs<ExtArgs>
     items?: boolean | Order$itemsArgs<ExtArgs>
     payments?: boolean | Order$paymentsArgs<ExtArgs>
     _count?: boolean | OrderCountOutputTypeDefaultArgs<ExtArgs>
@@ -1376,6 +1499,7 @@ export namespace Prisma {
     status?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    student?: boolean | StudentMirrorDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["order"]>
 
   export type OrderSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -1389,6 +1513,7 @@ export namespace Prisma {
     status?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    student?: boolean | StudentMirrorDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["order"]>
 
   export type OrderSelectScalar = {
@@ -1406,16 +1531,22 @@ export namespace Prisma {
 
   export type OrderOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "studentId" | "email" | "currency" | "subtotal" | "discount" | "total" | "status" | "createdAt" | "updatedAt", ExtArgs["result"]["order"]>
   export type OrderInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    student?: boolean | StudentMirrorDefaultArgs<ExtArgs>
     items?: boolean | Order$itemsArgs<ExtArgs>
     payments?: boolean | Order$paymentsArgs<ExtArgs>
     _count?: boolean | OrderCountOutputTypeDefaultArgs<ExtArgs>
   }
-  export type OrderIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
-  export type OrderIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
+  export type OrderIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    student?: boolean | StudentMirrorDefaultArgs<ExtArgs>
+  }
+  export type OrderIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    student?: boolean | StudentMirrorDefaultArgs<ExtArgs>
+  }
 
   export type $OrderPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Order"
     objects: {
+      student: Prisma.$StudentMirrorPayload<ExtArgs>
       items: Prisma.$OrderItemPayload<ExtArgs>[]
       payments: Prisma.$PaymentPayload<ExtArgs>[]
     }
@@ -1824,6 +1955,7 @@ export namespace Prisma {
    */
   export interface Prisma__OrderClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    student<T extends StudentMirrorDefaultArgs<ExtArgs> = {}>(args?: Subset<T, StudentMirrorDefaultArgs<ExtArgs>>): Prisma__StudentMirrorClient<$Result.GetResult<Prisma.$StudentMirrorPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     items<T extends Order$itemsArgs<ExtArgs> = {}>(args?: Subset<T, Order$itemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OrderItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     payments<T extends Order$paymentsArgs<ExtArgs> = {}>(args?: Subset<T, Order$paymentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
@@ -2112,6 +2244,10 @@ export namespace Prisma {
      * The data used to create many Orders.
      */
     data: OrderCreateManyInput | OrderCreateManyInput[]
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OrderIncludeCreateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -2182,6 +2318,10 @@ export namespace Prisma {
      * Limit how many Orders to update.
      */
     limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OrderIncludeUpdateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -2314,6 +2454,1074 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: OrderInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model StudentMirror
+   */
+
+  export type AggregateStudentMirror = {
+    _count: StudentMirrorCountAggregateOutputType | null
+    _min: StudentMirrorMinAggregateOutputType | null
+    _max: StudentMirrorMaxAggregateOutputType | null
+  }
+
+  export type StudentMirrorMinAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    displayName: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type StudentMirrorMaxAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    displayName: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type StudentMirrorCountAggregateOutputType = {
+    id: number
+    userId: number
+    displayName: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type StudentMirrorMinAggregateInputType = {
+    id?: true
+    userId?: true
+    displayName?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type StudentMirrorMaxAggregateInputType = {
+    id?: true
+    userId?: true
+    displayName?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type StudentMirrorCountAggregateInputType = {
+    id?: true
+    userId?: true
+    displayName?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type StudentMirrorAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which StudentMirror to aggregate.
+     */
+    where?: StudentMirrorWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of StudentMirrors to fetch.
+     */
+    orderBy?: StudentMirrorOrderByWithRelationInput | StudentMirrorOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: StudentMirrorWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` StudentMirrors from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` StudentMirrors.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned StudentMirrors
+    **/
+    _count?: true | StudentMirrorCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: StudentMirrorMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: StudentMirrorMaxAggregateInputType
+  }
+
+  export type GetStudentMirrorAggregateType<T extends StudentMirrorAggregateArgs> = {
+        [P in keyof T & keyof AggregateStudentMirror]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateStudentMirror[P]>
+      : GetScalarType<T[P], AggregateStudentMirror[P]>
+  }
+
+
+
+
+  export type StudentMirrorGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: StudentMirrorWhereInput
+    orderBy?: StudentMirrorOrderByWithAggregationInput | StudentMirrorOrderByWithAggregationInput[]
+    by: StudentMirrorScalarFieldEnum[] | StudentMirrorScalarFieldEnum
+    having?: StudentMirrorScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: StudentMirrorCountAggregateInputType | true
+    _min?: StudentMirrorMinAggregateInputType
+    _max?: StudentMirrorMaxAggregateInputType
+  }
+
+  export type StudentMirrorGroupByOutputType = {
+    id: string
+    userId: string | null
+    displayName: string | null
+    createdAt: Date
+    updatedAt: Date
+    _count: StudentMirrorCountAggregateOutputType | null
+    _min: StudentMirrorMinAggregateOutputType | null
+    _max: StudentMirrorMaxAggregateOutputType | null
+  }
+
+  type GetStudentMirrorGroupByPayload<T extends StudentMirrorGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<StudentMirrorGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof StudentMirrorGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], StudentMirrorGroupByOutputType[P]>
+            : GetScalarType<T[P], StudentMirrorGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type StudentMirrorSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    displayName?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    orders?: boolean | StudentMirror$ordersArgs<ExtArgs>
+    _count?: boolean | StudentMirrorCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["studentMirror"]>
+
+  export type StudentMirrorSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    displayName?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["studentMirror"]>
+
+  export type StudentMirrorSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    displayName?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["studentMirror"]>
+
+  export type StudentMirrorSelectScalar = {
+    id?: boolean
+    userId?: boolean
+    displayName?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type StudentMirrorOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "displayName" | "createdAt" | "updatedAt", ExtArgs["result"]["studentMirror"]>
+  export type StudentMirrorInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    orders?: boolean | StudentMirror$ordersArgs<ExtArgs>
+    _count?: boolean | StudentMirrorCountOutputTypeDefaultArgs<ExtArgs>
+  }
+  export type StudentMirrorIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
+  export type StudentMirrorIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
+
+  export type $StudentMirrorPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "StudentMirror"
+    objects: {
+      orders: Prisma.$OrderPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      userId: string | null
+      displayName: string | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["studentMirror"]>
+    composites: {}
+  }
+
+  type StudentMirrorGetPayload<S extends boolean | null | undefined | StudentMirrorDefaultArgs> = $Result.GetResult<Prisma.$StudentMirrorPayload, S>
+
+  type StudentMirrorCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<StudentMirrorFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: StudentMirrorCountAggregateInputType | true
+    }
+
+  export interface StudentMirrorDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['StudentMirror'], meta: { name: 'StudentMirror' } }
+    /**
+     * Find zero or one StudentMirror that matches the filter.
+     * @param {StudentMirrorFindUniqueArgs} args - Arguments to find a StudentMirror
+     * @example
+     * // Get one StudentMirror
+     * const studentMirror = await prisma.studentMirror.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends StudentMirrorFindUniqueArgs>(args: SelectSubset<T, StudentMirrorFindUniqueArgs<ExtArgs>>): Prisma__StudentMirrorClient<$Result.GetResult<Prisma.$StudentMirrorPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one StudentMirror that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {StudentMirrorFindUniqueOrThrowArgs} args - Arguments to find a StudentMirror
+     * @example
+     * // Get one StudentMirror
+     * const studentMirror = await prisma.studentMirror.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends StudentMirrorFindUniqueOrThrowArgs>(args: SelectSubset<T, StudentMirrorFindUniqueOrThrowArgs<ExtArgs>>): Prisma__StudentMirrorClient<$Result.GetResult<Prisma.$StudentMirrorPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first StudentMirror that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StudentMirrorFindFirstArgs} args - Arguments to find a StudentMirror
+     * @example
+     * // Get one StudentMirror
+     * const studentMirror = await prisma.studentMirror.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends StudentMirrorFindFirstArgs>(args?: SelectSubset<T, StudentMirrorFindFirstArgs<ExtArgs>>): Prisma__StudentMirrorClient<$Result.GetResult<Prisma.$StudentMirrorPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first StudentMirror that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StudentMirrorFindFirstOrThrowArgs} args - Arguments to find a StudentMirror
+     * @example
+     * // Get one StudentMirror
+     * const studentMirror = await prisma.studentMirror.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends StudentMirrorFindFirstOrThrowArgs>(args?: SelectSubset<T, StudentMirrorFindFirstOrThrowArgs<ExtArgs>>): Prisma__StudentMirrorClient<$Result.GetResult<Prisma.$StudentMirrorPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more StudentMirrors that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StudentMirrorFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all StudentMirrors
+     * const studentMirrors = await prisma.studentMirror.findMany()
+     * 
+     * // Get first 10 StudentMirrors
+     * const studentMirrors = await prisma.studentMirror.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const studentMirrorWithIdOnly = await prisma.studentMirror.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends StudentMirrorFindManyArgs>(args?: SelectSubset<T, StudentMirrorFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StudentMirrorPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a StudentMirror.
+     * @param {StudentMirrorCreateArgs} args - Arguments to create a StudentMirror.
+     * @example
+     * // Create one StudentMirror
+     * const StudentMirror = await prisma.studentMirror.create({
+     *   data: {
+     *     // ... data to create a StudentMirror
+     *   }
+     * })
+     * 
+     */
+    create<T extends StudentMirrorCreateArgs>(args: SelectSubset<T, StudentMirrorCreateArgs<ExtArgs>>): Prisma__StudentMirrorClient<$Result.GetResult<Prisma.$StudentMirrorPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many StudentMirrors.
+     * @param {StudentMirrorCreateManyArgs} args - Arguments to create many StudentMirrors.
+     * @example
+     * // Create many StudentMirrors
+     * const studentMirror = await prisma.studentMirror.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends StudentMirrorCreateManyArgs>(args?: SelectSubset<T, StudentMirrorCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many StudentMirrors and returns the data saved in the database.
+     * @param {StudentMirrorCreateManyAndReturnArgs} args - Arguments to create many StudentMirrors.
+     * @example
+     * // Create many StudentMirrors
+     * const studentMirror = await prisma.studentMirror.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many StudentMirrors and only return the `id`
+     * const studentMirrorWithIdOnly = await prisma.studentMirror.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends StudentMirrorCreateManyAndReturnArgs>(args?: SelectSubset<T, StudentMirrorCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StudentMirrorPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a StudentMirror.
+     * @param {StudentMirrorDeleteArgs} args - Arguments to delete one StudentMirror.
+     * @example
+     * // Delete one StudentMirror
+     * const StudentMirror = await prisma.studentMirror.delete({
+     *   where: {
+     *     // ... filter to delete one StudentMirror
+     *   }
+     * })
+     * 
+     */
+    delete<T extends StudentMirrorDeleteArgs>(args: SelectSubset<T, StudentMirrorDeleteArgs<ExtArgs>>): Prisma__StudentMirrorClient<$Result.GetResult<Prisma.$StudentMirrorPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one StudentMirror.
+     * @param {StudentMirrorUpdateArgs} args - Arguments to update one StudentMirror.
+     * @example
+     * // Update one StudentMirror
+     * const studentMirror = await prisma.studentMirror.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends StudentMirrorUpdateArgs>(args: SelectSubset<T, StudentMirrorUpdateArgs<ExtArgs>>): Prisma__StudentMirrorClient<$Result.GetResult<Prisma.$StudentMirrorPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more StudentMirrors.
+     * @param {StudentMirrorDeleteManyArgs} args - Arguments to filter StudentMirrors to delete.
+     * @example
+     * // Delete a few StudentMirrors
+     * const { count } = await prisma.studentMirror.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends StudentMirrorDeleteManyArgs>(args?: SelectSubset<T, StudentMirrorDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more StudentMirrors.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StudentMirrorUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many StudentMirrors
+     * const studentMirror = await prisma.studentMirror.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends StudentMirrorUpdateManyArgs>(args: SelectSubset<T, StudentMirrorUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more StudentMirrors and returns the data updated in the database.
+     * @param {StudentMirrorUpdateManyAndReturnArgs} args - Arguments to update many StudentMirrors.
+     * @example
+     * // Update many StudentMirrors
+     * const studentMirror = await prisma.studentMirror.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more StudentMirrors and only return the `id`
+     * const studentMirrorWithIdOnly = await prisma.studentMirror.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends StudentMirrorUpdateManyAndReturnArgs>(args: SelectSubset<T, StudentMirrorUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StudentMirrorPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one StudentMirror.
+     * @param {StudentMirrorUpsertArgs} args - Arguments to update or create a StudentMirror.
+     * @example
+     * // Update or create a StudentMirror
+     * const studentMirror = await prisma.studentMirror.upsert({
+     *   create: {
+     *     // ... data to create a StudentMirror
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the StudentMirror we want to update
+     *   }
+     * })
+     */
+    upsert<T extends StudentMirrorUpsertArgs>(args: SelectSubset<T, StudentMirrorUpsertArgs<ExtArgs>>): Prisma__StudentMirrorClient<$Result.GetResult<Prisma.$StudentMirrorPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of StudentMirrors.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StudentMirrorCountArgs} args - Arguments to filter StudentMirrors to count.
+     * @example
+     * // Count the number of StudentMirrors
+     * const count = await prisma.studentMirror.count({
+     *   where: {
+     *     // ... the filter for the StudentMirrors we want to count
+     *   }
+     * })
+    **/
+    count<T extends StudentMirrorCountArgs>(
+      args?: Subset<T, StudentMirrorCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], StudentMirrorCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a StudentMirror.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StudentMirrorAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends StudentMirrorAggregateArgs>(args: Subset<T, StudentMirrorAggregateArgs>): Prisma.PrismaPromise<GetStudentMirrorAggregateType<T>>
+
+    /**
+     * Group by StudentMirror.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StudentMirrorGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends StudentMirrorGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: StudentMirrorGroupByArgs['orderBy'] }
+        : { orderBy?: StudentMirrorGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, StudentMirrorGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetStudentMirrorGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the StudentMirror model
+   */
+  readonly fields: StudentMirrorFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for StudentMirror.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__StudentMirrorClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    orders<T extends StudentMirror$ordersArgs<ExtArgs> = {}>(args?: Subset<T, StudentMirror$ordersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the StudentMirror model
+   */
+  interface StudentMirrorFieldRefs {
+    readonly id: FieldRef<"StudentMirror", 'String'>
+    readonly userId: FieldRef<"StudentMirror", 'String'>
+    readonly displayName: FieldRef<"StudentMirror", 'String'>
+    readonly createdAt: FieldRef<"StudentMirror", 'DateTime'>
+    readonly updatedAt: FieldRef<"StudentMirror", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * StudentMirror findUnique
+   */
+  export type StudentMirrorFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StudentMirror
+     */
+    select?: StudentMirrorSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StudentMirror
+     */
+    omit?: StudentMirrorOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StudentMirrorInclude<ExtArgs> | null
+    /**
+     * Filter, which StudentMirror to fetch.
+     */
+    where: StudentMirrorWhereUniqueInput
+  }
+
+  /**
+   * StudentMirror findUniqueOrThrow
+   */
+  export type StudentMirrorFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StudentMirror
+     */
+    select?: StudentMirrorSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StudentMirror
+     */
+    omit?: StudentMirrorOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StudentMirrorInclude<ExtArgs> | null
+    /**
+     * Filter, which StudentMirror to fetch.
+     */
+    where: StudentMirrorWhereUniqueInput
+  }
+
+  /**
+   * StudentMirror findFirst
+   */
+  export type StudentMirrorFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StudentMirror
+     */
+    select?: StudentMirrorSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StudentMirror
+     */
+    omit?: StudentMirrorOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StudentMirrorInclude<ExtArgs> | null
+    /**
+     * Filter, which StudentMirror to fetch.
+     */
+    where?: StudentMirrorWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of StudentMirrors to fetch.
+     */
+    orderBy?: StudentMirrorOrderByWithRelationInput | StudentMirrorOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for StudentMirrors.
+     */
+    cursor?: StudentMirrorWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` StudentMirrors from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` StudentMirrors.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of StudentMirrors.
+     */
+    distinct?: StudentMirrorScalarFieldEnum | StudentMirrorScalarFieldEnum[]
+  }
+
+  /**
+   * StudentMirror findFirstOrThrow
+   */
+  export type StudentMirrorFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StudentMirror
+     */
+    select?: StudentMirrorSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StudentMirror
+     */
+    omit?: StudentMirrorOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StudentMirrorInclude<ExtArgs> | null
+    /**
+     * Filter, which StudentMirror to fetch.
+     */
+    where?: StudentMirrorWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of StudentMirrors to fetch.
+     */
+    orderBy?: StudentMirrorOrderByWithRelationInput | StudentMirrorOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for StudentMirrors.
+     */
+    cursor?: StudentMirrorWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` StudentMirrors from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` StudentMirrors.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of StudentMirrors.
+     */
+    distinct?: StudentMirrorScalarFieldEnum | StudentMirrorScalarFieldEnum[]
+  }
+
+  /**
+   * StudentMirror findMany
+   */
+  export type StudentMirrorFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StudentMirror
+     */
+    select?: StudentMirrorSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StudentMirror
+     */
+    omit?: StudentMirrorOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StudentMirrorInclude<ExtArgs> | null
+    /**
+     * Filter, which StudentMirrors to fetch.
+     */
+    where?: StudentMirrorWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of StudentMirrors to fetch.
+     */
+    orderBy?: StudentMirrorOrderByWithRelationInput | StudentMirrorOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing StudentMirrors.
+     */
+    cursor?: StudentMirrorWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` StudentMirrors from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` StudentMirrors.
+     */
+    skip?: number
+    distinct?: StudentMirrorScalarFieldEnum | StudentMirrorScalarFieldEnum[]
+  }
+
+  /**
+   * StudentMirror create
+   */
+  export type StudentMirrorCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StudentMirror
+     */
+    select?: StudentMirrorSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StudentMirror
+     */
+    omit?: StudentMirrorOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StudentMirrorInclude<ExtArgs> | null
+    /**
+     * The data needed to create a StudentMirror.
+     */
+    data: XOR<StudentMirrorCreateInput, StudentMirrorUncheckedCreateInput>
+  }
+
+  /**
+   * StudentMirror createMany
+   */
+  export type StudentMirrorCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many StudentMirrors.
+     */
+    data: StudentMirrorCreateManyInput | StudentMirrorCreateManyInput[]
+  }
+
+  /**
+   * StudentMirror createManyAndReturn
+   */
+  export type StudentMirrorCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StudentMirror
+     */
+    select?: StudentMirrorSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the StudentMirror
+     */
+    omit?: StudentMirrorOmit<ExtArgs> | null
+    /**
+     * The data used to create many StudentMirrors.
+     */
+    data: StudentMirrorCreateManyInput | StudentMirrorCreateManyInput[]
+  }
+
+  /**
+   * StudentMirror update
+   */
+  export type StudentMirrorUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StudentMirror
+     */
+    select?: StudentMirrorSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StudentMirror
+     */
+    omit?: StudentMirrorOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StudentMirrorInclude<ExtArgs> | null
+    /**
+     * The data needed to update a StudentMirror.
+     */
+    data: XOR<StudentMirrorUpdateInput, StudentMirrorUncheckedUpdateInput>
+    /**
+     * Choose, which StudentMirror to update.
+     */
+    where: StudentMirrorWhereUniqueInput
+  }
+
+  /**
+   * StudentMirror updateMany
+   */
+  export type StudentMirrorUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update StudentMirrors.
+     */
+    data: XOR<StudentMirrorUpdateManyMutationInput, StudentMirrorUncheckedUpdateManyInput>
+    /**
+     * Filter which StudentMirrors to update
+     */
+    where?: StudentMirrorWhereInput
+    /**
+     * Limit how many StudentMirrors to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * StudentMirror updateManyAndReturn
+   */
+  export type StudentMirrorUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StudentMirror
+     */
+    select?: StudentMirrorSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the StudentMirror
+     */
+    omit?: StudentMirrorOmit<ExtArgs> | null
+    /**
+     * The data used to update StudentMirrors.
+     */
+    data: XOR<StudentMirrorUpdateManyMutationInput, StudentMirrorUncheckedUpdateManyInput>
+    /**
+     * Filter which StudentMirrors to update
+     */
+    where?: StudentMirrorWhereInput
+    /**
+     * Limit how many StudentMirrors to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * StudentMirror upsert
+   */
+  export type StudentMirrorUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StudentMirror
+     */
+    select?: StudentMirrorSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StudentMirror
+     */
+    omit?: StudentMirrorOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StudentMirrorInclude<ExtArgs> | null
+    /**
+     * The filter to search for the StudentMirror to update in case it exists.
+     */
+    where: StudentMirrorWhereUniqueInput
+    /**
+     * In case the StudentMirror found by the `where` argument doesn't exist, create a new StudentMirror with this data.
+     */
+    create: XOR<StudentMirrorCreateInput, StudentMirrorUncheckedCreateInput>
+    /**
+     * In case the StudentMirror was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<StudentMirrorUpdateInput, StudentMirrorUncheckedUpdateInput>
+  }
+
+  /**
+   * StudentMirror delete
+   */
+  export type StudentMirrorDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StudentMirror
+     */
+    select?: StudentMirrorSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StudentMirror
+     */
+    omit?: StudentMirrorOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StudentMirrorInclude<ExtArgs> | null
+    /**
+     * Filter which StudentMirror to delete.
+     */
+    where: StudentMirrorWhereUniqueInput
+  }
+
+  /**
+   * StudentMirror deleteMany
+   */
+  export type StudentMirrorDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which StudentMirrors to delete
+     */
+    where?: StudentMirrorWhereInput
+    /**
+     * Limit how many StudentMirrors to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * StudentMirror.orders
+   */
+  export type StudentMirror$ordersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Order
+     */
+    select?: OrderSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Order
+     */
+    omit?: OrderOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OrderInclude<ExtArgs> | null
+    where?: OrderWhereInput
+    orderBy?: OrderOrderByWithRelationInput | OrderOrderByWithRelationInput[]
+    cursor?: OrderWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: OrderScalarFieldEnum | OrderScalarFieldEnum[]
+  }
+
+  /**
+   * StudentMirror without action
+   */
+  export type StudentMirrorDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StudentMirror
+     */
+    select?: StudentMirrorSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StudentMirror
+     */
+    omit?: StudentMirrorOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StudentMirrorInclude<ExtArgs> | null
   }
 
 
@@ -4563,6 +5771,17 @@ export namespace Prisma {
   export type OrderScalarFieldEnum = (typeof OrderScalarFieldEnum)[keyof typeof OrderScalarFieldEnum]
 
 
+  export const StudentMirrorScalarFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    displayName: 'displayName',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type StudentMirrorScalarFieldEnum = (typeof StudentMirrorScalarFieldEnum)[keyof typeof StudentMirrorScalarFieldEnum]
+
+
   export const OrderItemScalarFieldEnum: {
     id: 'id',
     orderId: 'orderId',
@@ -4707,6 +5926,7 @@ export namespace Prisma {
     status?: EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
     createdAt?: DateTimeFilter<"Order"> | Date | string
     updatedAt?: DateTimeFilter<"Order"> | Date | string
+    student?: XOR<StudentMirrorScalarRelationFilter, StudentMirrorWhereInput>
     items?: OrderItemListRelationFilter
     payments?: PaymentListRelationFilter
   }
@@ -4722,6 +5942,7 @@ export namespace Prisma {
     status?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    student?: StudentMirrorOrderByWithRelationInput
     items?: OrderItemOrderByRelationAggregateInput
     payments?: PaymentOrderByRelationAggregateInput
   }
@@ -4740,6 +5961,7 @@ export namespace Prisma {
     status?: EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
     createdAt?: DateTimeFilter<"Order"> | Date | string
     updatedAt?: DateTimeFilter<"Order"> | Date | string
+    student?: XOR<StudentMirrorScalarRelationFilter, StudentMirrorWhereInput>
     items?: OrderItemListRelationFilter
     payments?: PaymentListRelationFilter
   }, "id">
@@ -4776,6 +5998,61 @@ export namespace Prisma {
     status?: EnumOrderStatusWithAggregatesFilter<"Order"> | $Enums.OrderStatus
     createdAt?: DateTimeWithAggregatesFilter<"Order"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Order"> | Date | string
+  }
+
+  export type StudentMirrorWhereInput = {
+    AND?: StudentMirrorWhereInput | StudentMirrorWhereInput[]
+    OR?: StudentMirrorWhereInput[]
+    NOT?: StudentMirrorWhereInput | StudentMirrorWhereInput[]
+    id?: StringFilter<"StudentMirror"> | string
+    userId?: StringNullableFilter<"StudentMirror"> | string | null
+    displayName?: StringNullableFilter<"StudentMirror"> | string | null
+    createdAt?: DateTimeFilter<"StudentMirror"> | Date | string
+    updatedAt?: DateTimeFilter<"StudentMirror"> | Date | string
+    orders?: OrderListRelationFilter
+  }
+
+  export type StudentMirrorOrderByWithRelationInput = {
+    id?: SortOrder
+    userId?: SortOrderInput | SortOrder
+    displayName?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    orders?: OrderOrderByRelationAggregateInput
+  }
+
+  export type StudentMirrorWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: StudentMirrorWhereInput | StudentMirrorWhereInput[]
+    OR?: StudentMirrorWhereInput[]
+    NOT?: StudentMirrorWhereInput | StudentMirrorWhereInput[]
+    userId?: StringNullableFilter<"StudentMirror"> | string | null
+    displayName?: StringNullableFilter<"StudentMirror"> | string | null
+    createdAt?: DateTimeFilter<"StudentMirror"> | Date | string
+    updatedAt?: DateTimeFilter<"StudentMirror"> | Date | string
+    orders?: OrderListRelationFilter
+  }, "id">
+
+  export type StudentMirrorOrderByWithAggregationInput = {
+    id?: SortOrder
+    userId?: SortOrderInput | SortOrder
+    displayName?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: StudentMirrorCountOrderByAggregateInput
+    _max?: StudentMirrorMaxOrderByAggregateInput
+    _min?: StudentMirrorMinOrderByAggregateInput
+  }
+
+  export type StudentMirrorScalarWhereWithAggregatesInput = {
+    AND?: StudentMirrorScalarWhereWithAggregatesInput | StudentMirrorScalarWhereWithAggregatesInput[]
+    OR?: StudentMirrorScalarWhereWithAggregatesInput[]
+    NOT?: StudentMirrorScalarWhereWithAggregatesInput | StudentMirrorScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"StudentMirror"> | string
+    userId?: StringNullableWithAggregatesFilter<"StudentMirror"> | string | null
+    displayName?: StringNullableWithAggregatesFilter<"StudentMirror"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"StudentMirror"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"StudentMirror"> | Date | string
   }
 
   export type OrderItemWhereInput = {
@@ -4909,7 +6186,6 @@ export namespace Prisma {
 
   export type OrderCreateInput = {
     id?: string
-    studentId: string
     email?: string | null
     currency?: string
     subtotal?: number
@@ -4918,6 +6194,7 @@ export namespace Prisma {
     status?: $Enums.OrderStatus
     createdAt?: Date | string
     updatedAt?: Date | string
+    student: StudentMirrorCreateNestedOneWithoutOrdersInput
     items?: OrderItemCreateNestedManyWithoutOrderInput
     payments?: PaymentCreateNestedManyWithoutOrderInput
   }
@@ -4939,7 +6216,6 @@ export namespace Prisma {
 
   export type OrderUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    studentId?: StringFieldUpdateOperationsInput | string
     email?: NullableStringFieldUpdateOperationsInput | string | null
     currency?: StringFieldUpdateOperationsInput | string
     subtotal?: FloatFieldUpdateOperationsInput | number
@@ -4948,6 +6224,7 @@ export namespace Prisma {
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    student?: StudentMirrorUpdateOneRequiredWithoutOrdersNestedInput
     items?: OrderItemUpdateManyWithoutOrderNestedInput
     payments?: PaymentUpdateManyWithoutOrderNestedInput
   }
@@ -4982,7 +6259,6 @@ export namespace Prisma {
 
   export type OrderUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
-    studentId?: StringFieldUpdateOperationsInput | string
     email?: NullableStringFieldUpdateOperationsInput | string | null
     currency?: StringFieldUpdateOperationsInput | string
     subtotal?: FloatFieldUpdateOperationsInput | number
@@ -5002,6 +6278,66 @@ export namespace Prisma {
     discount?: FloatFieldUpdateOperationsInput | number
     total?: FloatFieldUpdateOperationsInput | number
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type StudentMirrorCreateInput = {
+    id: string
+    userId?: string | null
+    displayName?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    orders?: OrderCreateNestedManyWithoutStudentInput
+  }
+
+  export type StudentMirrorUncheckedCreateInput = {
+    id: string
+    userId?: string | null
+    displayName?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    orders?: OrderUncheckedCreateNestedManyWithoutStudentInput
+  }
+
+  export type StudentMirrorUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    orders?: OrderUpdateManyWithoutStudentNestedInput
+  }
+
+  export type StudentMirrorUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    orders?: OrderUncheckedUpdateManyWithoutStudentNestedInput
+  }
+
+  export type StudentMirrorCreateManyInput = {
+    id: string
+    userId?: string | null
+    displayName?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type StudentMirrorUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type StudentMirrorUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -5194,6 +6530,11 @@ export namespace Prisma {
     not?: NestedDateTimeFilter<$PrismaModel> | Date | string
   }
 
+  export type StudentMirrorScalarRelationFilter = {
+    is?: StudentMirrorWhereInput
+    isNot?: StudentMirrorWhereInput
+  }
+
   export type OrderItemListRelationFilter = {
     every?: OrderItemWhereInput
     some?: OrderItemWhereInput
@@ -5342,6 +6683,40 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedDateTimeFilter<$PrismaModel>
     _max?: NestedDateTimeFilter<$PrismaModel>
+  }
+
+  export type OrderListRelationFilter = {
+    every?: OrderWhereInput
+    some?: OrderWhereInput
+    none?: OrderWhereInput
+  }
+
+  export type OrderOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type StudentMirrorCountOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    displayName?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type StudentMirrorMaxOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    displayName?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type StudentMirrorMinOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    displayName?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
   }
 
   export type IntFilter<$PrismaModel = never> = {
@@ -5505,6 +6880,12 @@ export namespace Prisma {
     _max?: NestedJsonNullableFilter<$PrismaModel>
   }
 
+  export type StudentMirrorCreateNestedOneWithoutOrdersInput = {
+    create?: XOR<StudentMirrorCreateWithoutOrdersInput, StudentMirrorUncheckedCreateWithoutOrdersInput>
+    connectOrCreate?: StudentMirrorCreateOrConnectWithoutOrdersInput
+    connect?: StudentMirrorWhereUniqueInput
+  }
+
   export type OrderItemCreateNestedManyWithoutOrderInput = {
     create?: XOR<OrderItemCreateWithoutOrderInput, OrderItemUncheckedCreateWithoutOrderInput> | OrderItemCreateWithoutOrderInput[] | OrderItemUncheckedCreateWithoutOrderInput[]
     connectOrCreate?: OrderItemCreateOrConnectWithoutOrderInput | OrderItemCreateOrConnectWithoutOrderInput[]
@@ -5555,6 +6936,14 @@ export namespace Prisma {
 
   export type DateTimeFieldUpdateOperationsInput = {
     set?: Date | string
+  }
+
+  export type StudentMirrorUpdateOneRequiredWithoutOrdersNestedInput = {
+    create?: XOR<StudentMirrorCreateWithoutOrdersInput, StudentMirrorUncheckedCreateWithoutOrdersInput>
+    connectOrCreate?: StudentMirrorCreateOrConnectWithoutOrdersInput
+    upsert?: StudentMirrorUpsertWithoutOrdersInput
+    connect?: StudentMirrorWhereUniqueInput
+    update?: XOR<XOR<StudentMirrorUpdateToOneWithWhereWithoutOrdersInput, StudentMirrorUpdateWithoutOrdersInput>, StudentMirrorUncheckedUpdateWithoutOrdersInput>
   }
 
   export type OrderItemUpdateManyWithoutOrderNestedInput = {
@@ -5611,6 +7000,48 @@ export namespace Prisma {
     update?: PaymentUpdateWithWhereUniqueWithoutOrderInput | PaymentUpdateWithWhereUniqueWithoutOrderInput[]
     updateMany?: PaymentUpdateManyWithWhereWithoutOrderInput | PaymentUpdateManyWithWhereWithoutOrderInput[]
     deleteMany?: PaymentScalarWhereInput | PaymentScalarWhereInput[]
+  }
+
+  export type OrderCreateNestedManyWithoutStudentInput = {
+    create?: XOR<OrderCreateWithoutStudentInput, OrderUncheckedCreateWithoutStudentInput> | OrderCreateWithoutStudentInput[] | OrderUncheckedCreateWithoutStudentInput[]
+    connectOrCreate?: OrderCreateOrConnectWithoutStudentInput | OrderCreateOrConnectWithoutStudentInput[]
+    createMany?: OrderCreateManyStudentInputEnvelope
+    connect?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
+  }
+
+  export type OrderUncheckedCreateNestedManyWithoutStudentInput = {
+    create?: XOR<OrderCreateWithoutStudentInput, OrderUncheckedCreateWithoutStudentInput> | OrderCreateWithoutStudentInput[] | OrderUncheckedCreateWithoutStudentInput[]
+    connectOrCreate?: OrderCreateOrConnectWithoutStudentInput | OrderCreateOrConnectWithoutStudentInput[]
+    createMany?: OrderCreateManyStudentInputEnvelope
+    connect?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
+  }
+
+  export type OrderUpdateManyWithoutStudentNestedInput = {
+    create?: XOR<OrderCreateWithoutStudentInput, OrderUncheckedCreateWithoutStudentInput> | OrderCreateWithoutStudentInput[] | OrderUncheckedCreateWithoutStudentInput[]
+    connectOrCreate?: OrderCreateOrConnectWithoutStudentInput | OrderCreateOrConnectWithoutStudentInput[]
+    upsert?: OrderUpsertWithWhereUniqueWithoutStudentInput | OrderUpsertWithWhereUniqueWithoutStudentInput[]
+    createMany?: OrderCreateManyStudentInputEnvelope
+    set?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
+    disconnect?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
+    delete?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
+    connect?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
+    update?: OrderUpdateWithWhereUniqueWithoutStudentInput | OrderUpdateWithWhereUniqueWithoutStudentInput[]
+    updateMany?: OrderUpdateManyWithWhereWithoutStudentInput | OrderUpdateManyWithWhereWithoutStudentInput[]
+    deleteMany?: OrderScalarWhereInput | OrderScalarWhereInput[]
+  }
+
+  export type OrderUncheckedUpdateManyWithoutStudentNestedInput = {
+    create?: XOR<OrderCreateWithoutStudentInput, OrderUncheckedCreateWithoutStudentInput> | OrderCreateWithoutStudentInput[] | OrderUncheckedCreateWithoutStudentInput[]
+    connectOrCreate?: OrderCreateOrConnectWithoutStudentInput | OrderCreateOrConnectWithoutStudentInput[]
+    upsert?: OrderUpsertWithWhereUniqueWithoutStudentInput | OrderUpsertWithWhereUniqueWithoutStudentInput[]
+    createMany?: OrderCreateManyStudentInputEnvelope
+    set?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
+    disconnect?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
+    delete?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
+    connect?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
+    update?: OrderUpdateWithWhereUniqueWithoutStudentInput | OrderUpdateWithWhereUniqueWithoutStudentInput[]
+    updateMany?: OrderUpdateManyWithWhereWithoutStudentInput | OrderUpdateManyWithWhereWithoutStudentInput[]
+    deleteMany?: OrderScalarWhereInput | OrderScalarWhereInput[]
   }
 
   export type OrderCreateNestedOneWithoutItemsInput = {
@@ -5857,6 +7288,27 @@ export namespace Prisma {
     not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
   }
 
+  export type StudentMirrorCreateWithoutOrdersInput = {
+    id: string
+    userId?: string | null
+    displayName?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type StudentMirrorUncheckedCreateWithoutOrdersInput = {
+    id: string
+    userId?: string | null
+    displayName?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type StudentMirrorCreateOrConnectWithoutOrdersInput = {
+    where: StudentMirrorWhereUniqueInput
+    create: XOR<StudentMirrorCreateWithoutOrdersInput, StudentMirrorUncheckedCreateWithoutOrdersInput>
+  }
+
   export type OrderItemCreateWithoutOrderInput = {
     id?: string
     courseId: string
@@ -5907,6 +7359,33 @@ export namespace Prisma {
 
   export type PaymentCreateManyOrderInputEnvelope = {
     data: PaymentCreateManyOrderInput | PaymentCreateManyOrderInput[]
+  }
+
+  export type StudentMirrorUpsertWithoutOrdersInput = {
+    update: XOR<StudentMirrorUpdateWithoutOrdersInput, StudentMirrorUncheckedUpdateWithoutOrdersInput>
+    create: XOR<StudentMirrorCreateWithoutOrdersInput, StudentMirrorUncheckedCreateWithoutOrdersInput>
+    where?: StudentMirrorWhereInput
+  }
+
+  export type StudentMirrorUpdateToOneWithWhereWithoutOrdersInput = {
+    where?: StudentMirrorWhereInput
+    data: XOR<StudentMirrorUpdateWithoutOrdersInput, StudentMirrorUncheckedUpdateWithoutOrdersInput>
+  }
+
+  export type StudentMirrorUpdateWithoutOrdersInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type StudentMirrorUncheckedUpdateWithoutOrdersInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type OrderItemUpsertWithWhereUniqueWithoutOrderInput = {
@@ -5966,9 +7445,8 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"Payment"> | Date | string
   }
 
-  export type OrderCreateWithoutItemsInput = {
+  export type OrderCreateWithoutStudentInput = {
     id?: string
-    studentId: string
     email?: string | null
     currency?: string
     subtotal?: number
@@ -5977,6 +7455,76 @@ export namespace Prisma {
     status?: $Enums.OrderStatus
     createdAt?: Date | string
     updatedAt?: Date | string
+    items?: OrderItemCreateNestedManyWithoutOrderInput
+    payments?: PaymentCreateNestedManyWithoutOrderInput
+  }
+
+  export type OrderUncheckedCreateWithoutStudentInput = {
+    id?: string
+    email?: string | null
+    currency?: string
+    subtotal?: number
+    discount?: number
+    total?: number
+    status?: $Enums.OrderStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    items?: OrderItemUncheckedCreateNestedManyWithoutOrderInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutOrderInput
+  }
+
+  export type OrderCreateOrConnectWithoutStudentInput = {
+    where: OrderWhereUniqueInput
+    create: XOR<OrderCreateWithoutStudentInput, OrderUncheckedCreateWithoutStudentInput>
+  }
+
+  export type OrderCreateManyStudentInputEnvelope = {
+    data: OrderCreateManyStudentInput | OrderCreateManyStudentInput[]
+  }
+
+  export type OrderUpsertWithWhereUniqueWithoutStudentInput = {
+    where: OrderWhereUniqueInput
+    update: XOR<OrderUpdateWithoutStudentInput, OrderUncheckedUpdateWithoutStudentInput>
+    create: XOR<OrderCreateWithoutStudentInput, OrderUncheckedCreateWithoutStudentInput>
+  }
+
+  export type OrderUpdateWithWhereUniqueWithoutStudentInput = {
+    where: OrderWhereUniqueInput
+    data: XOR<OrderUpdateWithoutStudentInput, OrderUncheckedUpdateWithoutStudentInput>
+  }
+
+  export type OrderUpdateManyWithWhereWithoutStudentInput = {
+    where: OrderScalarWhereInput
+    data: XOR<OrderUpdateManyMutationInput, OrderUncheckedUpdateManyWithoutStudentInput>
+  }
+
+  export type OrderScalarWhereInput = {
+    AND?: OrderScalarWhereInput | OrderScalarWhereInput[]
+    OR?: OrderScalarWhereInput[]
+    NOT?: OrderScalarWhereInput | OrderScalarWhereInput[]
+    id?: StringFilter<"Order"> | string
+    studentId?: StringFilter<"Order"> | string
+    email?: StringNullableFilter<"Order"> | string | null
+    currency?: StringFilter<"Order"> | string
+    subtotal?: FloatFilter<"Order"> | number
+    discount?: FloatFilter<"Order"> | number
+    total?: FloatFilter<"Order"> | number
+    status?: EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
+    createdAt?: DateTimeFilter<"Order"> | Date | string
+    updatedAt?: DateTimeFilter<"Order"> | Date | string
+  }
+
+  export type OrderCreateWithoutItemsInput = {
+    id?: string
+    email?: string | null
+    currency?: string
+    subtotal?: number
+    discount?: number
+    total?: number
+    status?: $Enums.OrderStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    student: StudentMirrorCreateNestedOneWithoutOrdersInput
     payments?: PaymentCreateNestedManyWithoutOrderInput
   }
 
@@ -6012,7 +7560,6 @@ export namespace Prisma {
 
   export type OrderUpdateWithoutItemsInput = {
     id?: StringFieldUpdateOperationsInput | string
-    studentId?: StringFieldUpdateOperationsInput | string
     email?: NullableStringFieldUpdateOperationsInput | string | null
     currency?: StringFieldUpdateOperationsInput | string
     subtotal?: FloatFieldUpdateOperationsInput | number
@@ -6021,6 +7568,7 @@ export namespace Prisma {
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    student?: StudentMirrorUpdateOneRequiredWithoutOrdersNestedInput
     payments?: PaymentUpdateManyWithoutOrderNestedInput
   }
 
@@ -6040,7 +7588,6 @@ export namespace Prisma {
 
   export type OrderCreateWithoutPaymentsInput = {
     id?: string
-    studentId: string
     email?: string | null
     currency?: string
     subtotal?: number
@@ -6049,6 +7596,7 @@ export namespace Prisma {
     status?: $Enums.OrderStatus
     createdAt?: Date | string
     updatedAt?: Date | string
+    student: StudentMirrorCreateNestedOneWithoutOrdersInput
     items?: OrderItemCreateNestedManyWithoutOrderInput
   }
 
@@ -6084,7 +7632,6 @@ export namespace Prisma {
 
   export type OrderUpdateWithoutPaymentsInput = {
     id?: StringFieldUpdateOperationsInput | string
-    studentId?: StringFieldUpdateOperationsInput | string
     email?: NullableStringFieldUpdateOperationsInput | string | null
     currency?: StringFieldUpdateOperationsInput | string
     subtotal?: FloatFieldUpdateOperationsInput | number
@@ -6093,6 +7640,7 @@ export namespace Prisma {
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    student?: StudentMirrorUpdateOneRequiredWithoutOrdersNestedInput
     items?: OrderItemUpdateManyWithoutOrderNestedInput
   }
 
@@ -6176,6 +7724,58 @@ export namespace Prisma {
     amount?: FloatFieldUpdateOperationsInput | number
     payload?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type OrderCreateManyStudentInput = {
+    id?: string
+    email?: string | null
+    currency?: string
+    subtotal?: number
+    discount?: number
+    total?: number
+    status?: $Enums.OrderStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type OrderUpdateWithoutStudentInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: StringFieldUpdateOperationsInput | string
+    subtotal?: FloatFieldUpdateOperationsInput | number
+    discount?: FloatFieldUpdateOperationsInput | number
+    total?: FloatFieldUpdateOperationsInput | number
+    status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    items?: OrderItemUpdateManyWithoutOrderNestedInput
+    payments?: PaymentUpdateManyWithoutOrderNestedInput
+  }
+
+  export type OrderUncheckedUpdateWithoutStudentInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: StringFieldUpdateOperationsInput | string
+    subtotal?: FloatFieldUpdateOperationsInput | number
+    discount?: FloatFieldUpdateOperationsInput | number
+    total?: FloatFieldUpdateOperationsInput | number
+    status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    items?: OrderItemUncheckedUpdateManyWithoutOrderNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutOrderNestedInput
+  }
+
+  export type OrderUncheckedUpdateManyWithoutStudentInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    currency?: StringFieldUpdateOperationsInput | string
+    subtotal?: FloatFieldUpdateOperationsInput | number
+    discount?: FloatFieldUpdateOperationsInput | number
+    total?: FloatFieldUpdateOperationsInput | number
+    status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
 

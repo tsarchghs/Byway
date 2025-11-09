@@ -35,5 +35,51 @@ export const StudentQuery = extendType({
           orderBy: { submittedAt: 'desc' },
         }),
     })
+
+    // Check enrollment for a specific student id
+    t.field('isEnrolled', {
+      type: 'Boolean',
+      args: { studentId: nonNull(stringArg()), courseId: nonNull(stringArg()) },
+      resolve: async (_, { studentId, courseId }, ctx) => {
+        const sc = await ctx.prisma.studentCourse.findUnique({
+          where: { studentId_courseId: { studentId, courseId } },
+        })
+        return !!sc
+      },
+    })
+
+    // Check enrollment for current authenticated user
+    t.field('isEnrolledMe', {
+      type: 'Boolean',
+      args: { courseId: nonNull(stringArg()) },
+      resolve: async (_, { courseId }, ctx) => {
+        if (!ctx.user?.userId) return false
+        const student = await ctx.prisma.student.findUnique({ where: { userId: ctx.user.userId } })
+        if (!student) return false
+        const sc = await ctx.prisma.studentCourse.findUnique({
+          where: { studentId_courseId: { studentId: student.id, courseId } },
+        })
+        return !!sc
+      },
+    })
+
+    // Check whether a student exists by Student.id
+    t.field('studentExists', {
+      type: 'Boolean',
+      args: { studentId: nonNull(stringArg()) },
+      resolve: async (_, { studentId }, ctx) => {
+        const s = await ctx.prisma.student.findUnique({ where: { id: studentId } })
+        return !!s
+      },
+    })
+
+    // Get student by authentication user id (soft link userId -> authentication.user.id)
+    t.field('studentByUserId', {
+      type: 'Student',
+      args: { userId: nonNull(stringArg()) },
+      resolve: async (_, { userId }, ctx) => {
+        return ctx.prisma.student.findUnique({ where: { userId } })
+      },
+    })
   },
 })

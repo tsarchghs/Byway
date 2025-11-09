@@ -56,7 +56,7 @@ export interface NexusGenFieldTypes {
     createTeacherProfile: NexusGenRootTypes['TeacherProfile'] | null; // TeacherProfile
   }
   Query: { // field return type
-    ok: boolean; // Boolean!
+    teacherProfile: NexusGenRootTypes['TeacherProfile'] | null; // TeacherProfile
   }
   TeacherProfile: { // field return type
     avatarUrl: string | null; // String
@@ -74,7 +74,7 @@ export interface NexusGenFieldTypeNames {
     createTeacherProfile: 'TeacherProfile'
   }
   Query: { // field return type name
-    ok: 'Boolean'
+    teacherProfile: 'TeacherProfile'
   }
   TeacherProfile: { // field return type name
     avatarUrl: 'String'
@@ -94,6 +94,11 @@ export interface NexusGenArgTypes {
       bio: string; // String!
       payoutEmail?: string | null; // String
       subjects?: string | null; // String
+    }
+  }
+  Query: {
+    teacherProfile: { // args
+      id: string; // String!
     }
   }
 }

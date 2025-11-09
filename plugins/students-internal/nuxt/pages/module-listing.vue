@@ -412,6 +412,9 @@ const progress = reactive<{ completedLessonIds: string[]; lastLessonId?: string 
   lastLessonId: undefined
 })
 
+// Enrollment flag (true when the student is enrolled in the course)
+const isEnrolledCourse = ref(false)
+
 /** ---------- Helpers ---------- */
 const selectedModuleId = computed(() => String(route.params.module_id || ''))
 const hasModules = computed(() => modules.value.length > 0)
@@ -449,6 +452,8 @@ const filteredLessons = computed(() => {
 const isCompleted = (lessonId: string) => progress.completedLessonIds.includes(lessonId)
 const labelForLesson = (id: string) => lessons.value.find(l => l.id === id)?.title || ''
 function isLocked(l: Lesson): boolean {
+  // If user is not enrolled, only allow preview lessons
+  if (!isEnrolledCourse.value && !l.preview) return true
   if (l.preview) return false
   if (l.unlockAt && new Date(l.unlockAt).getTime() > Date.now()) return true
   if (l.prerequisites?.length) return !l.prerequisites.every(pid => isCompleted(pid))
@@ -581,7 +586,9 @@ async function loadCourseOverview(studentId: string, courseId: string) {
     }>(GQL.myCourses, { studentId }, STUDENTS_API)
 
     const sc = (myCoursesData?.myCourses || []).find(c => c.courseId === courseId)
-    if (sc?.course) Object.assign(course, sc.course)
+  // mark enrollment based on myCourses result
+  isEnrolledCourse.value = !!sc
+  if (sc?.course) Object.assign(course, sc.course)
 
     // 2) Modules + lesson shells
     const teach = await fetchGraphQL<{

@@ -91,6 +91,18 @@ const TeacherProfile = objectType({
   },
 })
 
+// Query to fetch teacher profile by id (used by other plugins to verify teacher status)
+const Query = objectType({
+  name: 'Query',
+  definition(t) {
+    t.field('teacherProfile', {
+      type: 'TeacherProfile',
+      args: { id: nonNull(stringArg()) },
+      resolve: (_, { id }, ctx) => ctx.prisma.teacherProfile.findUnique({ where: { id } }),
+    })
+  },
+})
+
 // ===============================
 // 🔧 Mutations
 // ===============================
@@ -138,7 +150,7 @@ export async function register(app) {
   const router = express.Router()
 
   const schema = makeSchema({
-    types: [TeacherProfile, Mutation],
+    types: [TeacherProfile, Query, Mutation],
     outputs: {
       schema: path.join(__dirname, "./schema.graphql"),
       typegen: path.join(__dirname, "./nexus-typegen.d.ts"),

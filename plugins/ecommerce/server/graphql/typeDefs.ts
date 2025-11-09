@@ -49,6 +49,7 @@ export const typeDefs = /* GraphQL */ `
   type Query {
     myOrders(studentId: String): [EcOrder!]!
     isEnrolled(courseId: String!, studentId: String): Boolean!
+    verifyCheckout(sessionId: String!): VerifyCheckout!
     validateCoupon(courseId: String!, code: String!): CouponValidation!
   }
 
@@ -61,5 +62,11 @@ export const typeDefs = /* GraphQL */ `
       successUrl: String!
       cancelUrl: String!
     ): CheckoutPayload!
+  }
+
+  type VerifyCheckout {
+    ok: Boolean!
+    orderId: String
+    status: EcOrderStatus
   }
 `

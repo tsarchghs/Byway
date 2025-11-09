@@ -7,7 +7,7 @@ type Mutation {
 }
 
 type Query {
-  ok: Boolean!
+  teacherProfile(id: String!): TeacherProfile
 }
 
 type TeacherProfile {

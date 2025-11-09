@@ -6,6 +6,17 @@ export const LessonStatus = enumType({
   members: ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'],
 })
 
+// Minimal Student object exposed via GraphQL for cross-plugin checks
+export const Student = objectType({
+  name: 'Student',
+  definition(t) {
+    t.string('id')
+    t.nullable.string('userId')
+    t.nullable.string('displayName')
+    t.field('createdAt', { type: 'DateTime' })
+  },
+})
+
 // Prisma → Nexus mapping
 export const StudentCourse = objectType({
   name: 'StudentCourse',

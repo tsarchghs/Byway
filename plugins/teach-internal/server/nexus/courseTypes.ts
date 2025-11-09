@@ -1,5 +1,6 @@
 // src/graphql/courseTypes.ts
 import { objectType, extendType, stringArg, floatArg, nonNull } from 'nexus'
+import { callGraphQL } from '../graphql/callPlugins'
 
 export const Course = objectType({
   name: 'Course',
@@ -16,6 +17,22 @@ export const Course = objectType({
     t.list.field('modules', { type: 'Module' })
     t.field('createdAt', { type: 'DateTime' })
     t.field('updatedAt', { type: 'DateTime' })
+    // Enrollment flag: resolved via students-internal when JWT is present
+    t.boolean('isEnrolled', {
+      resolve: async (parent, _args, ctx) => {
+        try {
+          const STUDENTS_API = '/api/students-internal/graphql'
+          const q = `query ($courseId: String!) { isEnrolledMe(courseId: $courseId) }`
+          if (!ctx?.token) return false
+          const d = await callGraphQL(STUDENTS_API, q, { courseId: parent.id }, ctx.token)
+          return !!d?.isEnrolledMe
+        } catch (e) {
+          // On error, don't leak details — treat as not enrolled
+          console.warn('[teach-internal] isEnrolled resolver error', (e as any)?.message || e)
+          return false
+        }
+      },
+    })
   },
 })
 
@@ -58,7 +75,27 @@ export const CourseMutation = extendType({
         discount: floatArg(),
         coverUrl: stringArg(),
       },
-      resolve: (_, args, ctx) => ctx.prisma.course.create({ data: args }),
+      resolve: async (_, args, ctx) => {
+          // require authenticated user and ensure they own the teacher profile
+          const token = ctx?.token
+          if (!token) throw new Error('Not authenticated')
+
+          try {
+            // 1) verify current user via authentication plugin
+            const authResp = await callGraphQL('/api/authentication/graphql', `query { me { id teacherProfileId } }`, {}, token)
+            const me = authResp?.me
+            if (!me) throw new Error('Could not verify user with authentication service')
+            if (me.teacherProfileId !== args.teacherId) throw new Error('You are not allowed to create a course for this teacher profile')
+
+            // 2) ensure teacher profile is verified in the teach plugin
+            const teachResp = await callGraphQL('/api/teach/graphql', `query ($id: String!) { teacherProfile(id:$id){ verified } }`, { id: args.teacherId })
+            if (!teachResp?.teacherProfile?.verified) throw new Error('Teacher profile is not verified')
+
+            return ctx.prisma.course.create({ data: args })
+          } catch (e) {
+            throw new Error((e as any)?.message || 'Failed to create course')
+          }
+        },
     })
 
     t.field('updateCourse', {

@@ -102,7 +102,7 @@
 import { ref, h, onMounted, watch, computed } from 'vue'
 import { ShoppingCartOutlined, UserOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 import { List, message } from 'ant-design-vue'
-import { useAuth } from '@shared/composables/useAuth'
+import { useAuth } from '../composables/useAuth'
 
 const q = ref('')
 const openCart = ref(false)

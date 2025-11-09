@@ -22,18 +22,33 @@ enum PaymentStatus {
 }
 
 model Order {
-  id        String      @id @default(cuid())
+  id        String        @id @default(cuid())
   studentId String
+  student   StudentMirror @relation(fields: [studentId], references: [id])
   email     String?
-  currency  String      @default("EUR")
-  subtotal  Float       @default(0)
-  discount  Float       @default(0)
-  total     Float       @default(0)
-  status    OrderStatus @default(PENDING)
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  currency  String        @default("EUR")
+  subtotal  Float         @default(0)
+  discount  Float         @default(0)
+  total     Float         @default(0)
+  status    OrderStatus   @default(PENDING)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
   items     OrderItem[]
   payments  Payment[]
+
+  @@index([studentId])
+}
+
+model StudentMirror {
+  id          String   @id
+  userId      String?
+  displayName String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orders Order[]
+
+  @@index([userId])
 }
 
 model OrderItem {
@@ -44,6 +59,8 @@ model OrderItem {
   titleSnapshot String
   priceSnapshot Float
   quantity      Int    @default(1)
+
+  @@index([courseId])
 }
 
 model Payment {

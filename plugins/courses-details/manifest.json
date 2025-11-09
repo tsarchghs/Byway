@@ -1,6 +1,7 @@
 {
   "name": "course-detail",
   "routes": [
-    { "path": "/course-detail/[course_id]", "file": "nuxt/pages/courses-detail.vue" }
+    { "path": "/course-detail/[course_id]", "file": "nuxt/pages/courses-detail.vue" },
+    { "path": "/course/[course_id]", "file": "nuxt/pages/courses-detail.vue" }
   ]
 }

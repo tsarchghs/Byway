@@ -130,6 +130,14 @@ exports.Prisma.OrderScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.StudentMirrorScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  displayName: 'displayName',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.OrderItemScalarFieldEnum = {
   id: 'id',
   orderId: 'orderId',
@@ -189,6 +197,7 @@ exports.PaymentStatus = exports.$Enums.PaymentStatus = {
 
 exports.Prisma.ModelName = {
   Order: 'Order',
+  StudentMirror: 'StudentMirror',
   OrderItem: 'OrderItem',
   Payment: 'Payment'
 };

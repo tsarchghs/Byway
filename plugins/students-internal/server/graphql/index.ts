@@ -10,6 +10,7 @@ import {
   StudentCourse,
   StudentProgress,
   StudentSubmission,
+  Student,
 } from './studentTypes.js'
 
 import { DateTimeResolver, JSONResolver } from 'graphql-scalars'
@@ -26,7 +27,8 @@ export const schema = makeSchema({
     // shared
     Course, Module, Lesson, LessonStatus,
     // student
-    StudentCourse,
+  Student,
+  StudentCourse,
     StudentProgress,
     StudentSubmission,
     // resolvers
