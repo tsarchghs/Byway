@@ -1,3 +1,76 @@
+<template>
+
+<!-- increment-3: analytics + controls (non-breaking) -->
+<a-card class="uni-analytics-bar" :bordered="false" style="margin: 12px 0">
+  <div class="flex flex-wrap items-center gap-3 justify-between">
+    <div class="flex flex-wrap items-center gap-4">
+      <a-statistic title="Students" :value="(roster && roster.length) || 0" />
+      <a-statistic title="Avg Progress" :precision="0" :value="avgProgress" suffix="%" />
+      <a-statistic title="At Risk" :value="riskSummaryTotal" />
+      <a-space>
+        <a-tag v-for="chip in riskSummary" :key="chip.label" :color="chip.color">{{ chip.label }}: {{ chip.count }}</a-tag>
+      </a-space>
+    </div>
+    <div class="flex items-center gap-2">
+      <a-auto-complete
+        style="width: 220px"
+        :options="searchOptions"
+        v-model:value="searchValue"
+        placeholder="Find student..."
+        @select="openStudentByName"
+      />
+      <a-popover placement="bottomRight" title="Show / hide columns">
+        <template #content>
+          <div style="max-width:260px">
+            <a-checkbox-group v-model:value="visibleColumnKeys">
+              <div v-for="col in allColumns" :key="col.key" class="py-1">
+                <a-checkbox :value="col.key">{{ col.title }}</a-checkbox>
+              </div>
+            </a-checkbox-group>
+            <a-divider/>
+            <a-space>
+              <a-button size="small" @click="selectAllCols">Select all</a-button>
+              <a-button size="small" @click="selectDefaultCols">Defaults</a-button>
+            </a-space>
+          </div>
+        </template>
+        <a-button>Columns</a-button>
+      </a-popover>
+      <a-switch v-model:checked="dense" checked-children="Dense" un-checked-children="Comfort"/>
+      <a-button @click="refreshRoster" :loading="refreshing">Refresh</a-button>
+    </div>
+  </div>
+</a-card>
+
+<a-drawer v-model:open="drawerOpen" width="460" :title="selectedStudent?.name || 'Student'">
+  <template #extra>
+    <a-tag v-if="selectedStudent?.risk" :color="selectedStudent.risk === 'high' ? 'error' : (selectedStudent.risk === 'medium' ? 'warning' : 'success')">
+      {{ (selectedStudent?.risk || 'ok').toUpperCase() }}
+    </a-tag>
+  </template>
+
+  <a-descriptions size="small" layout="vertical" :column="1" v-if="selectedStudent">
+    <a-descriptions-item label="Email">{{ selectedStudent.email || '–' }}</a-descriptions-item>
+    <a-descriptions-item label="Cohort">{{ selectedStudent.cohort || '–' }}</a-descriptions-item>
+    <a-descriptions-item label="Progress">{{ (selectedStudent.progress ?? 0) + '%' }}</a-descriptions-item>
+    <a-descriptions-item label="Last Active">{{ selectedStudent.lastActive || '–' }}</a-descriptions-item>
+  </a-descriptions>
+
+  <a-empty v-else description="Pick a student from search to preview." />
+
+  <a-divider />
+  <a-typography-title :level="5">Recent activity</a-typography-title>
+  <a-timeline>
+    <a-timeline-item v-for="(evt, i) in (selectedStudent?.activities || [])" :key="i">
+      <strong>{{ evt.title || evt.kind || 'Activity' }}</strong>
+      <div style="opacity:.75">{{ evt.date || evt.when || '' }}</div>
+    </a-timeline-item>
+    <a-timeline-item v-if="!(selectedStudent?.activities?.length)">No recent activity</a-timeline-item>
+  </a-timeline>
+</a-drawer>
+<!-- /increment-3 -->
+
+</template>
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 
@@ -355,4 +428,94 @@ const filteredRoster = computed(() => {
   return arr
 })
 // --- end increment ---
+
+
+// increment-3: reactive analytics + controls for university panel
+import { computed, watch, onMounted } from 'vue'
+
+const dense = ref(false)
+const refreshing = ref(false)
+const drawerOpen = ref(false)
+const selectedStudent = ref(null)
+const searchValue = ref('')
+
+const allColumns = computed(() => {
+  const item = (roster && roster[0]) || null
+  if (!item) return []
+  return Object.keys(item).filter(k => !['id','activities'].includes(k)).map(k => ({
+    key: k,
+    title: k.replace(/([A-Z])/g,' $1').replace(/^./, s => s.toUpperCase())
+  }))
+})
+
+const storageKeyCols = 'byway:uni:columns'
+const visibleColumnKeys = ref([])
+
+onMounted(() => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(storageKeyCols) || '[]')
+    if (Array.isArray(saved) && saved.length) visibleColumnKeys.value = saved
+  } catch {}
+})
+
+watch(visibleColumnKeys, v => {
+  try { localStorage.setItem(storageKeyCols, JSON.stringify(v)) } catch {}
+}, { deep: true })
+
+const selectAllCols = () => visibleColumnKeys.value = allColumns.value.map(c => c.key)
+const selectDefaultCols = () => {
+  const defaults = ['name','email','cohort','progress','lastActive'].filter(k => allColumns.value.some(c => c.key === k))
+  visibleColumnKeys.value = defaults
+}
+
+const searchOptions = computed(() => (roster || []).map(s => ({ value: s.name || s.email, id: s.id })))
+const openStudentByName = (val, option) => {
+  const id = option?.id
+  const s = (roster || []).find(r => (r.name === val || r.email === val) || (id && r.id === id))
+  if (s) {
+    selectedStudent.value = s
+    drawerOpen.value = true
+  }
+}
+
+const refreshRoster = async () => {
+  if (typeof fetch !== 'function') return
+  try {
+    refreshing.value = true
+    // Try a best-effort refresh endpoint if it exists; falls back silently.
+    const res = await fetch('/api/students-internal/university/roster', { method: 'POST' }).catch(()=>null)
+    if (res && res.ok) {
+      // if response returns JSON roster, merge it
+      const data = await res.json().catch(()=>null)
+      if (data && Array.isArray(data.roster)) {
+        roster.splice(0, roster.length, ...data.roster)
+      }
+    }
+  } finally {
+    refreshing.value = false
+  }
+}
+
+const avgProgress = computed(() => {
+  const arr = (roster || []).map(r => Number(r.progress ?? 0)).filter(n => !Number.isNaN(n))
+  if (!arr.length) return 0
+  return Math.round(arr.reduce((a,b)=>a+b,0) / arr.length)
+})
+
+const riskSummary = computed(() => {
+  const arr = (roster || [])
+  const counters = { low:0, medium:0, high:0 }
+  for (const r of arr) {
+    const tag = (r.risk || 'low').toLowerCase()
+    if (counters[tag] != null) counters[tag]++
+  }
+  return [
+    { label: 'Low', color: 'success', count: counters.low },
+    { label: 'Medium', color: 'warning', count: counters.medium },
+    { label: 'High', color: 'error', count: counters.high },
+  ]
+})
+
+const riskSummaryTotal = computed(() => riskSummary.value.reduce((a,b)=>a+b.count,0))
+
 </script>
