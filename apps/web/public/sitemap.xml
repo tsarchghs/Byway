@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>/</loc></url>
+  <url><loc>/categories</loc></url>
+  <url><loc>/faculties</loc></url>
+  <url><loc>/programs</loc></url>
+  <url><loc>/dashboard</loc></url>
+  <url><loc>/admin</loc></url>
+  <url><loc>/faculty-admin</loc></url>
+  <url><loc>/wishlist</loc></url>
+  <url><loc>/programs</loc></url>
+  <url><loc>/verify/BYW-001</loc></url>
+  <url><loc>/settings/mode</loc></url>
+</urlset>

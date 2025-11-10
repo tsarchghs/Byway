@@ -4,6 +4,7 @@ import path from 'node:path'
 import { dirname, resolve } from 'path'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 export default defineNuxtConfig({
+  routeRules:{ '/':{prerender:false}, '/faculties/**':{swr:60} },
     alias: {
     '@shared-ui': '../../packages/shared-ui/src',
     '@shared': resolve(__dirname, '../../packages/shared-ui/src')
