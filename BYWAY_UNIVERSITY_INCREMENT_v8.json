@@ -1,0 +1,10 @@
+{
+  "target_view": "plugins/students-internal/nuxt/pages/modules/[id]/view.vue",
+  "component_created": "plugins/students-internal/nuxt/pages/components/ModuleUniversityPanel.vue",
+  "notes": [
+    "Append-only import injected into existing <script setup> (or added a new one if absent).",
+    "Inserted <ModuleUniversityPanel/> before </template> so it renders below existing content.",
+    "Created comprehensive ModuleUniversityPanel.vue with Overview, Schedule, Assignments, Discussions, Resources, Grades, KPI strip, and Checklist Drawer.",
+    "No existing file was overwritten; new component file added, existing page updated minimally."
+  ]
+}

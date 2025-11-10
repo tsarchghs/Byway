@@ -38,9 +38,12 @@
       <a-collapse-panel key="check" header="Module Checklist"><a-list :data-source="checklist" :renderItem="(i:any)=> h('div', {}, [ h('input', { type: 'checkbox', checked: i.done, onChange:()=> i.done=!i.done }), h('span', ' ' + i.title) ])" /></a-collapse-panel></a-collapse>
     </a-card>
   </a-layout>
+  
+  <!-- University Panel (incremental, append-only) -->
+  <ModuleUniversityPanel />
 </template>
 
-<script setup lang="ts">
+\1import ModuleUniversityPanel from '@/components/ModuleUniversityPanel.vue';
 const route = useRoute()
 const config = useRuntimeConfig()
 const baseUrl = config.public?.apiBase || 'http://localhost:4000'
