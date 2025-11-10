@@ -1,0 +1,6 @@
+{
+  "upgraded_panel_components": [
+    "plugins/students-internal/nuxt/pages/components/ModuleUniversityPanel.vue"
+  ],
+  "note": "Enhanced the University Module panel with cohorts, roster, assignments, grading, discussions, resources, integrations, and analytics tabs. Placeholder data only; safe to wire to GraphQL/REST later."
+}

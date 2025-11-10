@@ -1,0 +1,12 @@
+{
+  "base_zip": "byway-univ-mode-patched-v8.zip",
+  "output_zip": "byway-univ-mode-patched-v9.zip",
+  "patched_files": [],
+  "skipped": [
+    {
+      "file": "plugins/students-internal/nuxt/pages/modules/[id]/view.vue",
+      "reason": "already_patched"
+    }
+  ],
+  "added": []
+}
