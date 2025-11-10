@@ -52,3 +52,14 @@ export const ModuleMutation = extendType({
     })
   },
 })
+
+export const ModuleQueryById = extendType({
+  type: 'Query',
+  definition(t) {
+    t.field('moduleById', {
+      type: 'Module',
+      args: { id: nonNull(stringArg()) },
+      resolve: (_root, args, ctx) => ctx.prisma.module.findUnique({ where: { id: args.id } }),
+    })
+  },
+})

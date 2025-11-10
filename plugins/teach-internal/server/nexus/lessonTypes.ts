@@ -81,3 +81,23 @@ export const LessonMutation = extendType({
     })
   },
 })
+
+export const LessonReorderMutation = extendType({
+  type: 'Mutation',
+  definition(t) {
+    t.field('reorderLessons', {
+      type: 'Boolean',
+      args: {
+        moduleId: nonNull(stringArg()),
+        ids: nonNull(list(nonNull(stringArg()))),
+      },
+      async resolve(_root, args, ctx) {
+        const ids = args.ids
+        for (let i = 0; i < ids.length; i++) {
+          await ctx.prisma.lesson.update({ where: { id: ids[i] }, data: { position: i } })
+        }
+        return true
+      }
+    })
+  }
+})

@@ -9,6 +9,9 @@ import { UserService } from './auth/user.service';
 import { CartService } from './ecommerce/cart.service';
 import { OrderService } from './ecommerce/order.service';
 import { PaymentService } from './ecommerce/payment.service';
+import { InstitutionService } from './institutions/institution.service';
+import { ClassroomService } from './teach/classroom.service';
+import { AssignmentService } from './teach/assignment.service';
 
 export type BywayClientOptions = {
   baseUrl?: string;
@@ -38,7 +41,10 @@ export class BywayClient {
     this.users = new UserService(this.http);
     this.cart = new CartService(this.http);
     this.orders = new OrderService(this.http);
-    this.payments = new PaymentService(this.http);
+    \1
+    this.institutions = new InstitutionService(this.http);
+    this.classrooms = new ClassroomService(this.http);
+    this.assignments = new AssignmentService(this.http);
   }
     withToken(token?: string) {
     this.http.setToken(token);

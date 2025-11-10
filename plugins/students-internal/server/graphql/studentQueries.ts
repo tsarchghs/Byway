@@ -83,3 +83,28 @@ export const StudentQuery = extendType({
     })
   },
 })
+
+// Added surgically: check if a student is enrolled in a course
+t.field('hasEnrollment', {
+  type: 'Boolean',
+  args: {
+    studentId: nonNull(stringArg()),
+    courseId: nonNull(stringArg()),
+  },
+  async resolve(_root, args, ctx) {
+    const e = await ctx.prisma.enrollment.findFirst({
+      where: { studentId: args.studentId, courseId: args.courseId },
+      select: { id: true },
+    }).catch(() => null)
+    return !!e
+  },
+})
+
+// Added surgically: enrollment count by classroom
+t.field('enrollmentCountByClassroom', {
+  type: 'Int',
+  args: { classroomId: nonNull(stringArg()) },
+  resolve: async (_root, args, ctx) => {
+    return ctx.prisma.studentCourse.count({ where: { classroomId: args.classroomId } })
+  },
+})

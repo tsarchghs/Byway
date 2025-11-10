@@ -117,3 +117,66 @@ export const StudentMutation = extendType({
     })
   },
 })
+
+// Added surgically: enroll a student into a classroom (or update existing enrollment)
+t.field('enrollInClassroom', {
+  type: 'String', // returns enrollment id or "OK"
+  args: {
+    studentId: nonNull(stringArg()),
+    courseId: nonNull(stringArg()),
+    classroomId: nonNull(stringArg()),
+  },
+  async resolve(_root, args, ctx) {
+    const { studentId, courseId, classroomId } = args
+    // 1) find enrollment by unique (studentId, courseId) if it exists
+    const existing = await ctx.prisma.$queryRawUnsafe(
+      `SELECT id FROM Enrollment WHERE studentId = ? AND courseId = ? LIMIT 1`,
+      studentId, courseId
+    ).catch(() => null)
+
+    if (Array.isArray(existing) && existing.length > 0) {
+      const id = existing[0].id
+      await ctx.prisma.enrollment.update({ where: { id }, data: { classroomId } })
+      return id
+    }
+
+    // if there's a different model name, fallback: try prisma.enrollment upsert
+    try {
+      const created = await ctx.prisma.enrollment.create({
+        data: { studentId, courseId, classroomId } as any,
+      })
+      return created.id
+    } catch {
+      // Some repos name it StudentCourse or similar; try generic raw insert
+      await ctx.prisma.$executeRawUnsafe(
+        `INSERT INTO Enrollment (id, studentId, courseId, classroomId) VALUES (lower(hex(randomblob(16))), ?, ?, ?)`,
+        studentId, courseId, classroomId
+      )
+      return 'OK'
+    }
+  },
+})
+
+// Added surgically: bulk enrollment via CSV (studentId,courseId[,classroomId])
+t.field('bulkEnrollCsv', {
+  type: 'Int', // returns number of processed rows
+  args: { csv: nonNull(stringArg()) },
+  async resolve(_root, args, ctx) {
+    const lines = args.csv.split(/\r?\n/).filter(Boolean)
+    let count = 0
+    for (const line of lines) {
+      const [studentId, courseId, classroomId] = line.split(',').map(s=>s?.trim())
+      if (!studentId || !courseId) continue
+      try {
+        const existing = await ctx.prisma.enrollment.findFirst({ where: { studentId, courseId }, select: { id: true } })
+        if (existing) {
+          await ctx.prisma.enrollment.update({ where: { id: existing.id }, data: { classroomId: classroomId ?? undefined } })
+        } else {
+          await ctx.prisma.enrollment.create({ data: { studentId, courseId, classroomId: classroomId ?? null } as any })
+        }
+        count++
+      } catch {}
+    }
+    return count
+  },
+})

@@ -55,6 +55,8 @@ model StudentCourse {
 
   @@unique([studentId, courseId])
   @@index([courseId])
+  classroomId String?
+
 }
 
 /* ---- Lesson progress ---- */

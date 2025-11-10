@@ -3,6 +3,8 @@ import { makeSchema } from 'nexus'
 import { Course, CourseQuery, CourseMutation } from './courseTypes'
 import { Module, ModuleQuery, ModuleMutation } from './moduleTypes'
 import { Lesson, LessonQuery, LessonMutation } from './lessonTypes'
+import { Classroom, ClassroomQuery, ClassroomMutation } from './classroomTypes'
+import { Assignment, AssignmentQuery, AssignmentMutation, Submission, SubmissionQuery, SubmissionMutation } from './assignmentTypes'
 import { DateTimeResolver, JSONResolver } from 'graphql-scalars'
 
 export const schema = makeSchema({
@@ -14,7 +16,7 @@ export const schema = makeSchema({
     // Queries
     CourseQuery, ModuleQuery, LessonQuery,
     // Mutations
-    CourseMutation, ModuleMutation, LessonMutation,
+    CourseMutation, ModuleMutation, LessonMutation, ClassroomMutation, AssignmentMutation, SubmissionMutation,
   ],
   outputs: {
     typegen: path.join(process.cwd(), 'src/nexus/generated/nexus-typegen.ts'),

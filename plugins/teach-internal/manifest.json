@@ -16,6 +16,26 @@
     {
       "path": "/teach-internal/[teacher_id]/course/[course_id]/module/[module_id]/view",
       "file": "nuxt/pages/course/module/view.vue"
+    },
+    {
+      "path": "/institutions",
+      "file": "nuxt/pages/institutions/index.vue"
+    },
+    {
+      "path": "/institutions/[slug]/admin",
+      "file": "nuxt/pages/institutions/[slug]/admin.vue"
+    },
+    {
+      "path": "/institutions/[slug]/assignments/[id]/grading",
+      "file": "nuxt/pages/institutions/[slug]/assignments/[id]/grading.vue"
+    },
+    {
+      "path": "/institutions/[slug]/dashboard",
+      "file": "nuxt/pages/institutions/[slug]/dashboard.vue"
+    },
+    {
+      "path": "/modules/[id]/admin",
+      "file": "nuxt/pages/modules/[id]/admin.vue"
     }
   ],
   "endpoints": {

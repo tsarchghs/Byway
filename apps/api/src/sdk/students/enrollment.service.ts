@@ -34,3 +34,22 @@ export class EnrollmentService {
     return data as any[];
   }
 }
+
+
+export async function enrollInClassroom(client: any, input: { studentId: string; courseId: string; classroomId: string }) {
+  const query = `mutation($studentId:String!,$courseId:String!,$classroomId:String!){ enrollInClassroom(studentId:$studentId,courseId:$courseId,classroomId:$classroomId) }`
+  return client.post('/api/students-internal/graphql', { query, variables: input })
+}
+
+
+export async function hasEnrollment(client: any, input: { studentId: string; courseId: string }) {
+  const query = `query($studentId:String!,$courseId:String!){ hasEnrollment(studentId:$studentId, courseId:$courseId) }`
+  const r = await client.post('/api/students-internal/graphql', { query, variables: input })
+  return (r as any)?.data?.hasEnrollment === true
+}
+
+
+export async function bulkEnrollCsv(client: any, csv: string) {
+  const query = `mutation($csv:String!){ bulkEnrollCsv(csv:$csv) }`
+  return client.post('/api/students-internal/graphql', { query, variables: { csv } })
+}

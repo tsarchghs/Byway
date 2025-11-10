@@ -12,6 +12,14 @@
     {
       "path": "/student/[student_id]/course/[course_id]/module/[module_id]",
       "file": "nuxt/pages/module-listing.vue"
+    },
+    {
+      "path": "/classrooms/[id]",
+      "file": "nuxt/pages/classrooms/[id].vue"
+    },
+    {
+      "path": "/modules/[id]/view",
+      "file": "nuxt/pages/modules/[id]/view.vue"
     }
   ],
   "endpoints": {
