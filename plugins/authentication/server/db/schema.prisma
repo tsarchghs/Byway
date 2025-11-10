@@ -28,6 +28,9 @@ model Institution {
   logoUrl     String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  primaryColor String?
+  bannerUrl String?
+
 }
 
 model InstitutionUser {

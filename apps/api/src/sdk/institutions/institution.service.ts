@@ -28,3 +28,14 @@ export async function hasRole(client: any, input: { userId: string; institutionI
   const r = await client.post('/api/authentication/graphql', { query, variables: input })
   return (r as any)?.data?.hasRole === true
 }
+
+
+export async function getInstitutionBySlug(client: any, slug: string) {
+  const query = `query($slug:String!){ institutionBySlug(slug:$slug){ id name domain primaryColor bannerUrl } }`
+  return client.post('/api/authentication/graphql', { query, variables: { slug } })
+}
+
+export async function gradebookCsv(client: any, classroomId: string) {
+  const query = `query($classroomId:String!){ gradebookCsv(classroomId:$classroomId) }`
+  return client.post('/api/teach-internal/graphql', { query, variables: { classroomId } })
+}

@@ -34,6 +34,7 @@ const classroomId = computed(() => String(route.params.id))
 const studentId = ref('')
 const rows = ref<any[]>([])
 const cols = [
+          { title: 'Attempts Left', key: 'attempts', customRender: ({ record }: any)=> attemptsLeft(record) },
           { title: 'Status', key: 'st', customRender: ({ record }: any) => statusLabel(record) },
   { title: 'Title', dataIndex: 'title', key: 'title' },
   { title: 'Due', dataIndex: 'dueDate', key: 'dueDate' },

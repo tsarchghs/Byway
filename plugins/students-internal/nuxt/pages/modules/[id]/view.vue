@@ -8,6 +8,9 @@
       </div>
 
       <a-collapse accordion>
+            <a-collapse-panel key="timeline" header="Deadlines Timeline">
+              <a-list :data-source="timeline" :renderItem="(i:any)=> h('div', {}, `${i.title} · ${i.when}`)" />
+            </a-collapse-panel>
             <a-collapse-panel key="reading" header="Reading Pane">
               <a-textarea v-model:value="reading" :rows="6" placeholder="Notes / rendered content (demo)" />
             </a-collapse-panel>
@@ -47,6 +50,7 @@ const completedIds = ref<string[]>([])
 
 const classroomId = ref('')
 const assignments = ref<any[]>([])
+    const timeline = ref<any[]>([])
 const aCols = [
   { title: 'Title', dataIndex: 'title', key: 'title' },
   { title: 'Due', dataIndex: 'dueDate', key: 'dueDate' },
@@ -103,6 +107,7 @@ async function loadAssignments() {
   const q = 'query($classroomId:String!){ assignmentsByClassroom(classroomId:$classroomId){ id title dueDate } }'
   const r = await $fetch(`${baseUrl}/api/teach-internal/graphql`, { method: 'POST', body: { query: q, variables: { classroomId: classroomId.value }}}) as any
   assignments.value = r.data?.assignmentsByClassroom ?? []
+      timeline.value = assignments.value.map((a:any)=> ({ title: a.title, when: a.dueDate || '-' }))
 }
 
 async function init(){ await loadModule(); await loadLessons() }

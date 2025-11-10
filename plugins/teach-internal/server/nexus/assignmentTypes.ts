@@ -110,7 +110,7 @@ export const SubmissionMutation = extendType({
         fileUrl: stringArg(),
       },
       resolve: (_root, args, ctx) => ctx.prisma.submission.create({
-        data: {
+        data: { attempt: attemptNo, isLate: isLate2, 
           assignmentId: args.assignmentId,
           studentId: args.studentId,
           fileUrl: args.fileUrl ?? null,
@@ -118,4 +118,22 @@ export const SubmissionMutation = extendType({
       }),
     })
   },
+})
+
+export const AssignmentGradebookQuery = extendType({
+  type: 'Query',
+  definition(t) {
+    t.field('gradebookCsv', {
+      type: 'String',
+      args: { classroomId: nonNull(stringArg()) },
+      async resolve(_root, args, ctx) {
+        const assignments = await ctx.prisma.assignment.findMany({ where: { classroomId: args.classroomId } })
+        const subs = await ctx.prisma.submission.findMany({ where: { assignmentId: { in: assignments.map(a=>a.id) } } })
+        const header = ['studentId','assignmentId','grade','isLate','attempt','gradedAt']
+        const rows = subs.map(s=>[s.studentId,s.assignmentId, s.grade ?? '', s.isLate ? '1':'0', s.attempt ?? 1, s.gradedAt ? new Date(s.gradedAt as any).toISOString() : ''])
+        const csv = [header.join(','), ...rows.map(r=>r.join(','))].join('\n')
+        return csv
+      }
+    })
+  }
 })

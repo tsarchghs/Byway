@@ -75,6 +75,9 @@ model Assignment {
   maxAttempts Int? @default(1)
   latePenalty Float?
 
+  rubric Json?
+  gradingWeight Float?
+
 }
 
 model Submission {
@@ -86,4 +89,11 @@ model Submission {
   feedback      String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  gradedAt DateTime?
+  graderId String?
+  rubric Json?
+  comment String?
+  attempt Int? @default(1)
+  isLate Boolean? @default(false)
+
 }

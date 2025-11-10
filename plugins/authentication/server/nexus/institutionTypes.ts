@@ -82,3 +82,14 @@ export const InstitutionRolesQuery = extendType({
     })
   }
 })
+
+export const InstitutionBySlugQuery = extendType({
+  type: 'Query',
+  definition(t) {
+    t.field('institutionBySlug', {
+      type: 'Institution',
+      args: { slug: nonNull(stringArg()) },
+      resolve: (_root, args, ctx) => ctx.prisma.institution.findFirst({ where: { domain: args.slug } })
+    })
+  }
+})

@@ -1,6 +1,6 @@
 <template>
   <a-layout class="p-6">
-    <a-card :title="`Dashboard · ${route.params.slug}`" :bordered="false">
+    <a-card :title="`Dashboard · ${route.params.slug}`" :headStyle="theme.primaryColor?{background:theme.primaryColor,color:'#fff'}:{}" :bordered="false">
       <div class="mb-4 flex flex-wrap gap-2 items-center">
             <a-input v-model:value="userId" placeholder="Your userId (for roles)" style="max-width:260px" />
             <a-button @click="checkRoles">Check Access</a-button>
@@ -40,7 +40,11 @@ const cols = [
   { title: 'Assignments', dataIndex: 'assignmentsCount', key: 'assignmentsCount' },
   { title: 'Submissions', dataIndex: 'submissionsCount', key: 'submissionsCount' },
   { title: 'Enrollments', dataIndex: 'enrollments', key: 'enrollments' },
-  { title: 'Actions', key: 'act', customRender: ({ record }: any)=> h('a', { href: `/institutions/${route.params.slug}/assignments/${record.latestAssignmentId}/grading` }, 'Grade latest') },
+  { title: 'Actions', key: 'act', customRender: ({ record }: any)=> h('div', {}, [
+              h('a', { href: `/institutions/${route.params.slug}/assignments/${record.latestAssignmentId}/grading` }, 'Grade latest'),
+              h('span', ' · '),
+              h('a', { onClick: ()=> exportGradebook(record.id) }, 'Export gradebook')
+            ]) },
 ]
 const sCols = [
   { title: 'Assignment', dataIndex: 'assignmentId', key: 'assignmentId' },
@@ -90,7 +94,17 @@ async function load() {
   }
 }
 
-onMounted(load)
+onMounted(async()=>{ await loadTheme(); await load() })
+
+
+const theme = reactive({ primaryColor: '', bannerUrl: '' })
+async function loadTheme(){
+  const q = 'query($slug:String!){ institutionBySlug(slug:$slug){ primaryColor bannerUrl } }'
+  const r = await $fetch(`${baseUrl}/api/authentication/graphql`, { method: 'POST', body: { query: q, variables: { slug: String(route.params.slug) }}}) as any
+  theme.primaryColor = r?.data?.institutionBySlug?.primaryColor || ''
+  theme.bannerUrl = r?.data?.institutionBySlug?.bannerUrl || ''
+}
+
 
 
 const userId = ref('')

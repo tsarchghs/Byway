@@ -2,6 +2,12 @@
   <a-layout class="p-6">
     <a-card :title="`Grade · ${route.params.id}`" :bordered="false">
       <a-table :data-source="rows" :columns="cols" row-key="id" />
+
+<a-drawer v-model:open="rubricOpen" title="Rubric" placement="right" width="420">
+  <a-alert type="info" message="Provide a JSON rubric, e.g., [{label:'Code',weight:0.5},{label:'Report',weight:0.5}]" show-icon class="mb-2" />
+  <a-textarea v-model:value="rubricJson" :rows="10" />
+  <div class="mt-2"><a-button type="primary" @click="saveRubric">Save</a-button></div>
+</a-drawer>
     </a-card>
   </a-layout>
 </template>
@@ -12,6 +18,7 @@ const config = useRuntimeConfig()
 const baseUrl = config.public?.apiBase || 'http://localhost:4000'
 const rows = ref<any[]>([])
 const cols = [
+      { title: 'Attempt', dataIndex: 'attempt', key: 'attempt' },
   { title: 'Student', dataIndex: 'studentId', key: 'studentId' },
   { title: 'File', dataIndex: 'fileUrl', key: 'fileUrl' },
   { title: 'Grade', key: 'grade', customRender: ({ record }: any) => {
@@ -45,4 +52,16 @@ async function grade(rec:any) {
   await load()
 }
 onMounted(load)
+
+
+const rubricOpen = ref(false)
+const rubricJson = ref('')
+const commentText = ref('')
+
+function openRubric(){ rubricOpen.value = true }
+async function saveRubric(){
+  // store locally; actual persist happens on gradeSubmission
+  rubricOpen.value = false
+}
+
 </script>
