@@ -134,7 +134,8 @@ exports.Prisma.StudentCourseScalarFieldEnum = {
   courseId: 'courseId',
   completed: 'completed',
   progress: 'progress',
-  enrolledAt: 'enrolledAt'
+  enrolledAt: 'enrolledAt',
+  classroomId: 'classroomId'
 };
 
 exports.Prisma.LessonProgressScalarFieldEnum = {
@@ -210,7 +211,8 @@ exports.Prisma.StudentOrderByRelevanceFieldEnum = {
 exports.Prisma.StudentCourseOrderByRelevanceFieldEnum = {
   id: 'id',
   studentId: 'studentId',
-  courseId: 'courseId'
+  courseId: 'courseId',
+  classroomId: 'classroomId'
 };
 
 exports.Prisma.LessonProgressOrderByRelevanceFieldEnum = {

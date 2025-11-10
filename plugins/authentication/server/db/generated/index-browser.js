@@ -128,6 +128,26 @@ exports.Prisma.UserScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.InstitutionScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  domain: 'domain',
+  logoUrl: 'logoUrl',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  primaryColor: 'primaryColor',
+  bannerUrl: 'bannerUrl'
+};
+
+exports.Prisma.InstitutionUserScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  institutionId: 'institutionId',
+  role: 'role',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -140,7 +160,9 @@ exports.Prisma.NullsOrder = {
 
 
 exports.Prisma.ModelName = {
-  User: 'User'
+  User: 'User',
+  Institution: 'Institution',
+  InstitutionUser: 'InstitutionUser'
 };
 
 /**

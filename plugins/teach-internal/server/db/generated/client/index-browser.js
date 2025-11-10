@@ -128,7 +128,8 @@ exports.Prisma.CourseScalarFieldEnum = {
   discount: 'discount',
   coverUrl: 'coverUrl',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  institutionId: 'institutionId'
 };
 
 exports.Prisma.ModuleScalarFieldEnum = {
@@ -148,7 +149,52 @@ exports.Prisma.LessonScalarFieldEnum = {
   rubric: 'rubric',
   preview: 'preview',
   metadata: 'metadata',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  position: 'position'
+};
+
+exports.Prisma.ClassroomScalarFieldEnum = {
+  id: 'id',
+  courseId: 'courseId',
+  institutionId: 'institutionId',
+  name: 'name',
+  startDate: 'startDate',
+  endDate: 'endDate',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.AssignmentScalarFieldEnum = {
+  id: 'id',
+  classroomId: 'classroomId',
+  title: 'title',
+  description: 'description',
+  dueDate: 'dueDate',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  acceptUntil: 'acceptUntil',
+  maxAttempts: 'maxAttempts',
+  latePenalty: 'latePenalty',
+  rubric: 'rubric',
+  gradingWeight: 'gradingWeight'
+};
+
+exports.Prisma.SubmissionScalarFieldEnum = {
+  id: 'id',
+  assignmentId: 'assignmentId',
+  studentId: 'studentId',
+  fileUrl: 'fileUrl',
+  grade: 'grade',
+  feedback: 'feedback',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  gradedAt: 'gradedAt',
+  graderId: 'graderId',
+  rubric: 'rubric',
+  comment: 'comment',
+  attempt: 'attempt',
+  isLate: 'isLate',
+  comments: 'comments'
 };
 
 exports.Prisma.SortOrder = {
@@ -181,7 +227,10 @@ exports.Prisma.QueryMode = {
 exports.Prisma.ModelName = {
   Course: 'Course',
   Module: 'Module',
-  Lesson: 'Lesson'
+  Lesson: 'Lesson',
+  Classroom: 'Classroom',
+  Assignment: 'Assignment',
+  Submission: 'Submission'
 };
 
 /**

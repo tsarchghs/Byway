@@ -56,8 +56,10 @@ type Module {
 }
 
 type Mutation {
+  bulkEnrollCsv(csv: String!): Int!
   createStudent(displayName: String, userId: String!): Student!
   enrollCourse(courseId: String!, studentId: String!): StudentCourse!
+  enrollInClassroom(classroomId: String!, courseId: String!, studentId: String!): String!
   enrollMe(courseId: String!): StudentCourse!
   enrollStudent(courseId: String!, studentId: String!): StudentCourse!
   submitLesson(content: String, lessonId: String!, studentId: String!, type: String!): StudentSubmission!
@@ -65,6 +67,8 @@ type Mutation {
 }
 
 type Query {
+  enrollmentCountByClassroom(classroomId: String!): Int!
+  hasEnrollment(courseId: String!, studentId: String!): Boolean!
   isEnrolled(courseId: String!, studentId: String!): Boolean!
   isEnrolledMe(courseId: String!): Boolean!
   myCourses(studentId: String!): [StudentCourse!]!

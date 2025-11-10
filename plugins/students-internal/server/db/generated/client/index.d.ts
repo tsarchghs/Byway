@@ -2472,6 +2472,7 @@ export namespace Prisma {
     completed: boolean | null
     progress: number | null
     enrolledAt: Date | null
+    classroomId: string | null
   }
 
   export type StudentCourseMaxAggregateOutputType = {
@@ -2481,6 +2482,7 @@ export namespace Prisma {
     completed: boolean | null
     progress: number | null
     enrolledAt: Date | null
+    classroomId: string | null
   }
 
   export type StudentCourseCountAggregateOutputType = {
@@ -2490,6 +2492,7 @@ export namespace Prisma {
     completed: number
     progress: number
     enrolledAt: number
+    classroomId: number
     _all: number
   }
 
@@ -2509,6 +2512,7 @@ export namespace Prisma {
     completed?: true
     progress?: true
     enrolledAt?: true
+    classroomId?: true
   }
 
   export type StudentCourseMaxAggregateInputType = {
@@ -2518,6 +2522,7 @@ export namespace Prisma {
     completed?: true
     progress?: true
     enrolledAt?: true
+    classroomId?: true
   }
 
   export type StudentCourseCountAggregateInputType = {
@@ -2527,6 +2532,7 @@ export namespace Prisma {
     completed?: true
     progress?: true
     enrolledAt?: true
+    classroomId?: true
     _all?: true
   }
 
@@ -2623,6 +2629,7 @@ export namespace Prisma {
     completed: boolean
     progress: number | null
     enrolledAt: Date
+    classroomId: string | null
     _count: StudentCourseCountAggregateOutputType | null
     _avg: StudentCourseAvgAggregateOutputType | null
     _sum: StudentCourseSumAggregateOutputType | null
@@ -2651,6 +2658,7 @@ export namespace Prisma {
     completed?: boolean
     progress?: boolean
     enrolledAt?: boolean
+    classroomId?: boolean
     student?: boolean | StudentDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["studentCourse"]>
 
@@ -2663,9 +2671,10 @@ export namespace Prisma {
     completed?: boolean
     progress?: boolean
     enrolledAt?: boolean
+    classroomId?: boolean
   }
 
-  export type StudentCourseOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "studentId" | "courseId" | "completed" | "progress" | "enrolledAt", ExtArgs["result"]["studentCourse"]>
+  export type StudentCourseOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "studentId" | "courseId" | "completed" | "progress" | "enrolledAt" | "classroomId", ExtArgs["result"]["studentCourse"]>
   export type StudentCourseInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     student?: boolean | StudentDefaultArgs<ExtArgs>
   }
@@ -2682,6 +2691,7 @@ export namespace Prisma {
       completed: boolean
       progress: number | null
       enrolledAt: Date
+      classroomId: string | null
     }, ExtArgs["result"]["studentCourse"]>
     composites: {}
   }
@@ -3058,6 +3068,7 @@ export namespace Prisma {
     readonly completed: FieldRef<"StudentCourse", 'Boolean'>
     readonly progress: FieldRef<"StudentCourse", 'Int'>
     readonly enrolledAt: FieldRef<"StudentCourse", 'DateTime'>
+    readonly classroomId: FieldRef<"StudentCourse", 'String'>
   }
     
 
@@ -7395,7 +7406,8 @@ export namespace Prisma {
     courseId: 'courseId',
     completed: 'completed',
     progress: 'progress',
-    enrolledAt: 'enrolledAt'
+    enrolledAt: 'enrolledAt',
+    classroomId: 'classroomId'
   };
 
   export type StudentCourseScalarFieldEnum = (typeof StudentCourseScalarFieldEnum)[keyof typeof StudentCourseScalarFieldEnum]
@@ -7501,7 +7513,8 @@ export namespace Prisma {
   export const StudentCourseOrderByRelevanceFieldEnum: {
     id: 'id',
     studentId: 'studentId',
-    courseId: 'courseId'
+    courseId: 'courseId',
+    classroomId: 'classroomId'
   };
 
   export type StudentCourseOrderByRelevanceFieldEnum = (typeof StudentCourseOrderByRelevanceFieldEnum)[keyof typeof StudentCourseOrderByRelevanceFieldEnum]
@@ -7719,6 +7732,7 @@ export namespace Prisma {
     completed?: BoolFilter<"StudentCourse"> | boolean
     progress?: IntNullableFilter<"StudentCourse"> | number | null
     enrolledAt?: DateTimeFilter<"StudentCourse"> | Date | string
+    classroomId?: StringNullableFilter<"StudentCourse"> | string | null
     student?: XOR<StudentScalarRelationFilter, StudentWhereInput>
   }
 
@@ -7729,6 +7743,7 @@ export namespace Prisma {
     completed?: SortOrder
     progress?: SortOrderInput | SortOrder
     enrolledAt?: SortOrder
+    classroomId?: SortOrderInput | SortOrder
     student?: StudentOrderByWithRelationInput
     _relevance?: StudentCourseOrderByRelevanceInput
   }
@@ -7744,6 +7759,7 @@ export namespace Prisma {
     completed?: BoolFilter<"StudentCourse"> | boolean
     progress?: IntNullableFilter<"StudentCourse"> | number | null
     enrolledAt?: DateTimeFilter<"StudentCourse"> | Date | string
+    classroomId?: StringNullableFilter<"StudentCourse"> | string | null
     student?: XOR<StudentScalarRelationFilter, StudentWhereInput>
   }, "id" | "studentId_courseId">
 
@@ -7754,6 +7770,7 @@ export namespace Prisma {
     completed?: SortOrder
     progress?: SortOrderInput | SortOrder
     enrolledAt?: SortOrder
+    classroomId?: SortOrderInput | SortOrder
     _count?: StudentCourseCountOrderByAggregateInput
     _avg?: StudentCourseAvgOrderByAggregateInput
     _max?: StudentCourseMaxOrderByAggregateInput
@@ -7771,6 +7788,7 @@ export namespace Prisma {
     completed?: BoolWithAggregatesFilter<"StudentCourse"> | boolean
     progress?: IntNullableWithAggregatesFilter<"StudentCourse"> | number | null
     enrolledAt?: DateTimeWithAggregatesFilter<"StudentCourse"> | Date | string
+    classroomId?: StringNullableWithAggregatesFilter<"StudentCourse"> | string | null
   }
 
   export type LessonProgressWhereInput = {
@@ -8152,6 +8170,7 @@ export namespace Prisma {
     completed?: boolean
     progress?: number | null
     enrolledAt?: Date | string
+    classroomId?: string | null
     student: StudentCreateNestedOneWithoutCoursesInput
   }
 
@@ -8162,6 +8181,7 @@ export namespace Prisma {
     completed?: boolean
     progress?: number | null
     enrolledAt?: Date | string
+    classroomId?: string | null
   }
 
   export type StudentCourseUpdateInput = {
@@ -8170,6 +8190,7 @@ export namespace Prisma {
     completed?: BoolFieldUpdateOperationsInput | boolean
     progress?: NullableIntFieldUpdateOperationsInput | number | null
     enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    classroomId?: NullableStringFieldUpdateOperationsInput | string | null
     student?: StudentUpdateOneRequiredWithoutCoursesNestedInput
   }
 
@@ -8180,6 +8201,7 @@ export namespace Prisma {
     completed?: BoolFieldUpdateOperationsInput | boolean
     progress?: NullableIntFieldUpdateOperationsInput | number | null
     enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    classroomId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type StudentCourseCreateManyInput = {
@@ -8189,6 +8211,7 @@ export namespace Prisma {
     completed?: boolean
     progress?: number | null
     enrolledAt?: Date | string
+    classroomId?: string | null
   }
 
   export type StudentCourseUpdateManyMutationInput = {
@@ -8197,6 +8220,7 @@ export namespace Prisma {
     completed?: BoolFieldUpdateOperationsInput | boolean
     progress?: NullableIntFieldUpdateOperationsInput | number | null
     enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    classroomId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type StudentCourseUncheckedUpdateManyInput = {
@@ -8206,6 +8230,7 @@ export namespace Prisma {
     completed?: BoolFieldUpdateOperationsInput | boolean
     progress?: NullableIntFieldUpdateOperationsInput | number | null
     enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    classroomId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type LessonProgressCreateInput = {
@@ -8734,6 +8759,7 @@ export namespace Prisma {
     completed?: SortOrder
     progress?: SortOrder
     enrolledAt?: SortOrder
+    classroomId?: SortOrder
   }
 
   export type StudentCourseAvgOrderByAggregateInput = {
@@ -8747,6 +8773,7 @@ export namespace Prisma {
     completed?: SortOrder
     progress?: SortOrder
     enrolledAt?: SortOrder
+    classroomId?: SortOrder
   }
 
   export type StudentCourseMinOrderByAggregateInput = {
@@ -8756,6 +8783,7 @@ export namespace Prisma {
     completed?: SortOrder
     progress?: SortOrder
     enrolledAt?: SortOrder
+    classroomId?: SortOrder
   }
 
   export type StudentCourseSumOrderByAggregateInput = {
@@ -9797,6 +9825,7 @@ export namespace Prisma {
     completed?: boolean
     progress?: number | null
     enrolledAt?: Date | string
+    classroomId?: string | null
   }
 
   export type StudentCourseUncheckedCreateWithoutStudentInput = {
@@ -9805,6 +9834,7 @@ export namespace Prisma {
     completed?: boolean
     progress?: number | null
     enrolledAt?: Date | string
+    classroomId?: string | null
   }
 
   export type StudentCourseCreateOrConnectWithoutStudentInput = {
@@ -9965,6 +9995,7 @@ export namespace Prisma {
     completed?: BoolFilter<"StudentCourse"> | boolean
     progress?: IntNullableFilter<"StudentCourse"> | number | null
     enrolledAt?: DateTimeFilter<"StudentCourse"> | Date | string
+    classroomId?: StringNullableFilter<"StudentCourse"> | string | null
   }
 
   export type LessonProgressUpsertWithWhereUniqueWithoutStudentInput = {
@@ -10414,6 +10445,7 @@ export namespace Prisma {
     completed?: boolean
     progress?: number | null
     enrolledAt?: Date | string
+    classroomId?: string | null
   }
 
   export type LessonProgressCreateManyStudentInput = {
@@ -10463,6 +10495,7 @@ export namespace Prisma {
     completed?: BoolFieldUpdateOperationsInput | boolean
     progress?: NullableIntFieldUpdateOperationsInput | number | null
     enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    classroomId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type StudentCourseUncheckedUpdateWithoutStudentInput = {
@@ -10471,6 +10504,7 @@ export namespace Prisma {
     completed?: BoolFieldUpdateOperationsInput | boolean
     progress?: NullableIntFieldUpdateOperationsInput | number | null
     enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    classroomId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type StudentCourseUncheckedUpdateManyWithoutStudentInput = {
@@ -10479,6 +10513,7 @@ export namespace Prisma {
     completed?: BoolFieldUpdateOperationsInput | boolean
     progress?: NullableIntFieldUpdateOperationsInput | number | null
     enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    classroomId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type LessonProgressUpdateWithoutStudentInput = {

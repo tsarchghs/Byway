@@ -4,9 +4,23 @@
  */
 
 
-
-
-
+import type { core } from "nexus"
+declare global {
+  interface NexusGenCustomInputMethods<TypeName extends string> {
+    /**
+     * ISO 8601 date-time scalar
+     */
+    dateTime<FieldName extends string>(fieldName: FieldName, opts?: core.CommonInputFieldConfig<TypeName, FieldName>): void // "DateTime";
+  }
+}
+declare global {
+  interface NexusGenCustomOutputMethods<TypeName extends string> {
+    /**
+     * ISO 8601 date-time scalar
+     */
+    dateTime<FieldName extends string>(fieldName: FieldName, ...opts: core.ScalarOutSpread<TypeName, FieldName>): void // "DateTime";
+  }
+}
 
 
 declare global {
@@ -25,16 +39,31 @@ export interface NexusGenScalars {
   Float: number
   Boolean: boolean
   ID: string
+  DateTime: any
 }
 
 export interface NexusGenObjects {
   AuthPayload: { // root type
     token: string; // String!
-    user: NexusGenRootTypes['User']; // User!
+    user: NexusGenRootTypes['GqlUser']; // GqlUser!
   }
-  Mutation: {};
-  Query: {};
-  User: { // root type
+  GqlInstitution: { // root type
+    createdAt?: NexusGenScalars['DateTime'] | null; // DateTime
+    domain?: string | null; // String
+    id?: string | null; // String
+    logoUrl?: string | null; // String
+    name?: string | null; // String
+    updatedAt?: NexusGenScalars['DateTime'] | null; // DateTime
+  }
+  GqlInstitutionUser: { // root type
+    createdAt?: NexusGenScalars['DateTime'] | null; // DateTime
+    id?: string | null; // String
+    institutionId?: string | null; // String
+    role?: string | null; // String
+    updatedAt?: NexusGenScalars['DateTime'] | null; // DateTime
+    userId?: string | null; // String
+  }
+  GqlUser: { // root type
     createdAt: string; // String!
     email: string; // String!
     firstName?: string | null; // String
@@ -44,6 +73,8 @@ export interface NexusGenObjects {
     token?: string | null; // String
     updatedAt: string; // String!
   }
+  Mutation: {};
+  Query: {};
 }
 
 export interface NexusGenInterfaces {
@@ -59,17 +90,25 @@ export type NexusGenAllTypes = NexusGenRootTypes & NexusGenScalars
 export interface NexusGenFieldTypes {
   AuthPayload: { // field return type
     token: string; // String!
-    user: NexusGenRootTypes['User']; // User!
+    user: NexusGenRootTypes['GqlUser']; // GqlUser!
   }
-  Mutation: { // field return type
-    login: NexusGenRootTypes['AuthPayload'] | null; // AuthPayload
-    register: NexusGenRootTypes['User'] | null; // User
-    updateUserTeacherProfile: NexusGenRootTypes['User'] | null; // User
+  GqlInstitution: { // field return type
+    createdAt: NexusGenScalars['DateTime'] | null; // DateTime
+    domain: string | null; // String
+    id: string | null; // String
+    logoUrl: string | null; // String
+    name: string | null; // String
+    updatedAt: NexusGenScalars['DateTime'] | null; // DateTime
   }
-  Query: { // field return type
-    me: NexusGenRootTypes['User'] | null; // User
+  GqlInstitutionUser: { // field return type
+    createdAt: NexusGenScalars['DateTime'] | null; // DateTime
+    id: string | null; // String
+    institutionId: string | null; // String
+    role: string | null; // String
+    updatedAt: NexusGenScalars['DateTime'] | null; // DateTime
+    userId: string | null; // String
   }
-  User: { // field return type
+  GqlUser: { // field return type
     createdAt: string; // String!
     email: string; // String!
     firstName: string | null; // String
@@ -79,22 +118,44 @@ export interface NexusGenFieldTypes {
     token: string | null; // String
     updatedAt: string; // String!
   }
+  Mutation: { // field return type
+    createInstitution: NexusGenRootTypes['GqlInstitution'] | null; // GqlInstitution
+    linkInstitutionUser: NexusGenRootTypes['GqlInstitutionUser'] | null; // GqlInstitutionUser
+    login: NexusGenRootTypes['AuthPayload'] | null; // AuthPayload
+    register: NexusGenRootTypes['GqlUser'] | null; // GqlUser
+    updateUserTeacherProfile: NexusGenRootTypes['GqlUser'] | null; // GqlUser
+  }
+  Query: { // field return type
+    hasRole: boolean | null; // Boolean
+    institutionBySlug: NexusGenRootTypes['GqlInstitution'] | null; // GqlInstitution
+    institutionRoles: Array<NexusGenRootTypes['GqlInstitutionUser'] | null> | null; // [GqlInstitutionUser]
+    institutions: Array<NexusGenRootTypes['GqlInstitution'] | null> | null; // [GqlInstitution]
+    me: NexusGenRootTypes['GqlUser'] | null; // GqlUser
+  }
 }
 
 export interface NexusGenFieldTypeNames {
   AuthPayload: { // field return type name
     token: 'String'
-    user: 'User'
+    user: 'GqlUser'
   }
-  Mutation: { // field return type name
-    login: 'AuthPayload'
-    register: 'User'
-    updateUserTeacherProfile: 'User'
+  GqlInstitution: { // field return type name
+    createdAt: 'DateTime'
+    domain: 'String'
+    id: 'String'
+    logoUrl: 'String'
+    name: 'String'
+    updatedAt: 'DateTime'
   }
-  Query: { // field return type name
-    me: 'User'
+  GqlInstitutionUser: { // field return type name
+    createdAt: 'DateTime'
+    id: 'String'
+    institutionId: 'String'
+    role: 'String'
+    updatedAt: 'DateTime'
+    userId: 'String'
   }
-  User: { // field return type name
+  GqlUser: { // field return type name
     createdAt: 'String'
     email: 'String'
     firstName: 'String'
@@ -104,10 +165,34 @@ export interface NexusGenFieldTypeNames {
     token: 'String'
     updatedAt: 'String'
   }
+  Mutation: { // field return type name
+    createInstitution: 'GqlInstitution'
+    linkInstitutionUser: 'GqlInstitutionUser'
+    login: 'AuthPayload'
+    register: 'GqlUser'
+    updateUserTeacherProfile: 'GqlUser'
+  }
+  Query: { // field return type name
+    hasRole: 'Boolean'
+    institutionBySlug: 'GqlInstitution'
+    institutionRoles: 'GqlInstitutionUser'
+    institutions: 'GqlInstitution'
+    me: 'GqlUser'
+  }
 }
 
 export interface NexusGenArgTypes {
   Mutation: {
+    createInstitution: { // args
+      domain?: string | null; // String
+      logoUrl?: string | null; // String
+      name: string; // String!
+    }
+    linkInstitutionUser: { // args
+      institutionId: string; // String!
+      role: string; // String!
+      userId: string; // String!
+    }
     login: { // args
       email: string; // String!
       password: string; // String!
@@ -120,6 +205,19 @@ export interface NexusGenArgTypes {
     }
     updateUserTeacherProfile: { // args
       teacherProfileId: string; // String!
+    }
+  }
+  Query: {
+    hasRole: { // args
+      institutionId: string; // String!
+      role: string; // String!
+      userId: string; // String!
+    }
+    institutionBySlug: { // args
+      slug: string; // String!
+    }
+    institutionRoles: { // args
+      userId: string; // String!
     }
   }
 }

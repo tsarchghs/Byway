@@ -100,7 +100,8 @@ exports.Prisma.CourseScalarFieldEnum = {
   discount: 'discount',
   coverUrl: 'coverUrl',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  institutionId: 'institutionId'
 };
 
 exports.Prisma.ModuleScalarFieldEnum = {
@@ -120,7 +121,52 @@ exports.Prisma.LessonScalarFieldEnum = {
   rubric: 'rubric',
   preview: 'preview',
   metadata: 'metadata',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  position: 'position'
+};
+
+exports.Prisma.ClassroomScalarFieldEnum = {
+  id: 'id',
+  courseId: 'courseId',
+  institutionId: 'institutionId',
+  name: 'name',
+  startDate: 'startDate',
+  endDate: 'endDate',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.AssignmentScalarFieldEnum = {
+  id: 'id',
+  classroomId: 'classroomId',
+  title: 'title',
+  description: 'description',
+  dueDate: 'dueDate',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  acceptUntil: 'acceptUntil',
+  maxAttempts: 'maxAttempts',
+  latePenalty: 'latePenalty',
+  rubric: 'rubric',
+  gradingWeight: 'gradingWeight'
+};
+
+exports.Prisma.SubmissionScalarFieldEnum = {
+  id: 'id',
+  assignmentId: 'assignmentId',
+  studentId: 'studentId',
+  fileUrl: 'fileUrl',
+  grade: 'grade',
+  feedback: 'feedback',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  gradedAt: 'gradedAt',
+  graderId: 'graderId',
+  rubric: 'rubric',
+  comment: 'comment',
+  attempt: 'attempt',
+  isLate: 'isLate',
+  comments: 'comments'
 };
 
 exports.Prisma.SortOrder = {
@@ -153,7 +199,10 @@ exports.Prisma.QueryMode = {
 exports.Prisma.ModelName = {
   Course: 'Course',
   Module: 'Module',
-  Lesson: 'Lesson'
+  Lesson: 'Lesson',
+  Classroom: 'Classroom',
+  Assignment: 'Assignment',
+  Submission: 'Submission'
 };
 /**
  * Create the Client
@@ -193,7 +242,6 @@ const config = {
     "db"
   ],
   "activeProvider": "sqlite",
-  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {
@@ -202,13 +250,13 @@ const config = {
       }
     }
   },
-  "inlineSchema": "generator client {\n  provider = \"prisma-client-js\"\n  output   = \"./generated/client\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = \"file:./teach_internal.db\"\n}\n\nmodel Course {\n  id          String   @id @default(cuid())\n  teacherId   String // soft link to Authentication.user.id\n  title       String\n  category    String?\n  difficulty  String?\n  description String?\n  price       Float    @default(0)\n  discount    Float    @default(0)\n  coverUrl    String?\n  modules     Module[]\n  createdAt   DateTime @default(now())\n  updatedAt   DateTime @updatedAt\n\n  @@index([teacherId])\n}\n\nmodel Module {\n  id       String   @id @default(cuid())\n  courseId String\n  title    String\n  lessons  Lesson[]\n  Course   Course   @relation(fields: [courseId], references: [id])\n}\n\nmodel Lesson {\n  id        String   @id @default(cuid())\n  moduleId  String\n  title     String\n  type      String\n  duration  Int?\n  content   String?\n  videoUrl  String?\n  rubric    String?\n  preview   Boolean  @default(false)\n  metadata  Json?\n  createdAt DateTime @default(now())\n  Module    Module   @relation(fields: [moduleId], references: [id])\n}\n",
-  "inlineSchemaHash": "1696f8e5ddca626d677faf4e1a063fd2d108e51389533a0971d10ad4e4081dc1",
+  "inlineSchema": "generator client {\n  provider = \"prisma-client-js\"\n  output   = \"./generated/client\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = \"file:./teach_internal.db\"\n}\n\nmodel Course {\n  id            String   @id @default(cuid())\n  teacherId     String // soft link to Authentication.user.id\n  title         String\n  category      String?\n  difficulty    String?\n  description   String?\n  price         Float    @default(0)\n  discount      Float    @default(0)\n  coverUrl      String?\n  modules       Module[]\n  createdAt     DateTime @default(now())\n  updatedAt     DateTime @updatedAt\n  institutionId String?\n\n  @@index([teacherId])\n}\n\nmodel Module {\n  id       String   @id @default(cuid())\n  courseId String\n  title    String\n  lessons  Lesson[]\n  Course   Course   @relation(fields: [courseId], references: [id])\n}\n\nmodel Lesson {\n  id        String   @id @default(cuid())\n  moduleId  String\n  title     String\n  type      String\n  duration  Int?\n  content   String?\n  videoUrl  String?\n  rubric    String?\n  preview   Boolean  @default(false)\n  metadata  Json?\n  createdAt DateTime @default(now())\n  Module    Module   @relation(fields: [moduleId], references: [id])\n  position  Int?     @default(0)\n}\n\nmodel Classroom {\n  id            String   @id @default(cuid())\n  courseId      String\n  institutionId String?\n  name          String\n  startDate     DateTime\n  endDate       DateTime\n  createdAt     DateTime @default(now())\n  updatedAt     DateTime @updatedAt\n}\n\nmodel Assignment {\n  id          String    @id @default(cuid())\n  classroomId String\n  title       String\n  description String\n  dueDate     DateTime\n  createdAt   DateTime  @default(now())\n  updatedAt   DateTime  @updatedAt\n  acceptUntil DateTime?\n  maxAttempts Int?      @default(1)\n  latePenalty Float?\n\n  rubric        Json?\n  gradingWeight Float?\n}\n\nmodel Submission {\n  id           String    @id @default(cuid())\n  assignmentId String\n  studentId    String\n  fileUrl      String?\n  grade        Float?\n  feedback     String?\n  createdAt    DateTime  @default(now())\n  updatedAt    DateTime  @updatedAt\n  gradedAt     DateTime?\n  graderId     String?\n  rubric       Json?\n  comment      String?\n  attempt      Int?      @default(1)\n  isLate       Boolean?  @default(false)\n\n  comments Json?\n}\n",
+  "inlineSchemaHash": "7f74c2c720a6ebdf60d8aa7d53ddfed7528bdd855432a484a37ca39e55815940",
   "copyEngine": true
 }
 config.dirname = '/'
 
-config.runtimeDataModel = JSON.parse("{\"models\":{\"Course\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"teacherId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"title\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"category\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"difficulty\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"price\",\"kind\":\"scalar\",\"type\":\"Float\"},{\"name\":\"discount\",\"kind\":\"scalar\",\"type\":\"Float\"},{\"name\":\"coverUrl\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"modules\",\"kind\":\"object\",\"type\":\"Module\",\"relationName\":\"CourseToModule\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"Module\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"courseId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"title\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"lessons\",\"kind\":\"object\",\"type\":\"Lesson\",\"relationName\":\"LessonToModule\"},{\"name\":\"Course\",\"kind\":\"object\",\"type\":\"Course\",\"relationName\":\"CourseToModule\"}],\"dbName\":null},\"Lesson\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"moduleId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"title\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"type\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"duration\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"content\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"videoUrl\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"rubric\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"preview\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"metadata\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"Module\",\"kind\":\"object\",\"type\":\"Module\",\"relationName\":\"LessonToModule\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
+config.runtimeDataModel = JSON.parse("{\"models\":{\"Course\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"teacherId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"title\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"category\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"difficulty\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"price\",\"kind\":\"scalar\",\"type\":\"Float\"},{\"name\":\"discount\",\"kind\":\"scalar\",\"type\":\"Float\"},{\"name\":\"coverUrl\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"modules\",\"kind\":\"object\",\"type\":\"Module\",\"relationName\":\"CourseToModule\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"institutionId\",\"kind\":\"scalar\",\"type\":\"String\"}],\"dbName\":null},\"Module\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"courseId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"title\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"lessons\",\"kind\":\"object\",\"type\":\"Lesson\",\"relationName\":\"LessonToModule\"},{\"name\":\"Course\",\"kind\":\"object\",\"type\":\"Course\",\"relationName\":\"CourseToModule\"}],\"dbName\":null},\"Lesson\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"moduleId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"title\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"type\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"duration\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"content\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"videoUrl\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"rubric\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"preview\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"metadata\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"Module\",\"kind\":\"object\",\"type\":\"Module\",\"relationName\":\"LessonToModule\"},{\"name\":\"position\",\"kind\":\"scalar\",\"type\":\"Int\"}],\"dbName\":null},\"Classroom\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"courseId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"institutionId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"startDate\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"endDate\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"Assignment\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"classroomId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"title\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"dueDate\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"acceptUntil\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"maxAttempts\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"latePenalty\",\"kind\":\"scalar\",\"type\":\"Float\"},{\"name\":\"rubric\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"gradingWeight\",\"kind\":\"scalar\",\"type\":\"Float\"}],\"dbName\":null},\"Submission\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"assignmentId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"studentId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"fileUrl\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"grade\",\"kind\":\"scalar\",\"type\":\"Float\"},{\"name\":\"feedback\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"gradedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"graderId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"rubric\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"comment\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"attempt\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"isLate\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"comments\",\"kind\":\"scalar\",\"type\":\"Json\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
 defineDmmfProperty(exports.Prisma, config.runtimeDataModel)
 config.engineWasm = {
   getRuntime: async () => require('./query_engine_bg.js'),

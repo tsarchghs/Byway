@@ -146,14 +146,18 @@ export interface NexusGenFieldTypes {
     title: string; // String!
   }
   Mutation: { // field return type
+    bulkEnrollCsv: number; // Int!
     createStudent: NexusGenRootTypes['Student']; // Student!
     enrollCourse: NexusGenRootTypes['StudentCourse']; // StudentCourse!
+    enrollInClassroom: string; // String!
     enrollMe: NexusGenRootTypes['StudentCourse']; // StudentCourse!
     enrollStudent: NexusGenRootTypes['StudentCourse']; // StudentCourse!
     submitLesson: NexusGenRootTypes['StudentSubmission']; // StudentSubmission!
     updateProgress: NexusGenRootTypes['StudentProgress']; // StudentProgress!
   }
   Query: { // field return type
+    enrollmentCountByClassroom: number; // Int!
+    hasEnrollment: boolean; // Boolean!
     isEnrolled: boolean; // Boolean!
     isEnrolledMe: boolean; // Boolean!
     myCourses: NexusGenRootTypes['StudentCourse'][]; // [StudentCourse!]!
@@ -233,14 +237,18 @@ export interface NexusGenFieldTypeNames {
     title: 'String'
   }
   Mutation: { // field return type name
+    bulkEnrollCsv: 'Int'
     createStudent: 'Student'
     enrollCourse: 'StudentCourse'
+    enrollInClassroom: 'String'
     enrollMe: 'StudentCourse'
     enrollStudent: 'StudentCourse'
     submitLesson: 'StudentSubmission'
     updateProgress: 'StudentProgress'
   }
   Query: { // field return type name
+    enrollmentCountByClassroom: 'Int'
+    hasEnrollment: 'Boolean'
     isEnrolled: 'Boolean'
     isEnrolledMe: 'Boolean'
     myCourses: 'StudentCourse'
@@ -286,11 +294,19 @@ export interface NexusGenFieldTypeNames {
 
 export interface NexusGenArgTypes {
   Mutation: {
+    bulkEnrollCsv: { // args
+      csv: string; // String!
+    }
     createStudent: { // args
       displayName?: string | null; // String
       userId: string; // String!
     }
     enrollCourse: { // args
+      courseId: string; // String!
+      studentId: string; // String!
+    }
+    enrollInClassroom: { // args
+      classroomId: string; // String!
       courseId: string; // String!
       studentId: string; // String!
     }
@@ -315,6 +331,13 @@ export interface NexusGenArgTypes {
     }
   }
   Query: {
+    enrollmentCountByClassroom: { // args
+      classroomId: string; // String!
+    }
+    hasEnrollment: { // args
+      courseId: string; // String!
+      studentId: string; // String!
+    }
     isEnrolled: { // args
       courseId: string; // String!
       studentId: string; // String!

@@ -1,4 +1,3 @@
-
 import { HttpClient } from './utils/http';
 import { StudentService } from './students/student.service';
 import { EnrollmentService } from './students/enrollment.service';
@@ -41,7 +40,6 @@ export class BywayClient {
     this.users = new UserService(this.http);
     this.cart = new CartService(this.http);
     this.orders = new OrderService(this.http);
-    \1
     this.institutions = new InstitutionService(this.http);
     this.classrooms = new ClassroomService(this.http);
     this.assignments = new AssignmentService(this.http);

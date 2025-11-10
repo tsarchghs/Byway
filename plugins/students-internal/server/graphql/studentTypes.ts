@@ -8,7 +8,7 @@ export const LessonStatus = enumType({
 
 // Minimal Student object exposed via GraphQL for cross-plugin checks
 export const Student = objectType({
-  name: 'Student',
+  name: 'GqlStudent',
   definition(t) {
     t.string('id')
     t.nullable.string('userId')
@@ -19,7 +19,7 @@ export const Student = objectType({
 
 // Prisma → Nexus mapping
 export const StudentCourse = objectType({
-  name: 'StudentCourse',
+  name: 'GqlStudentCourse',
   definition(t) {
     t.string('id')
     t.string('studentId')
@@ -51,7 +51,7 @@ export const StudentProgress = objectType({
 
 // Resolved from StudentSubmission table
 export const StudentSubmission = objectType({
-  name: 'StudentSubmission',
+  name: 'GqlStudentSubmission',
   definition(t) {
     t.string('id')
     t.string('studentId')

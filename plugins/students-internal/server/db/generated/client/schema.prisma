@@ -57,7 +57,8 @@ model StudentCourse {
   progress   Int?
   enrolledAt DateTime @default(now())
 
-  student Student @relation(fields: [studentId], references: [id])
+  student     Student @relation(fields: [studentId], references: [id])
+  classroomId String?
 
   @@unique([studentId, courseId])
   @@index([courseId])

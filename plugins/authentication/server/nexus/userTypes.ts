@@ -1,40 +1,32 @@
-import { objectType, extendType, nonNull, stringArg } from 'nexus'
+import { extendType } from "nexus"
 
-export const User = objectType({
-  name: 'User',
+export const UserExtension = extendType({
+  type: "GqlUser", // reuse the one from authTypes.ts
   definition(t) {
-    t.nonNull.id('id')
-    t.nonNull.string('email')
-    t.string('firstName')
-    t.string('lastName')
-    t.string('role') // e.g. "teacher" | "student" | "admin"
-    t.field('createdAt', { type: 'DateTime' })
+    t.string("role") // e.g. "teacher" | "student" | "admin"
+    t.field("createdAt", { type: "DateTime" })
   },
 })
 
 export const UserQuery = extendType({
-  type: 'Query',
+  type: "Query",
   definition(t) {
-    t.field('user', {
-      type: 'User',
-      args: {
-        id: nonNull(stringArg()),
-      },
+    t.field("user", {
+      type: "GqlUser",
+      args: { id: "String" },
       async resolve(_, { id }, ctx) {
-        // Defensive checks
-        if (!ctx.prisma) throw new Error('Prisma client not in context')
+        if (!ctx.prisma) throw new Error("Prisma client missing in context")
         const user = await ctx.prisma.user.findUnique({ where: { id } })
         if (!user) throw new Error(`User ${id} not found`)
         return user
       },
     })
 
-    // Optional: support querying the current authenticated user
-    t.field('me', {
-      type: 'User',
+    t.field("me", {
+      type: "GqlUser",
       async resolve(_, __, ctx) {
-        if (!ctx.user) throw new Error('Not authenticated')
-        return ctx.prisma.user.findUnique({ where: { id: ctx.user.id } })
+        if (!ctx.userId) throw new Error("Not authenticated")
+        return ctx.prisma.user.findUnique({ where: { id: ctx.userId } })
       },
     })
   },
