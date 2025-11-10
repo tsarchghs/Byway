@@ -117,4 +117,6 @@ async function checkRoles(){
   allowed.value = !!r?.data?.hasRole
 }
 
+
+definePageMeta({ layout: 'institution' })
 </script>

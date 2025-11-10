@@ -130,4 +130,6 @@ async function bulkEnroll() {
 }
 
 
+
+definePageMeta({ layout: 'institution' })
 </script>

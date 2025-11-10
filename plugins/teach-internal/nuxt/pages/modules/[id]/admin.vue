@@ -92,4 +92,6 @@ async function checkTeacher(){
 
 async function init(){ await loadModule(); await loadLessons() }
 onMounted(init)
+
+definePageMeta({ layout: 'institution' })
 </script>

@@ -10,14 +10,22 @@
 </a-drawer>
     </a-card>
   </a-layout>
+
+  <a-drawer v-model:open="commentsOpen" title="Comments" placement="right" width="420">
+    <a-list :data-source="comments" :renderItem="(c:any)=> h('div', {}, `${c.at} – ${c.authorId || 'anon'}: ${c.text}`)" />
+    <a-textarea v-model:value="newComment" :rows="3" class="mt-2" placeholder="Add a comment..." />
+    <div class="mt-2"><a-button type="primary" @click="postComment">Post</a-button></div>
+  </a-drawer>
 </template>
+
 
 <script setup lang="ts">
 const route = useRoute()
 const config = useRuntimeConfig()
 const baseUrl = config.public?.apiBase || 'http://localhost:4000'
 const rows = ref<any[]>([])
-const cols = [
+\1
+      { title:'Comments', key:'comments', customRender:({ record }:any)=> h('a', { onClick:()=> loadComments(record.id) }, 'Open') },
       { title: 'Attempt', dataIndex: 'attempt', key: 'attempt' },
   { title: 'Student', dataIndex: 'studentId', key: 'studentId' },
   { title: 'File', dataIndex: 'fileUrl', key: 'fileUrl' },
@@ -51,7 +59,7 @@ async function grade(rec:any) {
   })
   await load()
 }
-onMounted(load)
+onMounted(async()=>{ try{ await load() }catch(_e){}; try{ await loadRubric() }catch(_e){} })
 
 
 const rubricOpen = ref(false)
@@ -64,4 +72,36 @@ async function saveRubric(){
   rubricOpen.value = false
 }
 
+
+definePageMeta({ layout: 'institution' })
+
+
+async function loadRubric(){
+  const q = 'query($id:String!){ assignmentById(id:$id){ id title rubric } }'
+  const r = await $fetch(`${baseUrl}/api/teach-internal/graphql`, { method:'POST', body:{ query:q, variables:{ id: String(route.params.id) }}}) as any
+  const raw = r?.data?.assignmentById?.rubric
+  if (raw) { rubricJson.value = typeof raw === 'string' ? raw : JSON.stringify(raw, null, 2) }
+}
+
+
+const commentsOpen = ref(false)
+const comments = ref<any[]>([])
+const newComment = ref('')
+async function loadComments(submissionId:string){
+  const q = 'query($submissionId:String!){ submissionComments(submissionId:$submissionId) }'
+  const r = await $fetch(`${baseUrl}/api/teach-internal/graphql`, { method:'POST', body:{ query:q, variables:{ submissionId }}}) as any
+  const raw = r?.data?.submissionComments
+  try { comments.value = raw ? JSON.parse(raw) : [] } catch(_e){ comments.value = [] }
+  commentsOpen.value = true
+}
+async function postComment(){
+  const targetId = currentRow?.value?.id || rows?.value?.[0]?.id
+  if(!targetId || !newComment.value) return
+  const q = 'mutation($submissionId:String!,$text:String!,$authorId:String){ addSubmissionComment(submissionId:$submissionId,text:$text,authorId:$authorId) }'
+  await $fetch(`${baseUrl}/api/teach-internal/graphql`, { method:'POST', body:{ query:q, variables:{ submissionId: targetId, text: newComment.value, authorId: userId?.value || undefined }}})
+  newComment.value = ''
+  await loadComments(targetId)
+}
 </script>
+
+

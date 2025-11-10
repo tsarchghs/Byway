@@ -8,6 +8,7 @@
       </div>
 
       <a-collapse accordion>
+  <a-collapse-panel key="stats" header="Module Stats"><div class="grid grid-cols-2 gap-3"><a-card size="small" title="Lessons">{{ lessons.length }}</a-card><a-card size="small" title="Assignments">{{ assignments.length }}</a-card><a-card size="small" title="Completed">{{ completedCount }}</a-card><a-card size="small" title="Progress Avg">{{ (progressPct || 0).toFixed(0) }}%</a-card></div></a-collapse-panel>
             <a-collapse-panel key="timeline" header="Deadlines Timeline">
               <a-list :data-source="timeline" :renderItem="(i:any)=> h('div', {}, `${i.title} · ${i.when}`)" />
             </a-collapse-panel>
@@ -34,7 +35,7 @@
           </div>
           <a-list :data-source="messages" :renderItem="(m:any)=> h('div', {}, `${m.ts}: ${m.text}`)" />
         </a-collapse-panel>
-      </a-collapse>
+      <a-collapse-panel key="check" header="Module Checklist"><a-list :data-source="checklist" :renderItem="(i:any)=> h('div', {}, [ h('input', { type: 'checkbox', checked: i.done, onChange:()=> i.done=!i.done }), h('span', ' ' + i.title) ])" /></a-collapse-panel></a-collapse>
     </a-card>
   </a-layout>
 </template>
@@ -51,6 +52,7 @@ const completedIds = ref<string[]>([])
 const classroomId = ref('')
 const assignments = ref<any[]>([])
     const timeline = ref<any[]>([])
+const checklist = ref<any[]>([{ title:'Watch intro video', done:false }, { title:'Read slides', done:false }, { title:'Submit Assignment 1', done:false }])
 const aCols = [
   { title: 'Title', dataIndex: 'title', key: 'title' },
   { title: 'Due', dataIndex: 'dueDate', key: 'dueDate' },

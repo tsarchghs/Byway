@@ -137,3 +137,63 @@ export const AssignmentGradebookQuery = extendType({
     })
   }
 })
+
+
+export const UpdateAssignmentRubricMutation = extendType({
+  type: 'Mutation',
+  definition(t){
+    t.field('updateAssignmentRubric', {
+      type: 'Assignment',
+      args: {
+        assignmentId: nonNull(stringArg()),
+        rubric: nonNull(stringArg())
+      },
+      async resolve(_root, args, ctx){
+        let parsed:any = null
+        try { parsed = JSON.parse(args.rubric) } catch(_e){}
+        return ctx.prisma.assignment.update({
+          where: { id: args.assignmentId },
+          data: { rubric: parsed }
+        })
+      }
+    })
+  }
+})
+
+
+export const SubmissionComments = extendType({
+  type: 'Query',
+  definition(t){
+    t.field('submissionComments', {
+      type: 'String',
+      args: { submissionId: nonNull(stringArg()) },
+      async resolve(_root, args, ctx){
+        const s = await ctx.prisma.submission.findUnique({ where: { id: args.submissionId } })
+        return JSON.stringify(s?.comments || [])
+      }
+    })
+  }
+})
+
+
+export const AddSubmissionComment = extendType({
+  type: 'Mutation',
+  definition(t){
+    t.field('addSubmissionComment', {
+      type: 'Boolean',
+      args: {
+        submissionId: nonNull(stringArg()),
+        text: nonNull(stringArg()),
+        authorId: stringArg()
+      },
+      async resolve(_root, args, ctx){
+        const s = await ctx.prisma.submission.findUnique({ where: { id: args.submissionId } })
+        const now = new Date().toISOString()
+        const items = Array.isArray(s?.comments) ? s.comments : []
+        items.push({ at: now, authorId: args.authorId || null, text: args.text })
+        await ctx.prisma.submission.update({ where:{ id: args.submissionId }, data:{ comments: items } })
+        return true
+      }
+    })
+  }
+})

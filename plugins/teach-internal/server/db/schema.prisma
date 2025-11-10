@@ -96,4 +96,5 @@ model Submission {
   attempt Int? @default(1)
   isLate Boolean? @default(false)
 
+  comments Json?
 }

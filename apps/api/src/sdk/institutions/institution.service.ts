@@ -39,3 +39,25 @@ export async function gradebookCsv(client: any, classroomId: string) {
   const query = `query($classroomId:String!){ gradebookCsv(classroomId:$classroomId) }`
   return client.post('/api/teach-internal/graphql', { query, variables: { classroomId } })
 }
+
+
+export async function updateAssignmentRubric(client:any, assignmentId:string, rubric:any){
+  const query = `mutation($assignmentId:String!,$rubric:String!){
+    updateAssignmentRubric(assignmentId:$assignmentId, rubric:$rubric){ id }
+  }`
+  return client.post('/api/teach-internal/graphql', {
+    query, variables: { assignmentId, rubric: JSON.stringify(rubric) }
+  })
+}
+
+
+export async function addSubmissionComment(client:any, submissionId:string, text:string, authorId?:string){
+  const query = `mutation($submissionId:String!,$text:String!,$authorId:String){
+    addSubmissionComment(submissionId:$submissionId, text:$text, authorId:$authorId)
+  }`
+  return client.post('/api/teach-internal/graphql', { query, variables: { submissionId, text, authorId } })
+}
+export async function submissionComments(client:any, submissionId:string){
+  const query = `query($submissionId:String!){ submissionComments(submissionId:$submissionId) }`
+  return client.post('/api/teach-internal/graphql', { query, variables: { submissionId } })
+}
