@@ -1,166 +1,3 @@
-<template>
-  <a-card class="university-module-panel" :bordered="false">
-    <template #title>
-      <div class="head">
-        <div>
-          <a-typography-title :level="3" style="margin:0">University Module Hub</a-typography-title>
-          <a-typography-text type="secondary">Cohorts, roster, grading, analytics, integrations</a-typography-text>
-        </div>
-        <div class="head-actions">
-          <a-input-search v-model:value="q" placeholder="Search activities…" style="width:260px" />
-          <a-segmented v-model:value="density" :options="['Comfort','Compact']" style="margin-left:8px" />
-          <a-button @click="refresh" :loading="loading" style="margin-left:8px">Refresh</a-button>
-        </div>
-      </div>
-    </template>
-
-    <!-- 🔧 Panel Toolbar (surgical increment) -->
-<div class="panel-toolbar">
-  <a-space wrap>
-    <a-input
-      v-model:value="q"
-      placeholder="Search students, cohorts, assignments… (press /)"
-      style="width: 320px"
-      allow-clear
-    />
-    <a-range-picker v-model:value="dateRange" style="min-width: 280px" />
-    <a-segmented v-model:value="density" :options="['Comfort','Compact']" />
-    <a-button @click="exportActive()" :loading="exporting">Export CSV</a-button>
-    <a-button @click="refresh" :loading="loading">Refresh</a-button>
-  </a-space>
-</div>
-<a-tabs v-model:activeKey="tab">
-      <a-tab-pane key="overview" tab="Overview">
-        <div class="grid-4">
-          <a-card size="small" v-for="k in kpis" :key="k.key" :title="k.label">
-            <a-statistic :value="k.value" />
-            <a-typography-text type="secondary">{{ k.hint }}</a-typography-text>
-          </a-card>
-        </div>
-        <a-divider />
-        <a-list :data-source="timeline" item-layout="vertical">
-          <template #renderItem="{ item }">
-            <a-list-item>
-              <a-list-item-meta :title="item.title">
-                <template #description>
-                  <a-space> <a-tag>{{ item.type }}</a-tag> <span>{{ item.when }}</span> </a-space>
-                </template>
-              </a-list-item-meta>
-              <template #actions>
-                <a-button type="link">Open</a-button>
-                <a-button type="link">Preview</a-button>
-              </template>
-            </a-list-item>
-          </template>
-        </a-list>
-      </a-tab-pane>
-
-      <a-tab-pane key="cohorts" tab="Cohorts">
-        <a-space direction="vertical" style="width:100%">
-          <a-space>
-            <a-button type="primary" @click="showCreateCohort=true">New Cohort</a-button>
-            <a-upload :show-upload-list="false"><a-button>Import CSV</a-button></a-upload>
-            <a-button @click="exportCohorts">Export</a-button>
-          </a-space>
-          <a-table :columns="cohortCols" :data-source="cohorts" row-key="id" size="small" />
-        </a-space>
-
-        <a-modal v-model:open="showCreateCohort" title="Create Cohort" @ok="createCohort">
-          <a-form layout="vertical">
-            <a-form-item label="Name"><a-input v-model:value="cohortDraft.name" /></a-form-item>
-            <a-form-item label="Start"><a-date-picker v-model:value="cohortDraft.start" /></a-form-item>
-            <a-form-item label="End"><a-date-picker v-model:value="cohortDraft.end" /></a-form-item>
-          </a-form>
-        </a-modal>
-      </a-tab-pane>
-
-      <a-tab-pane key="roster" tab="Roster">
-        <a-space direction="vertical" style="width:100%">
-          <a-space>
-            <a-input v-model:value="inviteEmail" placeholder="Invite by email" style="width:280px" />
-            <a-button type="primary" @click="invite">Invite</a-button>
-            <a-upload :show-upload-list="false"><a-button>Bulk Import</a-button></a-upload>
-          </a-space>
-          <a-table :columns="rosterCols" :data-source="roster" row-key="id" size="small" />
-        </a-space>
-      </a-tab-pane>
-
-      <a-tab-pane key="assignments" tab="Assignments">
-        <a-space direction="vertical" style="width:100%">
-          <a-space>
-            <a-button type="primary" @click="showCreateAssignment=true">New Assignment</a-button>
-            <a-segmented v-model:value="assignmentFilter" :options="['All','Pending','Submitted','Graded']" />
-          </a-space>
-          <a-table :columns="assignmentCols" :data-source="assignments" row-key="id" size="small" />
-        </a-space>
-
-        <a-modal v-model:open="showCreateAssignment" title="Create Assignment" @ok="createAssignment">
-          <a-form layout="vertical">
-            <a-form-item label="Title"><a-input v-model:value="assignmentDraft.title" /></a-form-item>
-            <a-form-item label="Due"><a-date-picker show-time v-model:value="assignmentDraft.due" /></a-form-item>
-            <a-form-item label="Points"><a-input-number v-model:value="assignmentDraft.points" :min="0" /></a-form-item>
-          </a-form>
-        </a-modal>
-      </a-tab-pane>
-
-      <a-tab-pane key="grading" tab="Grading">
-        <a-table :columns="gradeCols" :data-source="grades" row-key="id" size="small" />
-        <a-divider />
-        <a-space>
-          <a-button @click="exportGrades">Export CSV</a-button>
-          <a-button>Rubrics</a-button>
-        </a-space>
-      </a-tab-pane>
-
-      <a-tab-pane key="discuss" tab="Discussions">
-        <a-list :data-source="discussions" item-layout="vertical">
-          <template #renderItem="{ item }">
-            <a-list-item>
-              <a-list-item-meta :title="item.title" :description="item.author" />
-              <a-typography-paragraph :content="item.body" />
-              <template #actions>
-                <a-button type="link">Reply</a-button>
-              </template>
-            </a-list-item>
-          </template>
-        </a-list>
-        <a-divider />
-        <a-form layout="inline" @submit.prevent="postDiscussion">
-          <a-input v-model:value="draft.title" placeholder="Topic" style="width:280px" />
-          <a-input v-model:value="draft.body" placeholder="Message" style="width:420px" />
-          <a-button type="primary" @click="postDiscussion">Post</a-button>
-        </a-form>
-      </a-tab-pane>
-
-      <a-tab-pane key="resources" tab="Resources">
-        <a-space direction="vertical" style="width:100%">
-          <a-space>
-            <a-upload :show-upload-list="false"><a-button>Upload</a-button></a-upload>
-            <a-button>Link External</a-button>
-          </a-space>
-          <a-table :columns="resourceCols" :data-source="resources" row-key="id" size="small" />
-        </a-space>
-      </a-tab-pane>
-
-      <a-tab-pane key="integrations" tab="Integrations">
-        <a-descriptions bordered column="1" title="LMS Integrations">
-          <a-descriptions-item label="SCORM">Planned · Placeholder</a-descriptions-item>
-          <a-descriptions-item label="LTI">Planned · Placeholder</a-descriptions-item>
-          <a-descriptions-item label="SAML/SSO">Planned · Placeholder</a-descriptions-item>
-        </a-descriptions>
-      </a-tab-pane>
-
-      <a-tab-pane key="analytics" tab="Analytics">
-        <a-row :gutter="12">
-          <a-col :span="8"><a-card size="small" title="Active Students (wk)">~42</a-card></a-col>
-          <a-col :span="8"><a-card size="small" title="Avg. Completion">64%</a-card></a-col>
-          <a-col :span="8"><a-card size="small" title="Avg. Grade">81%</a-card></a-col>
-        </a-row>
-      </a-tab-pane>
-    </a-tabs>
-  </a-card>
-</template>
-
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 
@@ -372,10 +209,150 @@ function exportActive(){
     exporting.value = false
   }
 }
-</script>
+\n
+// --- increment: bulk selection, export, messaging (surgical) ---
+import { ref, computed } from 'vue'
+import { message as $message } from 'ant-design-vue'
 
-<style scoped>
-.university-module-panel { }
-.head{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
-.grid-4{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
-</style>
+const selectedRowKeys = ref<string[]>([])
+const onSelectChange = (keys: string[]) => { selectedRowKeys.value = keys }
+
+const rowKeyFn = (r: any) => r?.id || r?.userId || r?.email || r?.username || r?.name
+
+const selectedRows = computed(() => {
+  const set = new Set(selectedRowKeys.value)
+  return Array.isArray(roster) ? roster.filter((r:any) => set.has(rowKeyFn(r))) : []
+})
+
+const selectedEmails = computed(() => selectedRows.value
+  .map((r:any) => r.email || r.contactEmail)
+  .filter(Boolean))
+
+const cohortAssign = ref<string | null>(null)
+const composeOpen = ref(false)
+const composeSubject = ref('')
+const composeBody = ref('')
+
+function copySelectedEmails(){
+  if (!selectedEmails.value.length) return
+  navigator.clipboard?.writeText(selectedEmails.value.join('; '))
+  $message.success('Emails copied')
+}
+
+function exportSelectedCSV(){
+  const rows = selectedRows.value
+  if (!rows.length) return
+  const keys = Object.keys(rows[0] || {})
+  const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n')
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'})
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url; a.download = 'roster-selected.csv'; a.click()
+  URL.revokeObjectURL(url)
+}
+
+async function assignCohortToSelected(){
+  if (!cohortAssign.value || !selectedRows.value.length) return
+  try {
+    // SDK integration if available
+    const sdk:any = (globalThis as any).$bywaySDK || null
+    if (sdk?.classrooms?.assignToCohort){
+      await sdk.classrooms.assignToCohort({ cohortId: cohortAssign.value, studentIds: selectedRows.value.map((r:any)=>rowKeyFn(r)) })
+      $message.success('Assigned to cohort')
+    } else {
+      console.debug('SDK assignToCohort not found, noop')
+      $message.info('Simulated cohort assignment (SDK not wired).')
+    }
+  } catch (e){
+    console.error(e); $message.error('Failed to assign cohort')
+  }
+}
+
+async function sendMessageToSelected(){
+  try {
+    const payload = {
+      to: selectedEmails.value,
+      subject: composeSubject.value,
+      body: composeBody.value
+    }
+    const sdk:any = (globalThis as any).$bywaySDK || null
+    if (sdk?.messaging?.bulkSend){
+      await sdk.messaging.bulkSend(payload)
+      $message.success('Message queued')
+    } else {
+      console.debug('SDK messaging not found, falling back to console', payload)
+      $message.success('Simulated send (SDK not wired).')
+    }
+    composeOpen.value = false
+    composeSubject.value = ''
+    composeBody.value = ''
+  } catch (e){
+    console.error(e); $message.error('Failed to send message')
+  }
+}
+// --- end increment ---
+
+
+
+
+// --- increment: saved views ---
+const viewsKey = 'byway.univ.roster.views'
+const savedViews = ref<{name:string, search:string, filters:string[]}[]>([])
+
+function loadSavedViews(){
+  try { savedViews.value = JSON.parse(localStorage.getItem(viewsKey) || '[]') } catch {_=>{}}
+}
+function persistViews(){ localStorage.setItem(viewsKey, JSON.stringify(savedViews.value)) }
+function saveCurrentView(){
+  const name = prompt('Name this view')
+  if (!name) return
+  const filters = Array.from(activeFilters.value)
+  const v = { name, search: searchText.value, filters }
+  const existing = savedViews.value.filter(x=>x.name!==name)
+  savedViews.value = [...existing, v]
+  persistViews(); $message.success('View saved')
+}
+function applySavedView(v:any){
+  searchText.value = v.search || ''
+  activeFilters.value = new Set(v.filters || [])
+  $message.success(`Applied view: ${v.name}`)
+}
+function clearSavedViews(){
+  savedViews.value = []; persistViews(); $message.success('Cleared views')
+}
+loadSavedViews()
+// --- end increment views ---
+// --- increment: roster smart filters & search ---
+import { watch } from 'vue'
+const searchText = ref('')
+const activeFilters = ref<Set<string>>(new Set())
+
+function toggleFilter(key: string){
+  const set = new Set(activeFilters.value)
+  if (set.has(key)) set.delete(key); else set.add(key)
+  activeFilters.value = set
+}
+
+const filteredRoster = computed(() => {
+  let arr:any[] = Array.isArray(roster) ? roster.slice() : []
+  if (searchText.value){
+    const q = searchText.value.toLowerCase()
+    arr = arr.filter(r => [r.name, r.email, r.username, r.studentId].some(v => String(v||'').toLowerCase().includes(q)))
+  }
+  if (activeFilters.value.has('atRisk')){
+    arr = arr.filter(r => (r.grade ?? r.score ?? 0) <= 60 || (r.missingSubmissions ?? 0) > 0)
+  }
+  if (activeFilters.value.has('inactive14')){
+    const now = Date.now()
+    arr = arr.filter(r => {
+      const t = new Date(r.lastActive || r.lastSeen || r.updatedAt || 0).getTime()
+      return !t || (now - t) > 14*24*3600*1000
+    })
+  }
+  if (activeFilters.value.has('top')){
+    arr = arr.filter(r => (r.grade ?? r.score ?? 0) >= 85)
+  }
+  return arr
+})
+// --- end increment ---
+</script>
