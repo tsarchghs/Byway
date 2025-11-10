@@ -14,7 +14,22 @@
       </div>
     </template>
 
-    <a-tabs v-model:activeKey="tab">
+    <!-- 🔧 Panel Toolbar (surgical increment) -->
+<div class="panel-toolbar">
+  <a-space wrap>
+    <a-input
+      v-model:value="q"
+      placeholder="Search students, cohorts, assignments… (press /)"
+      style="width: 320px"
+      allow-clear
+    />
+    <a-range-picker v-model:value="dateRange" style="min-width: 280px" />
+    <a-segmented v-model:value="density" :options="['Comfort','Compact']" />
+    <a-button @click="exportActive()" :loading="exporting">Export CSV</a-button>
+    <a-button @click="refresh" :loading="loading">Refresh</a-button>
+  </a-space>
+</div>
+<a-tabs v-model:activeKey="tab">
       <a-tab-pane key="overview" tab="Overview">
         <div class="grid-4">
           <a-card size="small" v-for="k in kpis" :key="k.key" :title="k.label">
@@ -236,6 +251,127 @@ const resourceCols = [
 ]
 
 function refresh(){ loading.value = true; setTimeout(()=> loading.value=false, 500) }
+// ——— Surgical utilities increment ———
+import { onMounted, onBeforeUnmount, watch, computed, nextTick } from 'vue'
+
+const dateRange = ref<any | null>(null)
+const exporting = ref(false)
+
+// Persist a few UI bits
+const LS_KEY = 'byway.uni.panel.v1'
+onMounted(() => {
+  try {
+    const raw = localStorage.getItem(LS_KEY)
+    if (raw) {
+      const saved = JSON.parse(raw)
+      if (saved.tab) tab.value = saved.tab
+      if (typeof saved.q === 'string') q.value = saved.q
+      if (typeof saved.density === 'string') density.value = saved.density
+      if (saved.dateRange) dateRange.value = saved.dateRange
+    }
+  } catch {}
+  // keyboard shortcuts
+  window.addEventListener('keydown', handleKeys)
+})
+
+onBeforeUnmount(() => window.removeEventListener('keydown', handleKeys))
+
+watch([tab, q, density, dateRange], () => {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      tab: tab.value,
+      q: q.value,
+      density: density.value,
+      dateRange: dateRange.value
+    }))
+  } catch {}
+})
+
+// Quick keyboard shortcuts
+function handleKeys(e: KeyboardEvent){
+  if (e.key === '/') {
+    e.preventDefault()
+    // try to focus search input
+    const el = document.querySelector('.panel-toolbar input')
+    if (el instanceof HTMLInputElement) el.focus()
+  } else if (e.key.toLowerCase() === 'g') {
+    tab.value = 'grading'
+  } else if (e.key.toLowerCase() === 'c') {
+    tab.value = 'cohorts'
+  } else if (e.key.toLowerCase() === 'o') {
+    tab.value = 'overview'
+  } else if (e.key.toLowerCase() === 'e') {
+    exportActive()
+  }
+}
+
+// CSV export
+function toCSV(rows: any[], cols?: string[]): string {
+  if (!rows?.length) return ''
+  const keys = cols?.length ? cols : Object.keys(rows[0])
+  const escape = (v:any) => {
+    const s = v == null ? '' : String(v)
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s
+  }
+  const header = keys.map(escape).join(',')
+  const body = rows.map(r => keys.map(k => escape(r[k])).join(',')).join('\n')
+  return header + '\n' + body
+}
+
+function download(filename: string, text: string){
+  const blob = new Blob([text], {type: 'text/csv;charset=utf-8;'})
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+// Heuristic dataset exporter (doesn't change existing data flow)
+function exportActive(){
+  try {
+    exporting.value = true
+    // Try to infer data by tab id
+    let rows: any[] = []
+    let name = 'export'
+    const t = String(tab.value || 'overview').toLowerCase()
+    if (t.includes('cohort')) {
+      // attempt to locate a cohorts array on the instance
+      // @ts-ignore
+      rows = (typeof cohorts !== 'undefined' && Array.isArray(cohorts)) ? cohorts : []
+      name = 'cohorts'
+    } else if (t.includes('assign') || t.includes('grade')) {
+      // @ts-ignore
+      rows = (typeof assignments !== 'undefined' && Array.isArray(assignments)) ? assignments : []
+      if (!rows.length) {
+        // @ts-ignore
+        rows = (typeof roster !== 'undefined' && Array.isArray(roster)) ? roster : []
+      }
+      name = 'grading'
+    } else {
+      // fallback to timeline or kpis if available
+      // @ts-ignore
+      rows = (typeof timeline !== 'undefined' && Array.isArray(timeline)) ? timeline : []
+      if (!rows.length) {
+        // @ts-ignore
+        rows = (typeof kpis !== 'undefined' && Array.isArray(kpis)) ? kpis : []
+      }
+      name = 'overview'
+    }
+    if (!rows.length) {
+      // graceful no-op
+      exporting.value = false
+      return
+    }
+    const csv = toCSV(rows)
+    download(`module-${name}.csv`, csv)
+  } finally {
+    exporting.value = false
+  }
+}
 </script>
 
 <style scoped>
