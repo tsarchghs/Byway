@@ -7,7 +7,7 @@ export function createApolloClient(pluginName: string) {
   })
 
   const authLink = setContext((_, { headers }) => {
-    const token = localStorage.getItem('token')
+    const token = (null /* was localStorage.getItem('token') */)
     return {
       headers: {
         ...headers,

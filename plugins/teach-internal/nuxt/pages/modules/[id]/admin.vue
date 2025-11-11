@@ -94,4 +94,7 @@ async function init(){ await loadModule(); await loadLessons() }
 onMounted(init)
 
 definePageMeta({ layout: 'institution' })
+
+
+definePageMeta({ layout:'teacher', title:'Module Admin' })
 </script>

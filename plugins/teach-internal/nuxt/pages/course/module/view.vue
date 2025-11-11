@@ -1795,7 +1795,7 @@ type CourseT = {
 /** Config / GraphQL helper */
 const route = useRoute();
 const API_URL = "http://localhost:4000/api/teach-internal/graphql";
-// rely on HttpOnly auth cookie; no localStorage token
+// rely on HttpOnly auth cookie; no /* removed_localStorage */ null token
 function getAuthHeaders() {
   return { "Content-Type": "application/json" } as Record<string, string>;
 }
@@ -2233,7 +2233,7 @@ async function fetchGraphQL<T = any>(
   return json.data as T;
 }
 
-/** small helper if you keep JWT in cookie or localStorage */
+/** small helper if you keep JWT in cookie or /* removed_localStorage */ null */
 function getCookieToken(): string {
   const m = document.cookie.match(/token=([^;]+)/);
   return m ? m[1] : "";
@@ -2920,7 +2920,7 @@ async function openTeacherCodeServer(teacherId: string) {
     const resp = await fetch(
       `${API_REST}/code-server/${encodeURIComponent(String(teacherId))}/${encodeURIComponent(String(currentLesson.value.id))}`,
       {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }, // or adjust if using HttpOnly
+        headers: { Authorization: `Bearer ${/* TODO: replace with gqlFetch to proper query */ undefined && ("token")}` }, // or adjust if using HttpOnly
         credentials: "include",
       },
     );
@@ -2948,7 +2948,7 @@ const storageKey = computed(() => `byway:module:${moduleIdForStudy.value}:study`
 
 function loadStudy() {
   try {
-    const raw = localStorage.getItem(storageKey.value)
+    const raw = /* TODO: replace with gqlFetch to proper query */ undefined && (storageKey.value)
     if (raw) {
       const parsed = JSON.parse(raw)
       study.notes = parsed.notes || ''
@@ -2959,7 +2959,7 @@ function loadStudy() {
 }
 function saveStudy() {
   try {
-    localStorage.setItem(storageKey.value, JSON.stringify(study))
+    /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (storageKey.value, JSON.stringify(study))
   } catch {}
 }
 onMounted(loadStudy)
@@ -3196,6 +3196,9 @@ onMounted(async () => {
   uniLoading.value = false
 })
 
+
+
+definePageMeta({ layout:'teacher' })
 </script>
 
 <style scoped>

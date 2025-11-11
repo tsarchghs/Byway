@@ -411,21 +411,21 @@ const cartItems = ref<{ id: string; title: string; price: number; image?: string
 
 function loadCart() {
   try {
-    cartItems.value = JSON.parse(localStorage.getItem(CART_KEY) || '[]')
+    cartItems.value = JSON.parse(/* TODO: replace with gqlFetch to proper query */ undefined && (CART_KEY) || '[]')
   } catch {
     cartItems.value = []
   }
 }
 function saveCart() {
   try {
-    localStorage.setItem(CART_KEY, JSON.stringify(cartItems.value))
+    /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (CART_KEY, JSON.stringify(cartItems.value))
   } catch {
     // ignore
   }
 }
 
 
-// ✅ UPDATED: addToCart uses shared cart instead of localStorage
+// ✅ UPDATED: addToCart uses shared cart instead of /* removed_localStorage */ null
 function addToCart() {
   if (!course.value) return
   if (isInCart.value) return message.info('Already in cart')

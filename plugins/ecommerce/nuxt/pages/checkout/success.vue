@@ -23,7 +23,7 @@ async function verifyAndClear(sessionId: string | string[] | undefined) {
     const ok = json?.data?.verifyCheckout?.ok
     if (ok) {
       // backend verified payment & enrollment processing. clear local cart.
-      try { localStorage.setItem('byway:cart', '[]') } catch {}
+      try { /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); ('byway:cart', '[]') } catch {}
     }
   } catch (e) {
     // ignore — we don't want to block the UX

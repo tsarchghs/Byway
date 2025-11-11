@@ -94,4 +94,7 @@ async function refresh() {
 }
 onMounted(refresh)
 watch(studentId, loadMySubs)
+
+
+definePageMeta({ layout: 'student' })
 </script>

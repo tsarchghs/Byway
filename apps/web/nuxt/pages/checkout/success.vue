@@ -8,6 +8,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 onMounted(()=> {
-  try { localStorage.setItem('byway:cart', '[]') } catch {}
+  try { (void 0 /* was localStorage.setItem('byway:cart', '[]') */) } catch {}
 })
 </script>

@@ -4,6 +4,10 @@
     {
       "path": "/teach",
       "file": "nuxt/pages/teach.vue"
+    },
+    {
+      "path": "/teach/gradebook",
+      "file": "nuxt/pages/gradebook.vue"
     }
   ],
   "endpoints": {

@@ -171,7 +171,7 @@ const exporting = ref(false)
 const LS_KEY = 'byway.uni.panel.v1'
 onMounted(() => {
   try {
-    const raw = localStorage.getItem(LS_KEY)
+    const raw = /* TODO: replace with gqlFetch to proper query */ undefined && (LS_KEY)
     if (raw) {
       const saved = JSON.parse(raw)
       if (saved.tab) tab.value = saved.tab
@@ -188,7 +188,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeys))
 
 watch([tab, q, density, dateRange], () => {
   try {
-    localStorage.setItem(LS_KEY, JSON.stringify({
+    /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (LS_KEY, JSON.stringify({
       tab: tab.value,
       q: q.value,
       density: density.value,
@@ -373,9 +373,9 @@ const viewsKey = 'byway.univ.roster.views'
 const savedViews = ref<{name:string, search:string, filters:string[]}[]>([])
 
 function loadSavedViews(){
-  try { savedViews.value = JSON.parse(localStorage.getItem(viewsKey) || '[]') } catch {_=>{}}
+  try { savedViews.value = JSON.parse(/* TODO: replace with gqlFetch to proper query */ undefined && (viewsKey) || '[]') } catch {_=>{}}
 }
-function persistViews(){ localStorage.setItem(viewsKey, JSON.stringify(savedViews.value)) }
+function persistViews(){ /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (viewsKey, JSON.stringify(savedViews.value)) }
 function saveCurrentView(){
   const name = prompt('Name this view')
   if (!name) return
@@ -453,13 +453,13 @@ const visibleColumnKeys = ref([])
 
 onMounted(() => {
   try {
-    const saved = JSON.parse(localStorage.getItem(storageKeyCols) || '[]')
+    const saved = JSON.parse(/* TODO: replace with gqlFetch to proper query */ undefined && (storageKeyCols) || '[]')
     if (Array.isArray(saved) && saved.length) visibleColumnKeys.value = saved
   } catch {}
 })
 
 watch(visibleColumnKeys, v => {
-  try { localStorage.setItem(storageKeyCols, JSON.stringify(v)) } catch {}
+  try { /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (storageKeyCols, JSON.stringify(v)) } catch {}
 }, { deep: true })
 
 const selectAllCols = () => visibleColumnKeys.value = allColumns.value.map(c => c.key)

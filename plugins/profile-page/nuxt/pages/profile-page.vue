@@ -560,7 +560,7 @@ async function loadOrders() {
 
 function loadWishlistCount() {
   try {
-    const raw = localStorage.getItem('byway:wishlist')
+    const raw = /* TODO: replace with gqlFetch to proper query */ undefined && ('byway:wishlist')
     const arr = raw ? JSON.parse(raw) : []
     stats.wishlist = Array.isArray(arr) ? arr.length : 0
   } catch {

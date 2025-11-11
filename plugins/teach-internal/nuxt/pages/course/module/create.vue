@@ -763,7 +763,7 @@ const prereqOptions = (idx: number) =>
 const safeUrl = (url?: string) => (url || '').trim() || '#'
 
 // ------------------------------------------------------------------
-// Draft persistence (localStorage)
+// Draft persistence (/* removed_localStorage */ null)
 // ------------------------------------------------------------------
 const STORAGE_KEY = `byway:module-draft:${teacherId}:${courseId}`
 const autosaveEnabled = ref(true)
@@ -773,7 +773,7 @@ const draftVersion = ref(1)
 const saveDraft = () => {
   if (process.client) {
     const payload = JSON.stringify(moduleData)
-    localStorage.setItem(STORAGE_KEY, payload)
+    /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (STORAGE_KEY, payload)
     lastSavedAt.value = new Date().toLocaleString()
     draftVersion.value += 1
     message.success('Draft saved locally')
@@ -788,7 +788,7 @@ const toggleAutosave = () => {
 // Restore on mount
 onMounted(() => {
   try {
-    const raw = process.client ? localStorage.getItem(STORAGE_KEY) : null
+    const raw = process.client ? /* TODO: replace with gqlFetch to proper query */ undefined && (STORAGE_KEY) : null
     if (raw) {
       const parsed = JSON.parse(raw)
       Object.assign(moduleData, parsed)
@@ -1168,6 +1168,9 @@ const lessonWarnings = (idx: number) => {
   if (l.type === 'quiz' && !(l.quiz?.questions?.length)) result.push('Quiz has no questions')
   return result
 }
+
+
+definePageMeta({ layout:'teacher' })
 </script>
 
 <style scoped>

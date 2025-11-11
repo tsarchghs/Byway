@@ -77,6 +77,7 @@
 </template>
 
 <script setup lang="ts">
+import { useGql } from '../../../../packages/shared-ui/src/composables/useGql'
 import { ref, computed, h, onMounted, defineComponent } from 'vue'
 import { useRoute, useRuntimeConfig } from '#imports'
 
@@ -272,6 +273,9 @@ async function init() {
   await loadAssignments()
 }
 onMounted(init)
+
+
+definePageMeta({ layout: 'student' })
 </script>
 
 <style scoped>

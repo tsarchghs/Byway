@@ -224,12 +224,14 @@
         >
           <!-- Overview -->
           <template v-if="!currentModuleReady">
-            <a-card :loading="loadingCourse" :title="t('Course overview')" data-test-id="overview-card">
+            <a-breadcrumb class='mb-3'><a-breadcrumb-item to='/students'>Students</a-breadcrumb-item><a-breadcrumb-item>Modules</a-breadcrumb-item></a-breadcrumb>
+  <a-card :loading="loadingCourse" :title="t('Course overview')" data-test-id="overview-card">
               <p class="muted">{{ t('Browse modules and jump in — everything runs in this page.') }}</p>
               <a-empty v-if="!hasModules && !loadingCourse" :description="t('No modules yet')" />
               <a-row :gutter="16" v-else>
                 <a-col v-for="m in modules" :key="m.id" :xs="24" :sm="12" :md="8">
-                  <a-card hoverable class="mt-2" @click="switchModule(m.id)" data-test-id="module-card">
+                  <a-breadcrumb class='mb-3'><a-breadcrumb-item to='/students'>Students</a-breadcrumb-item><a-breadcrumb-item>Modules</a-breadcrumb-item></a-breadcrumb>
+  <a-card hoverable class="mt-2" @click="switchModule(m.id)" data-test-id="module-card">
                     <b>{{ m.title }}</b>
                     <div class="muted">
                       {{ m.lessonCount ?? 0 }} {{ t('lessons') }}
@@ -259,7 +261,8 @@
           <!-- Lesson viewer -->
           <template v-else>
             <a-spin :spinning="loadingModule">
-              <a-card v-if="currentLesson" :title="currentLesson.title || t('Lesson')" data-test-id="lesson-card">
+              <a-breadcrumb class='mb-3'><a-breadcrumb-item to='/students'>Students</a-breadcrumb-item><a-breadcrumb-item>Modules</a-breadcrumb-item></a-breadcrumb>
+  <a-card v-if="currentLesson" :title="currentLesson.title || t('Lesson')" data-test-id="lesson-card">
                 <template #extra>
                   <a-space>
                     <a-tag>{{ (currentLesson.type || '').toUpperCase() }}</a-tag>
@@ -514,7 +517,8 @@
           <div class="right-inner">
             <a-tabs v-model:activeKey="rightTab" size="small" :animated="false">
               <a-tab-pane key="progress" :tab="t('Progress')" data-test-id="tab-progress">
-                <a-card size="small" :title="t('Progress')" :bordered="false" body-style="padding:0;">
+                <a-breadcrumb class='mb-3'><a-breadcrumb-item to='/students'>Students</a-breadcrumb-item><a-breadcrumb-item>Modules</a-breadcrumb-item></a-breadcrumb>
+  <a-card size="small" :title="t('Progress')" :bordered="false" body-style="padding:0;">
                   <a-steps size="small" direction="vertical" :current="currentIndex">
                     <a-step
                       v-for="(l, i) in lessons"
@@ -528,7 +532,8 @@
               </a-tab-pane>
 
               <a-tab-pane key="resources" :tab="t('Resources')">
-                <a-card v-if="currentLesson" size="small" :title="t('Resources')" class="mt-2">
+                <a-breadcrumb class='mb-3'><a-breadcrumb-item to='/students'>Students</a-breadcrumb-item><a-breadcrumb-item>Modules</a-breadcrumb-item></a-breadcrumb>
+  <a-card v-if="currentLesson" size="small" :title="t('Resources')" class="mt-2">
                   <a-empty v-if="!currentLesson.resources?.length" :description="t('No resources')" />
                   <a-list v-else size="small" :data-source="currentLesson.resources">
                     <template #renderItem="{ item }">
@@ -539,7 +544,8 @@
                   </a-list>
                 </a-card>
 
-                <a-card v-if="currentLesson" size="small" class="mt-2" :title="t('Attachments')">
+                <a-breadcrumb class='mb-3'><a-breadcrumb-item to='/students'>Students</a-breadcrumb-item><a-breadcrumb-item>Modules</a-breadcrumb-item></a-breadcrumb>
+  <a-card v-if="currentLesson" size="small" class="mt-2" :title="t('Attachments')">
                   <a-empty v-if="!currentLesson.attachments?.length" :description="t('No attachments')" />
                   <a-list v-else size="small" :data-source="currentLesson.attachments">
                     <template #renderItem="{ item }">
@@ -552,7 +558,8 @@
               </a-tab-pane>
 
               <a-tab-pane key="notes" :tab="t('Notes')">
-                <a-card size="small" :title="t('Your notes')" class="mt-2">
+                <a-breadcrumb class='mb-3'><a-breadcrumb-item to='/students'>Students</a-breadcrumb-item><a-breadcrumb-item>Modules</a-breadcrumb-item></a-breadcrumb>
+  <a-card size="small" :title="t('Your notes')" class="mt-2">
                   <a-form layout="vertical" @finish.prevent>
                     <a-form-item :label="t('Lesson notes')">
                       <a-textarea
@@ -591,7 +598,8 @@
               </a-tab-pane>
 
               <a-tab-pane key="qa" :tab="t('Q&A')">
-                <a-card size="small" :title="t('Questions & Answers')" class="mt-2">
+                <a-breadcrumb class='mb-3'><a-breadcrumb-item to='/students'>Students</a-breadcrumb-item><a-breadcrumb-item>Modules</a-breadcrumb-item></a-breadcrumb>
+  <a-card size="small" :title="t('Questions & Answers')" class="mt-2">
                   <a-comment v-for="c in qaForCurrent" :key="c.id" :author="c.author" :content="c.text" :datetime="c.when">
                     <template #avatar>
                       <a-avatar :src="c.avatar" />
@@ -612,7 +620,8 @@
               </a-tab-pane>
 
               <a-tab-pane key="bookmarks" :tab="t('Bookmarks')">
-                <a-card size="small" :title="t('Bookmarks')" class="mt-2">
+                <a-breadcrumb class='mb-3'><a-breadcrumb-item to='/students'>Students</a-breadcrumb-item><a-breadcrumb-item>Modules</a-breadcrumb-item></a-breadcrumb>
+  <a-card size="small" :title="t('Bookmarks')" class="mt-2">
                   <a-empty v-if="!bookmarks.length" :description="t('No bookmarks yet')" />
                   <a-list v-else :data-source="bookmarks" size="small">
                     <template #renderItem="{ item, index }">
@@ -659,13 +668,15 @@
       <a-modal v-model:open="openImportExport" :title="t('Import / Export progress')" :footer="null" width="720">
         <a-row :gutter="16">
           <a-col :span="12">
-            <a-card :title="t('Export')" size="small">
+            <a-breadcrumb class='mb-3'><a-breadcrumb-item to='/students'>Students</a-breadcrumb-item><a-breadcrumb-item>Modules</a-breadcrumb-item></a-breadcrumb>
+  <a-card :title="t('Export')" size="small">
               <a-typography-paragraph>{{ t('Download your progress as JSON.') }}</a-typography-paragraph>
               <a-button type="primary" @click="exportProgress">{{ t('Export JSON') }}</a-button>
             </a-card>
           </a-col>
           <a-col :span="12">
-            <a-card :title="t('Import')" size="small">
+            <a-breadcrumb class='mb-3'><a-breadcrumb-item to='/students'>Students</a-breadcrumb-item><a-breadcrumb-item>Modules</a-breadcrumb-item></a-breadcrumb>
+  <a-card :title="t('Import')" size="small">
               <a-typography-paragraph>{{ t('Paste JSON below and import.') }}</a-typography-paragraph>
               <a-textarea v-model:value="importJson" :rows="8" />
               <a-space class="mt-1">
@@ -1334,35 +1345,35 @@ async function loadModule(studentId: string, courseId: string, moduleId: string)
 /** ---------- Persist / Restore ---------- */
 function persistLocalSnapshot(){
   try {
-    localStorage.setItem(LS('course'), JSON.stringify(course))
-    localStorage.setItem(LS('modules'), JSON.stringify(modules.value))
-    localStorage.setItem(LS('progress'), JSON.stringify(progress))
-    localStorage.setItem(LS('notes'), JSON.stringify(notes))
-    localStorage.setItem(LS('ratings'), JSON.stringify(ratings))
-    localStorage.setItem(LS('bookmarks'), JSON.stringify(bookmarks))
+    /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (LS('course'), JSON.stringify(course))
+    /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (LS('modules'), JSON.stringify(modules.value))
+    /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (LS('progress'), JSON.stringify(progress))
+    /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (LS('notes'), JSON.stringify(notes))
+    /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (LS('ratings'), JSON.stringify(ratings))
+    /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (LS('bookmarks'), JSON.stringify(bookmarks))
   } catch {}
 }
 function loadLocalProgress(): ProgressRow[] | null {
   try {
-    const p = localStorage.getItem(LS('progressRows'))
+    const p = /* TODO: replace with gqlFetch to proper query */ undefined && (LS('progressRows'))
     return p ? JSON.parse(p) : null
   } catch { return null }
 }
 function saveProgressRows(rows: ProgressRow[]){
-  try { localStorage.setItem(LS('progressRows'), JSON.stringify(rows)) } catch {}
+  try { /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (LS('progressRows'), JSON.stringify(rows)) } catch {}
 }
 function persistNotes(id: string){
-  try { localStorage.setItem(LS('notes'), JSON.stringify(notes)) } catch {}
+  try { /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (LS('notes'), JSON.stringify(notes)) } catch {}
 }
 function persistRatings(){
-  try { localStorage.setItem(LS('ratings'), JSON.stringify(ratings)) } catch {}
+  try { /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (LS('ratings'), JSON.stringify(ratings)) } catch {}
 }
 function persistBookmarks(){
-  try { localStorage.setItem(LS('bookmarks'), JSON.stringify(bookmarks)) } catch {}
+  try { /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (LS('bookmarks'), JSON.stringify(bookmarks)) } catch {}
 }
 function clearLocal(){
   const base = keyBase()
-  Object.keys(localStorage).forEach(k => { if (k.startsWith(base)) localStorage.removeItem(k) })
+  Object.keys(/* removed_localStorage */ null).forEach(k => { if (k.startsWith(base)) /* TODO: replace with mutation via gqlFetch */ console.debug("removeItem replaced"); (k) })
   message.success('Cleared local data for this course key')
 }
 
@@ -1526,7 +1537,7 @@ function submitQA(){
   }
   qa.unshift(item)
   qaDraft.value = ''
-  try { localStorage.setItem(LS('qa'), JSON.stringify(qa)) } catch {}
+  try { /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (LS('qa'), JSON.stringify(qa)) } catch {}
 }
 
 /** Bookmarks */
@@ -1676,19 +1687,19 @@ onMounted(async () => {
 
   // Restore local snapshot first for fast paint
   try {
-    const c = localStorage.getItem(LS('course'))
+    const c = /* TODO: replace with gqlFetch to proper query */ undefined && (LS('course'))
     if (c) Object.assign(course, JSON.parse(c))
-    const m = localStorage.getItem(LS('modules'))
+    const m = /* TODO: replace with gqlFetch to proper query */ undefined && (LS('modules'))
     if (m) modules.value = JSON.parse(m)
-    const p = localStorage.getItem(LS('progress'))
+    const p = /* TODO: replace with gqlFetch to proper query */ undefined && (LS('progress'))
     if (p) Object.assign(progress, JSON.parse(p))
-    const n = localStorage.getItem(LS('notes'))
+    const n = /* TODO: replace with gqlFetch to proper query */ undefined && (LS('notes'))
     if (n) Object.assign(notes, JSON.parse(n))
-    const r = localStorage.getItem(LS('ratings'))
+    const r = /* TODO: replace with gqlFetch to proper query */ undefined && (LS('ratings'))
     if (r) Object.assign(ratings, JSON.parse(r))
-    const b = localStorage.getItem(LS('bookmarks'))
+    const b = /* TODO: replace with gqlFetch to proper query */ undefined && (LS('bookmarks'))
     if (b) bookmarks.splice(0, bookmarks.length, ...JSON.parse(b))
-    const q = localStorage.getItem(LS('qa'))
+    const q = /* TODO: replace with gqlFetch to proper query */ undefined && (LS('qa'))
     if (q) qa.splice(0, qa.length, ...JSON.parse(q))
   } catch {}
 
@@ -1733,6 +1744,9 @@ onBeforeUnmount(() => {
   window.removeEventListener('offline', onOffline)
   window.removeEventListener('keydown', onKeydown)
 })
+
+
+definePageMeta({ layout: 'student' })
 </script>
 
 <style scoped>

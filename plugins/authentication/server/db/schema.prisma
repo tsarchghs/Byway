@@ -13,6 +13,10 @@ model User {
   teacherProfileId       String?
   email     String   @unique
   password  String
+  role      String   @default("STUDENT")
+  avatarUrl String?
+  uiPrefs   Json?
+
   firstName String?
   lastName  String?
   createdAt DateTime @default(now())

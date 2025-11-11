@@ -13,6 +13,7 @@
 
       <!-- 📚 Navigation -->
       <nav class="nav">
+        <NuxtLink to="/cart" class="nav-link">Cart</NuxtLink>
         <NuxtLink to="/categories" class="nav-link">Categories</NuxtLink>
       </nav>
 
@@ -28,7 +29,16 @@
       <!-- 🎓 Teach -->
       <NuxtLink to="/teach" class="teach-link">Teach on Byway</NuxtLink>
 
+      <span v-if="isLoggedIn" class="role-badge" data-test-id="role-badge" /><RoleSwitcher >{{ (role || '').toUpperCase() }}</span>
+
       <!-- ⚙️ Actions -->
+      <template v-if="!isLoggedIn">
+        <a-space>
+          <a-button href="/auth/login">Login</a-button>
+          <a-button type="primary" href="/auth/signup">Sign up</a-button>
+        </a-space>
+      </template>
+
       <div class="actions">
         <!-- 🛒 Cart -->
         <a-badge :count="cartItems.length" show-zero>
@@ -56,6 +66,16 @@
             </a>
             <template #overlay>
               <a-menu>
+                <a-menu-item key="role-switcher" data-test-id="role-switcher">
+                  <div style="padding:4px 8px">
+                    <div style="font-weight:600">Role</div>
+                    <a-space>
+                      <a-tag :color="isStudent ? 'blue' : ''" @click="setRole('student')">Student</a-tag>
+                      <a-tag :color="isTeacher ? 'blue' : ''" @click="setRole('teacher')">Teacher</a-tag>
+                      <a-tag :color="isAdmin ? 'blue' : ''" @click="setRole('admin')">Admin</a-tag>
+                    </a-space>
+                  </div>
+                </a-menu-item>
                 <a-menu-item>
                   <NuxtLink to="/profile">Profile</NuxtLink>
                 </a-menu-item>
@@ -101,6 +121,9 @@
 <script setup lang="ts">
 import { ref, h, onMounted, watch, computed } from 'vue'
 import { ShoppingCartOutlined, UserOutlined, DeleteOutlined } from '@ant-design/icons-vue'
+import { useNav } from '../composables/useNav'
+import { useRoles } from '../composables/useRoles'
+import RoleSwitcher from './RoleSwitcher.vue'
 import { List, message } from 'ant-design-vue'
 import { useAuth } from '../composables/useAuth'
 
@@ -111,16 +134,20 @@ const total = ref(0)
 
 const auth = useAuth()
 const user = computed(() => auth.user.value)
+const { items:navItems, isLoggedIn:loggedIn } = useNav()
 const isLoggedIn = computed(() => auth.isLoggedIn.value)
+const { role, isStudent, isTeacher, isAdmin } = useRoles()
 
 const CART_KEY = 'byway:cart'
 const EC_API = 'http://localhost:4000/api/ecommerce/graphql'
+
+function setRole(r:string){ try{ (void 0 /* was localStorage.setItem('byway:role', r) */); location.reload(); }catch(e){} }
 
 function logout() { auth.logout() }
 
 function loadCart() {
   try {
-    const raw = localStorage.getItem(CART_KEY)
+    const raw = (null /* was localStorage.getItem(CART_KEY) */)
     const parsed = raw ? JSON.parse(raw) : []
     cartItems.value = parsed.map((i:any)=>({ ...i, quantity: i.quantity || 1 }))
     total.value = cartItems.value.reduce((sum, i) => sum + i.price * (i.quantity || 1), 0)
@@ -130,7 +157,7 @@ function loadCart() {
   }
 }
 function saveCart() {
-  try { localStorage.setItem(CART_KEY, JSON.stringify(cartItems.value)) } catch {}
+  try { (void 0 /* was localStorage.setItem(CART_KEY, JSON.stringify(cartItems.value) */)) } catch {}
 }
 
 function euro(v: number) {
@@ -165,7 +192,7 @@ async function gfetch<T>(query: string, variables?: Record<string, any>): Promis
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
 
   // ✅ ensure we use the freshest token from localStorage
-  const tokenStr = auth.token.value || localStorage.getItem('token')
+  const tokenStr = auth.token.value || (null /* was localStorage.getItem('token') */)
   if (tokenStr) headers.Authorization = `Bearer ${tokenStr}`
 
   const r = await fetch(EC_API, {
@@ -191,7 +218,7 @@ const MUTATION_CREATE_CHECKOUT = `
 async function checkout() {
   if (!cartItems.value.length) return message.info('Your cart is empty')
   // If not logged in, you can still pass studentId for dev, or redirect to login:
-  const studentId = auth.isLoggedIn.value ? undefined : (localStorage.getItem('byway:dev-studentId') || undefined)
+  const studentId = auth.isLoggedIn.value ? undefined : ((null /* was localStorage.getItem('byway:dev-studentId') */) || undefined)
 
   const items = cartItems.value.map(i => ({ courseId: i.id, quantity: i.quantity || 1 }))
   try {
@@ -301,4 +328,5 @@ onMounted(() => {
   padding: 48px 0;
   color: rgba(0, 0, 0, 0.45);
 }
+.role-badge{ margin-left:12px; padding:2px 8px; border-radius:999px; background:#eef; font-size:12px; color:#2a2a; }
 </style>

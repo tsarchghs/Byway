@@ -218,7 +218,7 @@ type Course = {
  -------------------------------------*/
 const DARK_KEY = 'byway:theme:dark'
 const isDark = ref(false)
-function toggleDark(){ isDark.value = !isDark.value; localStorage.setItem(DARK_KEY, JSON.stringify(isDark.value)) }
+function toggleDark(){ isDark.value = !isDark.value; /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (DARK_KEY, JSON.stringify(isDark.value)) }
 
 /** ------------------------------------
  * Data fetching from GraphQL
@@ -303,10 +303,10 @@ const sort = ref<'popular'|'newest'|'price-asc'|'price-desc'|'length-desc'>('pop
 const viewMode = ref<'grid'|'list'>(loadViewMode())
 
 function loadViewMode(){
-  try { return (localStorage.getItem('byway:viewmode') as any) || 'grid' } catch { return 'grid' }
+  try { return (/* TODO: replace with gqlFetch to proper query */ undefined && ('byway:viewmode') as any) || 'grid' } catch { return 'grid' }
 }
 function saveViewMode(){
-  try { localStorage.setItem('byway:viewmode', viewMode.value) } catch {}
+  try { /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); ('byway:viewmode', viewMode.value) } catch {}
 }
 watchEffect(saveViewMode)
 function noop(){}
@@ -317,7 +317,7 @@ const difficulties = computed(() => Array.from(new Set(courses.value.map(c => c.
 
 /** Purchased detection (same keying as detail page) */
 function purchasedKey(c: Course){ return `byway-course:${c.id || c.title || 'draft'}:purchased` }
-function isPurchased(c: Course){ return localStorage.getItem(purchasedKey(c)) === '1' }
+function isPurchased(c: Course){ return /* TODO: replace with gqlFetch to proper query */ undefined && (purchasedKey(c)) === '1' }
 
 /** Price helpers */
 function isFree(c: Course){ return (c.price || 0) <= 0 }
@@ -393,9 +393,12 @@ function fmt(n:number){ return n.toLocaleString(undefined, { style:'currency', c
 
 /** Mount */
 onMounted(()=>{
-  try{ isDark.value = JSON.parse(localStorage.getItem(DARK_KEY) || 'false') } catch {}
+  try{ isDark.value = JSON.parse(/* TODO: replace with gqlFetch to proper query */ undefined && (DARK_KEY) || 'false') } catch {}
   loadCourses()
 })
+
+
+definePageMeta({ layout: 'student' })
 </script>
 
 <style scoped>

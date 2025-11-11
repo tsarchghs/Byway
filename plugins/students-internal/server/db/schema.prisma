@@ -1,125 +1,117 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "./generated/client"
+  output   = "./generated"
 }
 
 datasource db {
-  provider = "mysql"
-  url      = "mysql://root:gjergji21@localhost:3306/bloggrs_students"
+  provider = "sqlite"
+  url      = "file:./students.db"
 }
-
-/* ---------------- ENUMS ---------------- */
-enum LessonStatus {
-  NOT_STARTED
-  IN_PROGRESS
-  COMPLETED
-}
-
-enum SubmissionType {
-  ASSIGNMENT
-  LAB
-  FILE
-}
-
-enum LabState {
-  PENDING
-  RUNNING
-  STOPPED
-}
-
-/* ---------------- MODELS ---------------- */
 
 model Student {
-  id            String            @id @default(cuid())
-  userId        String?           @unique
-  displayName   String?
-  courses       StudentCourse[]
-  lessonProgress LessonProgress[]
-  submissions   StudentSubmission[]
-  labs          LabInstance[]
-  quizzes       QuizAttempt[]
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  id           String         @id @default(cuid())
+  userId       String?
+  displayName  String?
+  email        String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  enrollments  StudentCourse[]
+  grades       Grade[]
 }
 
-/* ---- Course enrollment ---- */
-model StudentCourse {
-  id          String    @id @default(cuid())
-  studentId   String
-  courseId    String
-  completed   Boolean   @default(false)
-  progress    Int?
-  enrolledAt  DateTime  @default(now())
+model CourseMirror {
+  id        String   @id
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 
-  student     Student   @relation(fields: [studentId], references: [id])
+model StudentCourse {
+  id           String    @id @default(cuid())
+  studentId    String
+  courseId     String
+  progressPct  Int       @default(0)
+  lastActivity DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  student    Student  @relation(fields: [studentId], references: [id])
 
   @@unique([studentId, courseId])
-  @@index([courseId])
-  classroomId String?
-
 }
 
-/* ---- Lesson progress ---- */
-model LessonProgress {
-  id            String        @id @default(cuid())
-  studentId     String
-  lessonId      String
-  status        LessonStatus  @default(NOT_STARTED)
-  score         Float?
-  startedAt     DateTime?     @default(now())
-  updatedAt     DateTime?     @updatedAt
-  completedAt   DateTime?
+model Grade {
+  id           String   @id @default(cuid())
+  studentId    String
+  courseId     String
+  assignmentId String
+  grade        Float
+  updatedAt    DateTime @updatedAt
 
-  student       Student       @relation(fields: [studentId], references: [id])
+  student  Student @relation(fields: [studentId], references: [id])
 
-  @@unique([studentId, lessonId])
+  @@unique([studentId, assignmentId])
 }
 
-/* ---- Lesson submissions ---- */
-model StudentSubmission {
-  id            String           @id @default(cuid())
-  studentId     String
-  lessonId      String
-  type          SubmissionType
-  content       String?
-  grade         Float?
-  submittedAt   DateTime         @default(now())
-
-  student       Student          @relation(fields: [studentId], references: [id])
-
-  @@index([studentId, lessonId])
+model Rubric {
+  id       String @id @default(cuid())
+  courseId String @unique
+  json     Json
+  updatedAt DateTime @updatedAt
 }
 
-/* ---- Labs (future) ---- */
-model LabInstance {
-  id            String     @id @default(cuid())
-  studentId     String
-  lessonId      String
-  url           String?
-  containerId   String?
-  state         LabState   @default(PENDING)
-  config        Json?
-  apiLastRun    Json?
-  uiLastRun     Json?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-
-  student       Student    @relation(fields: [studentId], references: [id])
-
-  @@unique([studentId, lessonId])
+model Enrollment {
+  id        String   @id @default(cuid())
+  studentId String
+  courseId  String
+  progress  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-/* ---- Quizzes (future) ---- */
-model QuizAttempt {
-  id            String    @id @default(cuid())
-  studentId     String
-  lessonId      String
-  answers       Json
-  score         Float?
-  startedAt     DateTime  @default(now())
-  submittedAt   DateTime?
+model UserRole {
+  id     String @id @default(cuid())
+  userId String @unique
+  role   String
+}
 
-  student       Student   @relation(fields: [studentId], references: [id])
 
-  @@index([studentId, lessonId])
+//
+// --- Added by Byway GQL8 Patch ---
+model Enrollment {
+  id        String   @id @default(cuid())
+  studentId String
+  courseId  String
+  progress  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, courseId])
+}
+
+model GradeItem {
+  id        String   @id @default(cuid())
+  courseId  String
+  studentId String
+  label     String
+  score     Float    @default(0)
+  weight    Float    @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Rubric {
+  id        String   @id @default(cuid())
+  courseId  String   @unique
+  items     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserRole {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  role      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

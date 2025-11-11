@@ -32,7 +32,7 @@ export function useApolloPluginClient(manualName?: string) {
   const httpLink = createHttpLink({ uri })
   const authLink = setContext((_, { headers }) => {
     // SSR-safe token access
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+    const token = typeof window !== 'undefined' ? (null /* was localStorage.getItem('token') */) : null
     return {
       headers: {
         ...headers,

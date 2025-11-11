@@ -8,6 +8,10 @@
     {
       "path": "/checkout/cancel",
       "file": "nuxt/pages/checkout/cancel.vue"
+    },
+    {
+      "path": "/cart",
+      "file": "nuxt/pages/cart.vue"
     }
   ],
   "endpoints": {

@@ -81,6 +81,49 @@ if (!pluginsDir) {
   }
 }
 
+
+// --- Dynamic plugin route discovery ---
+app.get("/api/discovery/routes", (_req, res) => {
+  try {
+    const base = pluginsDir && fs.existsSync(pluginsDir) ? pluginsDir : null;
+    const result = [];
+    if (base) {
+      const pluginNames = fs
+        .readdirSync(base)
+        .filter((d) => fs.statSync(path.join(base, d)).isDirectory());
+      for (const name of pluginNames) {
+        const plugDir = path.join(base, name);
+        const manifestPath = path.join(plugDir, "manifest.json");
+        let manifest = null;
+        if (fs.existsSync(manifestPath)) {
+          try { manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8")); } catch {}
+        }
+        // discover pages
+        const pagesRoot = path.join(plugDir, "nuxt", "pages");
+        const discoveredPages = [];
+        if (fs.existsSync(pagesRoot)) {
+          const walk = (p) => {
+            for (const entry of fs.readdirSync(p)) {
+              const full = path.join(p, entry);
+              const stat = fs.statSync(full);
+              if (stat.isDirectory()) walk(full);
+              else if (entry.endsWith(".vue")) {
+                discoveredPages.push(path.relative(plugDir, full).replace(/\\/g, "/"));
+              }
+            }
+          };
+          walk(pagesRoot);
+        }
+        result.push({ plugin: name, manifest, discoveredPages });
+      }
+    }
+    res.json({ ok: true, plugins: result });
+  } catch (e) {
+    console.error("[discovery] error", e);
+    res.status(500).json({ ok: false, error: e?.message || String(e) });
+  }
+});
+
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, time: new Date().toISOString() })
 })

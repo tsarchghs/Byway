@@ -20,6 +20,18 @@
     {
       "path": "/modules/[id]/view",
       "file": "nuxt/pages/modules/[id]/view.vue"
+    },
+    {
+      "path": "/students",
+      "file": "nuxt/pages/index.vue"
+    },
+    {
+      "path": "/students/enrollments",
+      "file": "nuxt/pages/enrollments.vue"
+    },
+    {
+      "path": "/students/gradebook",
+      "file": "nuxt/pages/gradebook.vue"
     }
   ],
   "endpoints": {
