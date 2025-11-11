@@ -1,0 +1,13 @@
+{
+  "name": "institutions",
+  "routes": [
+    {
+      "path": "/institutions",
+      "file": "nuxt/pages/index.vue"
+    },
+    {
+      "path": "/institutions/[id]",
+      "file": "nuxt/pages/[id].vue"
+    }
+  ]
+}

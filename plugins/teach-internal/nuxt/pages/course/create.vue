@@ -103,6 +103,20 @@
 </template>
 
 <script setup lang="ts">
+<script setup lang="ts">
+import { useQuery, useMutation, gql } from '@apollo/client/core'
+import { computed } from 'vue'
+
+const ME_QUERY = gql`
+  query Me {
+    me { id email roles displayName }
+  }
+`
+
+const { loading: meLoading, error: meError, data: meData, refetch: refetchMe } = useQuery(ME_QUERY)
+const me = computed(() => meData?.me || null)
+</script>
+
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { theme, message } from 'ant-design-vue'
@@ -179,7 +193,7 @@ const rules: Record<string, Rule[]> = {
 const API_URL = 'http://localhost:4000/api/teach-internal/graphql'
 function getAuthHeaders(){
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  const token = /* TODO: replace with gqlFetch to proper query */ undefined && ('token') || sessionStorage.getItem('token')
+  const token = /* TODO: replace with gqlFetch to proper query */ undefined && ('token') || null
   if (token) headers['Authorization'] = `Bearer ${token}`
   return headers
 }

@@ -1,98 +1,75 @@
-// Replaced localStorage with GraphQL calls (ECOM GQL v10)
+
 import { ref, computed } from 'vue'
-import { useGql } from './useGql'
+import { useAuth } from './useAuth'
 
-type OrderItem = { id: string; orderId: string; courseId: string; quantity: number }
-type Payment = { id: string; status: string; amount: number }
-type Cart = { id: string; studentId: string; status: string; items: OrderItem[]; payments: Payment[] }
+type CartItem = { id:string; orderId:string; courseId:string; quantity:number }
+type Order = { id:string; status:string; studentId:string; items:CartItem[] }
 
-const state = {
-  studentId: ref<string>(''),
-  cart: ref<Cart | null>(null),
-  loading: ref(false),
-  error: ref<string | null>(null),
+const cart = ref<Order|null>(null)
+const loading = ref(false)
+const error = ref<string|null>(null)
+
+async function gql(endpoint: string, query: string, variables?: any) {
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ query, variables })
+  })
+  const json = await res.json()
+  if (json.errors?.length) throw new Error(json.errors[0].message || 'GraphQL error')
+  return json.data
 }
 
-const CART_QUERY = `query ($studentId:String!){
-  cartByStudent(studentId:$studentId){
-    id studentId status
-    items{ id orderId courseId quantity }
-    payments{ id status amount }
+async function fetchCart() {
+  const { user } = useAuth()
+  if (!user.value?.id) {
+    cart.value = null
+    return
   }
-}`
-
-const ADD_ITEM = `mutation($studentId:String!, $courseId:String!, $quantity:Int){
-  addCartItem(studentId:$studentId, courseId:$courseId, quantity:$quantity){
-    id orderId courseId quantity
+  loading.value = true
+  error.value = null
+  try {
+    const data = await gql('/api/ecommerce/graphql', `
+      query ($studentId:String!) {
+        cartByStudent(studentId:$studentId) { id status studentId items { id orderId courseId quantity } }
+      }
+    `, { studentId: user.value.id })
+    cart.value = data?.cartByStudent || null
+  } catch (e:any) {
+    error.value = e?.message || String(e)
+  } finally {
+    loading.value = false
   }
-}`
+}
 
-const REMOVE_ITEM = `mutation($studentId:String!, $orderItemId:String!){
-  removeCartItem(studentId:$studentId, orderItemId:$orderItemId){ ok }
-}`
+async function addToCart(courseId:string, quantity:number=1) {
+  const { user } = useAuth()
+  if (!user.value?.id) throw new Error('not authenticated')
+  const data = await gql('/api/ecommerce/graphql', `
+    mutation ($studentId:String!, $courseId:String!, $quantity:Int) {
+      addToCart(studentId:$studentId, courseId:$courseId, quantity:$quantity) { id }
+    }
+  `, { studentId: user.value.id, courseId, quantity })
+  await fetchCart()
+  return data?.addToCart?.id
+}
 
-const CLEAR = `mutation($studentId:String!){
-  clearCart(studentId:$studentId){ ok }
-}`
+async function removeFromCart(orderItemId:string) {
+  await gql('/api/ecommerce/graphql', `
+    mutation ($orderItemId:String!) { removeFromCart(orderItemId:$orderItemId) { ok } }
+  `, { orderItemId })
+  await fetchCart()
+}
 
 export function useCart() {
-  const gql = useGql('/api/ecommerce/graphql')
-
-  async function ensure(studentId: string) {
-    if (!studentId) throw new Error('studentId required')
-    state.studentId.value = studentId
-    return await fetchCart(studentId)
-  }
-
-  async function fetchCart(studentId?: string) {
-    try {
-      state.loading.value = true
-      const sid = studentId || state.studentId.value
-      if (!sid) throw new Error('studentId required')
-      const data = await gql(CART_QUERY, { studentId: sid })
-      state.cart.value = (data && data.cartByStudent) || { id: '', studentId: sid, status: 'PENDING', items: [], payments: [] }
-      state.error.value = null
-      return state.cart.value
-    } catch (e:any) {
-      state.error.value = e?.message || String(e)
-      throw e
-    } finally {
-      state.loading.value = false
-    }
-  }
-
-  async function add(courseId: string, quantity = 1) {
-    const sid = state.studentId.value
-    if (!sid) throw new Error('studentId not set — call ensure(studentId) first')
-    await gql(ADD_ITEM, { studentId: sid, courseId, quantity })
-    return await fetchCart(sid)
-  }
-
-  async function remove(orderItemId: string) {
-    const sid = state.studentId.value
-    if (!sid) throw new Error('studentId not set — call ensure(studentId) first')
-    await gql(REMOVE_ITEM, { studentId: sid, orderItemId })
-    return await fetchCart(sid)
-  }
-
-  async function clear() {
-    const sid = state.studentId.value
-    if (!sid) throw new Error('studentId not set — call ensure(studentId) first')
-    await gql(CLEAR, { studentId: sid })
-    return await fetchCart(sid)
-  }
-
-  const count = computed(() => (state.cart.value?.items?.reduce((s,i)=>s + (i.quantity||0), 0) || 0))
-
   return {
-    loading: state.loading,
-    error: state.error,
-    cart: state.cart,
-    count,
-    ensure,
+    cart,
+    loading,
+    error,
+    items: computed(() => cart.value?.items || []),
     fetchCart,
-    add,
-    remove,
-    clear,
+    addToCart,
+    removeFromCart,
   }
 }

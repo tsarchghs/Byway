@@ -9,6 +9,7 @@ datasource db {
 }
 
 model User {
+  uiPrefsJson String?
   id               String   @id @default(cuid())
   teacherProfileId String?
   email            String   @unique

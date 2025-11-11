@@ -1,0 +1,1 @@
+<template><div class='p-6'><a-card title='Gradebook'><div>Coming soon</div></a-card></div></template>

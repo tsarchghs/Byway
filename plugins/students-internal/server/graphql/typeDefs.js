@@ -1,66 +1,36 @@
-// students-internal/server/graphql/typeDefs.js
-export default `#graphql
-scalar JSON
+import { gql } from 'apollo-server-express';
 
-type Enrollment {
-  id: ID!
-  studentId: String!
-  courseId: String!
-  progress: Int!
-  createdAt: String!
-  updatedAt: String!
-}
+export const typeDefs = gql`
+  scalar JSON
 
-type GradeItem {
-  id: ID!
-  enrollmentId: String!
-  label: String!
-  points: Float!
-  weight: Float!
-  updatedAt: String!
-}
+  type Course { id: ID!, title: String! }
+  type Enrollment { id: ID!, studentId: ID!, courseId: ID!, progressPct: Int!, createdAt: String!, updatedAt: String! }
+  type GradebookEntry { 
+    id: ID!, 
+    assignmentId: ID!, 
+    studentId: ID!, 
+    courseId: ID!, 
+    grade: Float, 
+    feedback: String, 
+    updatedAt: String! 
+  }
 
-input GradeItemInput {
-  enrollmentId: String!
-  label: String!
-  points: Float!
-  weight: Float!
-}
+  type KVPair { key: String!, value: String }
 
-type RubricItem {
-  label: String!
-  weight: Float!
-}
-input RubricItemInput {
-  label: String!
-  weight: Float!
-}
+  input GradebookInput { assignmentId: ID!, studentId: ID!, courseId: ID!, grade: Float, feedback: String }
 
-type Rubric {
-  id: ID!
-  courseId: String!
-  items: [RubricItem!]!
-  updatedAt: String!
-}
+  type Query {
+    studentCourses(studentId: ID!): [Course!]!
+    enrollments(studentId: ID, courseId: ID): [Enrollment!]!
+    courseGradebook(courseId: ID!): [GradebookEntry!]!
+    isEnrolled(studentId: ID!, courseId: ID!): Boolean!
+    kvGet(key: String!): KVPair
+  }
 
-type StudentCourse {
-  id: ID!
-  courseId: String!
-  studentId: String!
-}
-
-type Query {
-  meRole: String!
-  myEnrollments(studentId: String!): [Enrollment!]!
-  isEnrolled(studentId: String!, courseId: String!): Boolean!
-  gradebook(courseId: String!): [GradeItem!]!
-  rubric(courseId: String!): Rubric
-}
-
-type Mutation {
-  enrollStudent(studentId: String!, courseId: String!): Enrollment!
-  setProgress(enrollmentId: String!, value: Int!): Enrollment!
-  setRubric(courseId: String!, items: [RubricItemInput!]!): Rubric!
-  upsertGradeItems(items: [GradeItemInput!]!): [GradeItem!]!
-}
-`
+  type Mutation {
+    enrollStudent(studentId: ID!, courseId: ID!): Enrollment!
+    upsertGrade(input: GradebookInput!): GradebookEntry!
+    kvSet(key: String!, value: String): KVPair!
+    kvDelete(key: String!): Boolean!
+  }
+`;

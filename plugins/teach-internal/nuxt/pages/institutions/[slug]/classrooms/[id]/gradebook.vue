@@ -310,12 +310,12 @@ function persistAll() {
       comments: commentsBySubmission,
       autoSave: autoSave.value,
     }
-    localStorage.setItem(LS_KEY.value, JSON.stringify(payload))
+    /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (LS_KEY.value, JSON.stringify(payload))
   } catch {}
 }
 function restoreAll() {
   try {
-    const raw = localStorage.getItem(LS_KEY.value)
+    const raw = /* TODO: replace with gqlFetch to proper query */ undefined && (LS_KEY.value)
     if (!raw) return false
     const data = JSON.parse(raw)
     if (Array.isArray(data.rows)) rows.value = data.rows

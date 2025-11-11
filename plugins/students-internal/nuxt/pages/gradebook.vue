@@ -1,106 +1,100 @@
 <template>
   <a-layout class="p-6">
-    <a-breadcrumb class="mb-4">
-      <a-breadcrumb-item to="/">Home</a-breadcrumb-item>
-      <a-breadcrumb-item>Students</a-breadcrumb-item>
-      <a-breadcrumb-item>Gradebook</a-breadcrumb-item>
-    </a-breadcrumb>
-
-    <a-page-header title="Gradebook" sub-title="Overview across courses and modules">
+    <a-page-header
+      :title="`Gradebook · ${courseId}`"
+      @back="$router.back()"
+      :breadcrumb="{ routes: [
+        { path: '/', breadcrumbName: 'Home' },
+        { path: '/students', breadcrumbName: 'Students' },
+        { path: $route.fullPath, breadcrumbName: 'Gradebook' }
+      ] }"
+    >
+      <template #tags>
+        <a-tag color="blue">{{ entries.length }} records</a-tag>
+      </template>
       <template #extra>
         <a-space>
-          <a-button @click="go('/plugins/teach/nuxt/pages/assignments')"><file-text-outlined/> Assignments</a-button>
-          <a-button @click="go('/explore')"><compass-outlined/> Explore</a-button>
+          <a-button @click="refresh">Refresh</a-button>
+          <a-button type="primary" @click="openRubric">Rubric</a-button>
         </a-space>
       </template>
     </a-page-header>
 
-    <a-card :loading="loading" :bordered="false" class="mb-4">
+    <a-card :bordered="false">
       <a-tabs v-model:activeKey="tab">
-        <a-tab-pane key="courses" tab="By Course">
-          <a-table :data-source="overview.courses" :columns="cols.courses" row-key="id" />
+        <a-tab-pane key="grades" tab="Grades">
+          <a-table :data-source="entries" :columns="cols" row-key="id" :loading="loading" />
         </a-tab-pane>
-        <a-tab-pane key="modules" tab="By Module">
-          <a-table :data-source="overview.modules" :columns="cols.modules" row-key="id" />
-        </a-tab-pane>
-        <a-tab-pane key="assignments" tab="Assignments">
-          <a-table :data-source="overview.assignments" :columns="cols.assignments" row-key="id" />
-        </a-tab-pane>
-        <a-tab-pane key="analytics" tab="Analytics">
-          <div class="grid md:grid-cols-3 gap-3">
-            <a-card size="small" title="Avg. Grade">{{ overview.metrics.avgGrade?.toFixed(1) ?? '—' }}</a-card>
-            <a-card size="small" title="Completed">{{ overview.metrics.completed }}</a-card>
-            <a-card size="small" title="Outstanding">{{ overview.metrics.outstanding }}</a-card>
+        <a-tab-pane key="comments" tab="Comments">
+          <a-empty description="Select a row to view/add comments." v-if="!selected" />
+          <div v-else class="space-y-3">
+            <a-input-textarea v-model:value="commentText" :rows="4" placeholder="Add a comment..." />
+            <a-space>
+              <a-button type="primary" @click="saveComment" :disabled="!commentText">Save</a-button>
+              <a-button @click="commentText=''">Clear</a-button>
+            </a-space>
           </div>
+        </a-tab-pane>
+        <a-tab-pane key="rubric" tab="Rubric">
+          <a-empty description="Attach a rubric to guide grading." />
         </a-tab-pane>
       </a-tabs>
     </a-card>
+
+    <a-drawer v-model:open="rubricOpen" title="Rubric" placement="right" width="420">
+      <a-alert type="info" message="Provide a JSON rubric, e.g., [{label:'Code',weight:0.5},{label:'Report',weight:0.5}]" show-icon class="mb-2" />
+      <a-textarea v-model:value="rubricJson" :rows="10" />
+      <div class="mt-2"><a-button type="primary" @click="saveRubric">Save</a-button></div>
+    </a-drawer>
   </a-layout>
 </template>
 
 <script setup lang="ts">
-import { h, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { useUiPrefs } from '~/composables/useUiPrefs'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from '#imports'
+import { useGradebook } from '~/packages/shared-ui/src/composables/useGradebook'
 
+definePageMeta({ middleware: ['role'], roles: ['teacher'] })
+
+const route = useRoute()
 const router = useRouter()
-const { set: setPref, getSync } = useUiPrefs()
-const tab = ref(getSync('gradebook.tab') || 'courses')
-const loading = ref(true)
-const overview = ref<any>({
-  courses: [],
-  modules: [],
-  assignments: [],
-  metrics: { avgGrade: null, completed: 0, outstanding: 0 }
-})
+const courseId = computed(() => String(route.query.courseId ?? route.params.id ?? 'unknown'))
 
-function go(path: string){ router.push(path) }
+const { courseGradebook, upsertGrade } = useGradebook()
+const loading = ref(false)
+const entries = ref<any[]>([])
+const selected = ref<any | null>(null)
+const tab = ref('grades')
 
-const cols = {
-  courses: [
-    { title: 'Course', dataIndex: 'title' },
-    { title: 'Progress', key: 'progress', customRender: ({record}:any)=> h('div', {}, [h('div', {}, `${record.completed}/${record.total}`), h('a-progress', { percent: Math.round((record.completed||0)/(record.total||1)*100) })]) },
-    { title: 'Grade', dataIndex: 'grade' },
-  ],
-  modules: [
-    { title: 'Module', dataIndex: 'title' },
-    { title: 'Lessons', dataIndex: 'lessons' },
-    { title: 'Grade', dataIndex: 'grade' },
-  ],
-  assignments: [
-    { title: 'Assignment', dataIndex: 'title' },
-    { title: 'Course', dataIndex: 'courseTitle' },
-    { title: 'Score', dataIndex: 'score' },
-    { title: 'Status', dataIndex: 'status' },
-  ],
-}
+const cols = [
+  { title: 'Student', dataIndex: 'studentId' },
+  { title: 'Assignment', dataIndex: 'assignmentId' },
+  { title: 'Grade', dataIndex: 'grade', customRender: ({ text, record }: any) => text ?? '—' },
+  { title: 'Feedback', dataIndex: 'feedback' },
+  { title: 'Updated', dataIndex: 'updatedAt' },
+]
 
-async function fetchOverview(){
+async function refresh(){
+  loading.value = true
   try {
-    const resp = await fetch('/api/students-internal/graphql', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ query: `
-        query{
-          gradebookOverview{
-            metrics { avgGrade completed outstanding }
-            courses { id title total completed grade }
-            modules { id title lessons grade }
-            assignments { id title courseTitle score status }
-          }
-        }`})
-    })
-    const json = await resp.json()
-    if (json?.data?.gradebookOverview) overview.value = json.data.gradebookOverview
+    entries.value = await courseGradebook(courseId.value)
   } finally {
     loading.value = false
   }
 }
 
-onMounted(async ()=>{
-  await fetchOverview()
-})
+function openRubric(){ rubricOpen.value = true }
+const rubricOpen = ref(false)
+const rubricJson = ref('[]')
+function saveRubric(){ rubricOpen.value = false }
 
-watch(tab, (v)=> setPref('gradebook.tab', v))
+const commentText = ref('')
+async function saveComment(){
+  if(!selected.value) return
+  await upsertGrade({ assignmentId: selected.value.assignmentId, studentId: selected.value.studentId, courseId: selected.value.courseId, grade: selected.value.grade ?? null, feedback: commentText.value })
+  commentText.value = ''
+  await refresh()
+}
+
+onMounted(refresh)
 </script>

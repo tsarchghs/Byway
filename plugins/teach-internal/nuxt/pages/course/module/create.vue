@@ -591,6 +591,20 @@
 </template>
 
 <script setup lang="ts">
+<script setup lang="ts">
+import { useQuery, useMutation, gql } from '@apollo/client/core'
+import { computed } from 'vue'
+
+const ME_QUERY = gql`
+  query Me {
+    me { id email roles displayName }
+  }
+`
+
+const { loading: meLoading, error: meError, data: meData, refetch: refetchMe } = useQuery(ME_QUERY)
+const me = computed(() => meData?.me || null)
+</script>
+
 /* ==========================================================================================
    Script: Fully mocked business logic with quality-of-life features.
    No backend required. Safe defaults. Strong UX for teachers.

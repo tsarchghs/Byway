@@ -1,3 +1,5 @@
+import { authUiResolvers } from "./graphql/resolvers.mjs";
+import { authUiTypeDefs } from "./graphql/typeDefs.mjs";
 import { sdk } from '../../../apps/api/src/sdk/index.js'
 import { z } from 'zod'
 import { PrismaClient } from './db/generated/index.js';

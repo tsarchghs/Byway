@@ -1,91 +1,64 @@
 <template>
   <a-layout class="p-6">
-    <a-breadcrumb class="mb-4">
-      <a-breadcrumb-item to="/">Home</a-breadcrumb-item>
-      <a-breadcrumb-item>Teach</a-breadcrumb-item>
-      <a-breadcrumb-item>Dashboard</a-breadcrumb-item>
-    </a-breadcrumb>
-
-    <a-page-header title="Teacher Dashboard" sub-title="Courses · Assignments · Analytics">
+    <a-page-header title="Teacher Dashboard" sub-title="Courses, assignments, analytics">
       <template #extra>
         <a-space>
-          <a-button type="primary" @click="go('/plugins/teach/nuxt/pages/course-create')">
-            <plus-outlined/> New Course
+          <a-button type="primary" @click="$router.push('/teach/courses/create')">
+            <template #icon><PlusOutlined/></template>
+            New Course
           </a-button>
-          <a-button @click="go('/plugins/students-internal/nuxt/pages/gradebook')">
-            <bar-chart-outlined/> Gradebook
-          </a-button>
+          <a-button @click="refresh"><ReloadOutlined/></a-button>
         </a-space>
       </template>
     </a-page-header>
 
-    <a-card :loading="loading" :bordered="false">
-      <a-tabs v-model:activeKey="tab">
-        <a-tab-pane key="courses" tab="My Courses">
-          <a-table :data-source="rows.courses" :columns="cols.courses" row-key="id" />
-        </a-tab-pane>
-        <a-tab-pane key="assignments" tab="Assignments">
-          <a-table :data-source="rows.assignments" :columns="cols.assignments" row-key="id" />
-        </a-tab-pane>
-        <a-tab-pane key="analytics" tab="Analytics">
-          <div class="grid md:grid-cols-3 gap-3">
-            <a-card size="small" title="Total Students">{{ rows.metrics.students }}</a-card>
-            <a-card size="small" title="Active Courses">{{ rows.metrics.courses }}</a-card>
-            <a-card size="small" title="Pending Reviews">{{ rows.metrics.pending }}</a-card>
-          </div>
-        </a-tab-pane>
-      </a-tabs>
-    </a-card>
+    <a-row :gutter="[16,16]" class="mt-4">
+      <a-col :span="8">
+        <a-card title="Courses" :loading="loading">
+          <a-list :data-source="overview.courses" :renderItem="rCourse" />
+        </a-card>
+      </a-col>
+      <a-col :span="8">
+        <a-card title="Assignments" :loading="loading">
+          <a-list :data-source="overview.assignments" :renderItem="rAssignment" />
+        </a-card>
+      </a-col>
+      <a-col :span="8">
+        <a-card title="Signals" :loading="loading">
+          <a-list :data-source="overview.signals" :renderItem="rSignal" />
+        </a-card>
+      </a-col>
+    </a-row>
   </a-layout>
 </template>
 
 <script setup lang="ts">
-import { ref, h, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { useUiPrefs } from '~/composables/useUiPrefs'
+import { h, ref, onMounted } from 'vue'
+import { useApolloClient } from '@vue/apollo-composable'
+import gql from 'graphql-tag'
+import { PlusOutlined, ReloadOutlined } from '@ant-design/icons-vue'
 
-const router = useRouter()
-const { set: setPref, getSync } = useUiPrefs()
-const tab = ref(getSync('teach.tab') || 'courses')
-const loading = ref(true)
-
-const rows = ref<any>({ courses: [], assignments: [], metrics: { students: 0, courses: 0, pending: 0 } })
-
-const cols = {
-  courses: [
-    { title: 'Title', dataIndex: 'title' },
-    { title: 'Published', dataIndex: 'published' },
-    { title: 'Enrolled', dataIndex: 'enrolled' },
-  ],
-  assignments: [
-    { title: 'Title', dataIndex: 'title' },
-    { title: 'Course', dataIndex: 'courseTitle' },
-    { title: 'Submissions', dataIndex: 'submissions' },
-    { title: 'Pending', dataIndex: 'pending' },
-  ],
-}
-
-function go(path:string){ router.push(path) }
-
-async function fetchData(){
-  try {
-    const resp = await fetch('/api/teach/graphql', { 
-      method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'include',
-      body: JSON.stringify({ query: `query{
-        teacherOverview{
-          metrics { students courses pending }
-          courses { id title published enrolled }
-          assignments { id title courseTitle submissions pending }
-        }
-      }` })
-    })
-    const json = await resp.json()
-    if (json?.data?.teacherOverview) rows.value = json.data.teacherOverview
-  } finally {
-    loading.value = false
+const Q_OVERVIEW = gql`query TeacherOverview {
+  teacherOverview { 
+    courses { id title students }
+    assignments { id title courseTitle submissions }
+    signals { at message }
   }
-}
+}`
 
-onMounted(fetchData)
-watch(tab, (v)=> setPref('teach.tab', v))
+const { client } = useApolloClient()
+const loading = ref(true)
+const overview = ref<any>({ courses: [], assignments: [], signals: [] })
+
+function rCourse(it:any){ return h('a-list-item', {}, `${it.title} — ${it.students} students`) }
+function rAssignment(it:any){ return h('a-list-item', {}, `${it.title} · ${it.courseTitle} — ${it.submissions} submissions`) }
+function rSignal(it:any){ return h('a-list-item', {}, `${it.at} — ${it.message}`) }
+
+async function refresh() {
+  loading.value = true
+  const { data } = await client.query({ query: Q_OVERVIEW, fetchPolicy: 'network-only', context: { endpoint: '/api/teach/graphql' } as any })
+  overview.value = data?.teacherOverview || { courses: [], assignments: [], signals: [] }
+  loading.value = false
+}
+onMounted(refresh)
 </script>

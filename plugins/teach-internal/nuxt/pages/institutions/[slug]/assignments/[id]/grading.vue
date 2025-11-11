@@ -247,10 +247,10 @@ function postComment(){
 /* ---------------- Persistence ---------------- */
 function persist(){
   const payload={rows:rows.value,rubric:rubric.value,comments:commentsMap}
-  localStorage.setItem(STORAGE_KEY.value,JSON.stringify(payload))
+  /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (STORAGE_KEY.value,JSON.stringify(payload))
 }
 function restore(){
-  const raw=localStorage.getItem(STORAGE_KEY.value)
+  const raw=/* TODO: replace with gqlFetch to proper query */ undefined && (STORAGE_KEY.value)
   if(!raw) return false
   try{
     const data=JSON.parse(raw)
@@ -308,6 +308,9 @@ onMounted(()=>{
   if(!restore()){ rows.value=mockRows(10);persist() }
 })
 watch([rows,rubric],()=>{ if(autoSave.value) persist() },{deep:true})
+definePageMeta({ layout:'institution' })
+
+
 definePageMeta({ layout:'institution' })
 </script>
 

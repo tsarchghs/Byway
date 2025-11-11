@@ -26,6 +26,7 @@
 </template>
 
 <script setup lang="ts">
+import { useGql } from '../../../../../packages/shared-ui/src/composables/useGql'
 const route = useRoute()
 const config = useRuntimeConfig()
 const baseUrl = config.public?.apiBase || 'http://localhost:4000'

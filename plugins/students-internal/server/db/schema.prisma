@@ -8,110 +8,43 @@ datasource db {
   url      = "file:./students.db"
 }
 
-model Student {
-  id           String         @id @default(cuid())
-  userId       String?
-  displayName  String?
-  email        String?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  enrollments  StudentCourse[]
-  grades       Grade[]
-}
+model Enrollment {
+  id          String   @id @default(cuid())
+  studentId   String
+  courseId    String
+  progress Int      @default(0)
+  score       Float?
+  rubric      Json?
+  isActive    Boolean  @default(true)
 
-model CourseMirror {
-  id        String   @id
-  title     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model StudentCourse {
-  id           String    @id @default(cuid())
-  studentId    String
-  courseId     String
-  progressPct  Int       @default(0)
-  lastActivity DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  student    Student  @relation(fields: [studentId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@unique([studentId, courseId])
 }
 
-model Grade {
-  id           String   @id @default(cuid())
-  studentId    String
-  courseId     String
-  assignmentId String
-  grade        Float
-  updatedAt    DateTime @updatedAt
+model StudentNote {
+  id          String   @id @default(cuid())
+  studentId   String
+  courseId    String
+  body        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  student  Student @relation(fields: [studentId], references: [id])
-
-  @@unique([studentId, assignmentId])
+  @@index([studentId, courseId])
 }
 
-model Rubric {
-  id       String @id @default(cuid())
-  courseId String @unique
-  json     Json
-  updatedAt DateTime @updatedAt
-}
+model Course { id String @id @default(cuid()) title String }
 
-model Enrollment {
+model GradebookEntry { id String @id @default(cuid()) assignmentId String studentId String courseId String grade Float? feedback String? updatedAt DateTime @default(now()) }
+
+
+model UserKV {
   id        String   @id @default(cuid())
-  studentId String
-  courseId  String
-  progress  Int      @default(0)
-  createdAt DateTime @default(now())
+  userId    String?
+  sessionId String?
+  key       String
+  value     String
   updatedAt DateTime @updatedAt
-}
-
-model UserRole {
-  id     String @id @default(cuid())
-  userId String @unique
-  role   String
-}
-
-
-//
-// --- Added by Byway GQL8 Patch ---
-model Enrollment {
-  id        String   @id @default(cuid())
-  studentId String
-  courseId  String
-  progress  Int      @default(0)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([studentId, courseId])
-}
-
-model GradeItem {
-  id        String   @id @default(cuid())
-  courseId  String
-  studentId String
-  label     String
-  score     Float    @default(0)
-  weight    Float    @default(1)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Rubric {
-  id        String   @id @default(cuid())
-  courseId  String   @unique
-  items     Json
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model UserRole {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  role      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }

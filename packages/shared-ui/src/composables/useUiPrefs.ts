@@ -1,77 +1,42 @@
-// packages/shared-ui/src/composables/useUiPrefs.ts
-// A lightweight GraphQL-backed preference store (replaces localStorage).
+
 import { ref } from 'vue'
 
-type Prefs = Record<string, any>
-const prefs = ref<Prefs>({})
-let loaded = false
-let loading: Promise<void> | null = null
+type UiPrefs = Record<string, any>
 
-const API = (path: string) => (typeof window !== 'undefined' ? `${window.location.origin}${path}` : path)
+const prefs = ref<UiPrefs>({})
+const loaded = ref(false)
 
-async function ensureLoaded() {
-  if (loaded) return
-  if (loading) return loading
-  loading = (async () => {
-    try {
-      const resp = await fetch(API('/api/authentication/graphql'), {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ query: 'query{ uiPrefs }' }),
-      })
-      const json = await resp.json()
-      const uiPrefs = json?.data?.uiPrefs || {}
-      prefs.value = uiPrefs
-    } catch (e) {
-      // ignore
-    } finally {
-      loaded = true
-      loading = null
-    }
-  })()
-  return loading
+async function gql(endpoint: string, query: string, variables?: any) {
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ query, variables })
+  })
+  const json = await res.json()
+  if (json.errors?.length) throw new Error(json.errors[0].message || 'GraphQL error')
+  return json.data
+}
+
+async function loadPrefs() {
+  if (loaded.value) return
+  try {
+    const data = await gql('/api/authentication/graphql', `query { myUiPrefs }`)
+    const p = data?.myUiPrefs
+    prefs.value = (typeof p === 'string' ? JSON.parse(p) : p) || {}
+    loaded.value = true
+  } catch {
+    prefs.value = {}
+  }
+}
+
+async function setPref(key:string, value:any) {
+  await loadPrefs()
+  const next = { ...prefs.value, [key]: value }
+  await gql('/api/authentication/graphql', `mutation ($json:String!){ setMyUiPrefs(json:$json){ ok } }`, { json: JSON.stringify(next) })
+  prefs.value = next
 }
 
 export function useUiPrefs() {
-  async function get(key: string) {
-    await ensureLoaded()
-    return prefs.value?.[key]
-  }
-  function getSync(key: string) {
-    return prefs.value?.[key]
-  }
-  async function set(key: string, value: any) {
-    await ensureLoaded()
-    const resp = await fetch(API('/api/authentication/graphql'), {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ 
-        query: 'mutation($key:String!,$value:JSON!){ setUiPref(key:$key, value:$value){ uiPrefs } }',
-        variables: { key, value }
-      }),
-    })
-    const json = await resp.json()
-    const ui = json?.data?.setUiPref?.uiPrefs || {}
-    prefs.value = ui
-    return ui[key]
-  }
-  async function setMany(patch: Record<string, any>) {
-    await ensureLoaded()
-    const resp = await fetch(API('/api/authentication/graphql'), {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ 
-        query: 'mutation($patch:JSON!){ setUiPrefs(patch:$patch){ uiPrefs } }',
-        variables: { patch }
-      }),
-    })
-    const json = await resp.json()
-    const ui = json?.data?.setUiPrefs?.uiPrefs || {}
-    prefs.value = ui
-    return ui
-  }
-  return { get, getSync, set, setMany, ensureLoaded, state: prefs }
+  return { prefs, loadPrefs, setPref }
 }

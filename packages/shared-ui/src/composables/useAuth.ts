@@ -1,73 +1,84 @@
-import { ref, computed, watchEffect } from 'vue'
-import { useRouter } from 'vue-router'
 
-// GraphQL-backed "me" fetcher
+import { ref, computed } from 'vue'
+import { useRouter } from '#imports'
+
+type User = { id: string; email?: string; firstName?: string; lastName?: string; roles?: string[] }
+
+const currentUser = ref<User|null>(null)
+const loading = ref(false)
+const error = ref<string| null>(null)
+
+async function gql(endpoint: string, query: string, variables?: any) {
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ query, variables })
+  })
+  const json = await res.json()
+  if (json.errors?.length) throw new Error(json.errors[0].message || 'GraphQL error')
+  return json.data
+}
+
 async function fetchMe() {
+  loading.value = true
+  error.value = null
   try {
-    const resp = await fetch((typeof window !== 'undefined' ? window.location.origin : '') + '/api/authentication/graphql', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ query: 'query{ me { id email firstName lastName role avatarUrl uiPrefs } }' }),
-    })
-    const json = await resp.json()
-    user.value = json?.data?.me || null
-    return user.value
-  } catch {
-    user.value = null
+    const data = await gql('/api/authentication/graphql', `
+      query { me { id email firstName lastName roles } }
+    `)
+    currentUser.value = data?.me || null
+  } catch (e:any) {
+    error.value = e?.message || String(e)
+    currentUser.value = null
+  } finally {
+    loading.value = false
   }
 }
 
-const user = ref<any>(null)
-const token = ref<string | null>(null)
-
-// Only access localStorage on client
-if (typeof window !== 'undefined') {
-  token.value = (null /* was localStorage.getItem('token') */)
-  const savedUser = (null /* was localStorage.getItem('user') */)
-  if (savedUser) user.value = JSON.parse(savedUser)
-}
-watchEffect(() => {
-  if (typeof window !== 'undefined') {
-    token.value = (null /* was localStorage.getItem('token') */)
-    const saved = (null /* was localStorage.getItem('user') */)
-    user.value = saved ? JSON.parse(saved) : null
+async function login(email: string, password: string) {
+  loading.value = true
+  error.value = null
+  try {
+    const data = await gql('/api/authentication/graphql', `
+      mutation ($email:String!,$password:String!) {
+        login(email:$email,password:$password) { ok }
+      }
+    `, { email, password })
+    await fetchMe()
+    return data?.login?.ok === true
+  } catch (e:any) {
+    error.value = e?.message || String(e)
+    return false
+  } finally {
+    loading.value = false
   }
-})
+}
+
+async function logout() {
+  try {
+    await gql('/api/authentication/graphql', `mutation { logout { ok } }`)
+  } catch {}
+  currentUser.value = null
+}
 
 export function useAuth() {
+  if (currentUser.value === null && !loading.value) {
+    // try once on first use
+    fetchMe()
+  }
   const router = useRouter()
-  const isLoggedIn = computed(() => !!token.value && !!user.value)
+  const isLoggedIn = computed(() => !!currentUser.value?.id)
+  const roles = computed(() => currentUser.value?.roles || [])
 
-  function login(data: { token: string; user: any }) {
-    if (typeof window === 'undefined') return
-    (void 0 /* was localStorage.setItem('token', data.token) */)
-    (void 0 /* was localStorage.setItem('user', JSON.stringify(data.user) */))
-    token.value = data.token
-    user.value = data.user
+  return {
+    user: currentUser,
+    loading,
+    error,
+    isLoggedIn,
+    roles,
+    fetchMe,
+    login,
+    logout,
   }
-
-  function logout() {
-    if (typeof window === 'undefined') return
-    (void 0 /* was localStorage.removeItem('token') */)
-    (void 0 /* was localStorage.removeItem('user') */)
-    token.value = null
-    user.value = null
-    router.push('/auth/login')
-  }
-
-  function redirectIfAuthenticated() {
-    if (isLoggedIn.value) router.push('/')
-  }
-
-  // Keep reactive sync if storage changes from another tab
-  if (typeof window !== 'undefined') {
-    window.addEventListener('storage', () => {
-      token.value = (null /* was localStorage.getItem('token') */)
-      const saved = (null /* was localStorage.getItem('user') */)
-      user.value = saved ? JSON.parse(saved) : null
-    })
-  }
-
-  return { user, token, isLoggedIn, login, logout, redirectIfAuthenticated }
 }

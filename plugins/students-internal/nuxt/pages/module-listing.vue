@@ -733,7 +733,13 @@
   </a-config-provider>
 </template>
 
-<script setup lang="ts">
+\1
+import { computed } from 'vue'
+import { useQuery, gql } from '@vue/apollo-composable'
+const Q_ME = gql`query Me { me { id email displayName roles } }`
+const { result: _meResult } = useQuery(Q_ME)
+const me = computed(() => _meResult.value?.me || null)
+
 import { computed, onMounted, reactive, ref, watch, onBeforeUnmount, h, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { theme, message, Modal } from 'ant-design-vue'

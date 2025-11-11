@@ -43,4 +43,7 @@ async function create() {
   form.name=''; form.domain=''; form.logoUrl=''
 }
 onMounted(list)
+
+
+definePageMeta({ alias: ['/institutions'] })
 </script>

@@ -1,3 +1,5 @@
+import { teachResolvers } from "./graphql/resolvers.mjs";
+import { teachTypeDefs } from "./graphql/typeDefs.mjs";
 import { registerTeachGraphQL } from './registerGraphql.mjs'
 import express from "express"
 import cors from "cors"

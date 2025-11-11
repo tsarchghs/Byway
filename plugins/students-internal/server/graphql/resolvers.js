@@ -1,161 +1,61 @@
-// students-internal/server/graphql/resolvers.js
-import fs from 'node:fs'
-import path from 'node:path'
+import { prisma } from '../db/client.js';
 
-let memory = {
-  rubrics: new Map(), // courseId -> { id, courseId, items, updatedAt }
-  enrollments: new Map(), // enrollmentId -> { ... }
-  grades: new Map(), // enrollmentId -> [gradeItems]
-}
-
-function nowISO(){ return new Date().toISOString() }
-function id(){ return Math.random().toString(36).slice(2) }
-
-// Best-effort prisma loader (surgical, no apps/ edits)
-async function getPrisma() {
-  try {
-    const modA = await import('../db/client.js').catch(()=>null)
-    if (modA && modA.prisma) return modA.prisma
-  } catch {}
-  try {
-    const modB = await import('../db/generated/client/index.js').catch(()=>null)
-    if (modB && modB.PrismaClient) {
-      const prisma = new modB.PrismaClient()
-      return prisma
-    }
-  } catch {}
-  return null
-}
-
-export default {
+export const resolvers = {
   Query: {
-    meRole: async (_p, _a, ctx) => {
-      // Without auth, heuristics: teacher if header x-role=TEACHER, otherwise GUEST
-      const hdr = (ctx?.req?.headers?.['x-role'] || ctx?.req?.headers?.['x-user-role'] || '').toString().toUpperCase()
-      if (hdr === 'TEACHER' || hdr === 'ADMIN' || hdr === 'STUDENT') return hdr
-      return 'GUEST'
+    async studentCourses(_, { studentId }) {
+      const enrolls = await prisma.enrollment.findMany({ where: { studentId }, select: { courseId: true } });
+      const ids = [...new Set(enrolls.map(e => e.courseId))];
+      const courses = await prisma.course.findMany({ where: { id: { in: ids } } });
+      return courses;
     },
-    myEnrollments: async (_p, { studentId }) => {
-      const prisma = await getPrisma()
-      if (prisma?.enrollment) {
-        const rows = await prisma.enrollment.findMany({ where: { studentId } })
-        return rows
-      }
-      // memory fallback
-      return Array.from(memory.enrollments.values()).filter(e=>e.studentId===studentId)
+    async enrollments(_, args) {
+      const where = {};
+      if (args.studentId) where.studentId = args.studentId;
+      if (args.courseId) where.courseId = args.courseId;
+      return prisma.enrollment.findMany({ where, orderBy: { updatedAt: 'desc' } });
     },
-    isEnrolled: async (_p, { studentId, courseId }) => {
-      const prisma = await getPrisma()
-      if (prisma?.enrollment) {
-        const found = await prisma.enrollment.findFirst({ where: { studentId, courseId } })
-        return !!found
-      }
-      // memory fallback
-      return Array.from(memory.enrollments.values()).some(e=>e.studentId===studentId && e.courseId===courseId)
+    async courseGradebook(_, { courseId }) {
+      return prisma.gradebookEntry.findMany({ where: { courseId }, orderBy: { updatedAt: 'desc' } });
     },
-    gradebook: async (_p, { courseId }) => {
-      const prisma = await getPrisma()
-      if (prisma?.gradeItem && prisma?.enrollment) {
-        const ens = await prisma.enrollment.findMany({ where: { courseId } })
-        const ids = ens.map(e=>e.id)
-        const items = await prisma.gradeItem.findMany({ where: { enrollmentId: { in: ids } } })
-        return items
-      }
-      // memory fallback aggregate
-      const all = []
-      for (const [enrId, rows] of memory.grades.entries()) {
-        for (const r of rows) {
-          // join via enrollment
-          const enr = memory.enrollments.get(enrId)
-          if (enr?.courseId === courseId) all.push(r)
-        }
-      }
-      return all
+    async isEnrolled(_, { studentId, courseId }) {
+      const x = await prisma.enrollment.findFirst({ where: { studentId, courseId } });
+      return !!x;
     },
-    rubric: async (_p, { courseId }) => {
-      const prisma = await getPrisma()
-      if (prisma?.courseRubric) {
-        const r = await prisma.courseRubric.findFirst({ where: { courseId } })
-        return r && { ...r, items: (r.items||[]) }
-      }
-      // memory
-      return memory.rubrics.get(courseId) || null
+    async kvGet(_, { key }) {
+      const row = await prisma.kv.findUnique({ where: { key } });
+      return { key, value: row?.value ?? null };
     }
   },
   Mutation: {
-    enrollStudent: async (_p, { studentId, courseId }) => {
-      const prisma = await getPrisma()
-      if (prisma?.enrollment) {
-        const created = await prisma.enrollment.upsert({
-          where: { studentId_courseId: { studentId, courseId } },
-          update: {},
-          create: { studentId, courseId, progress: 0 }
-        })
-        return created
-      }
-      // memory fallback
-      const eid = id()
-      const row = { id: eid, studentId, courseId, progress: 0, createdAt: nowISO(), updatedAt: nowISO() }
-      memory.enrollments.set(eid, row)
-      return row
+    async enrollStudent(_, { studentId, courseId }) {
+      // idempotent create
+      const existing = await prisma.enrollment.findFirst({ where: { studentId, courseId } });
+      if (existing) return existing;
+      return prisma.enrollment.create({ data: { studentId, courseId, progressPct: 0 } });
     },
-    setProgress: async (_p, { enrollmentId, value }) => {
-      const prisma = await getPrisma()
-      if (prisma?.enrollment) {
-        const upd = await prisma.enrollment.update({
-          where: { id: enrollmentId },
-          data: { progress: Math.max(0, Math.min(100, value)), updatedAt: new Date() }
-        })
-        return upd
+    async upsertGrade(_, { input }) {
+      const { assignmentId, studentId, courseId, grade, feedback } = input;
+      const existing = await prisma.gradebookEntry.findFirst({ where: { assignmentId, studentId, courseId } });
+      if (existing) {
+        return prisma.gradebookEntry.update({ where: { id: existing.id }, data: { grade, feedback } });
       }
-      const cur = memory.enrollments.get(enrollmentId)
-      if (cur) {
-        cur.progress = Math.max(0, Math.min(100, value))
-        cur.updatedAt = nowISO()
-        return cur
-      }
-      throw new Error('enrollment not found')
+      return prisma.gradebookEntry.create({ data: { assignmentId, studentId, courseId, grade, feedback } });
     },
-    setRubric: async (_p, { courseId, items }) => {
-      const prisma = await getPrisma()
-      if (prisma?.courseRubric) {
-        const saved = await prisma.courseRubric.upsert({
-          where: { courseId },
-          update: { items, updatedAt: new Date() },
-          create: { courseId, items }
-        })
-        return { ...saved, items: saved.items||[] }
-      }
-      const row = { id: id(), courseId, items, updatedAt: nowISO() }
-      memory.rubrics.set(courseId, row)
-      return row
+    async kvSet(_, { key, value }) {
+      const up = await prisma.kv.upsert({
+        where: { key },
+        update: { value: value ?? null },
+        create: { key, value: value ?? null }
+      });
+      return { key: up.key, value: up.value };
     },
-    upsertGradeItems: async (_p, { items }) => {
-      const prisma = await getPrisma()
-      if (prisma?.gradeItem) {
-        const out = []
-        for (const it of items) {
-          const saved = await prisma.gradeItem.create({
-            data: {
-              enrollmentId: it.enrollmentId,
-              label: it.label,
-              points: it.points,
-              weight: it.weight
-            }
-          })
-          out.push(saved)
-        }
-        return out
+    async kvDelete(_, { key }) {
+      try {
+        await prisma.kv.delete({ where: { key } });
+        return true;
+      } catch {
+        return false;
       }
-      // memory
-      const out = []
-      for (const it of items) {
-        const row = { id: id(), ...it, updatedAt: nowISO() }
-        const arr = memory.grades.get(it.enrollmentId) || []
-        arr.push(row); memory.grades.set(it.enrollmentId, arr)
-        out.push(row)
-      }
-      return out
     }
   }
-}
+};

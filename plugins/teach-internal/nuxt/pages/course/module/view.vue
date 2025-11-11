@@ -1623,7 +1623,13 @@
 
 </template>
 
-<script setup lang="ts">
+\1
+import { computed } from 'vue'
+import { useQuery, gql } from '@vue/apollo-composable'
+const Q_ME = gql`query Me { me { id email displayName roles } }`
+const { result: _meResult } = useQuery(Q_ME)
+const me = computed(() => _meResult.value?.me || null)
+
 import { CodeOutlined } from "@ant-design/icons-vue";
 import { watch } from "vue";
 import { reactive, ref, computed, onMounted } from "vue";

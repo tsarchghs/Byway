@@ -6,6 +6,20 @@
   </div>
 </template>
 <script setup lang="ts">
+<script setup lang="ts">
+import { useQuery, useMutation, gql } from '@apollo/client/core'
+import { computed } from 'vue'
+
+const ME_QUERY = gql`
+  query Me {
+    me { id email roles displayName }
+  }
+`
+
+const { loading: meLoading, error: meError, data: meData, refetch: refetchMe } = useQuery(ME_QUERY)
+const me = computed(() => meData?.me || null)
+</script>
+
 import { onMounted } from 'vue'
 onMounted(()=> {
   try { (void 0 /* was localStorage.setItem('byway:cart', '[]') */) } catch {}
