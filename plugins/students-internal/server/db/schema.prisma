@@ -1,4 +1,5 @@
 generator client {
+engineType = "node-api"
   provider = "prisma-client-js"
   output   = "./generated"
 }
@@ -8,8 +9,6 @@ datasource db {
   url      = "file:./students.db"
 }
 
-\1  progressPct Int @default(0)
-}
 
 model StudentNote {
   id          String   @id @default(cuid())
@@ -22,9 +21,38 @@ model StudentNote {
   @@index([studentId, courseId])
 }
 
-model Course { id String @id @default(cuid()) title String }
+model Course {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?  // optional, useful for displaying course info
+  progressPct  Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-model GradebookEntry { id String @id @default(cuid()) assignmentId String studentId String courseId String grade Float? feedback String? updatedAt DateTime @default(now()) }
+  // Relations (optional — uncomment if you have these models)
+  // gradebookEntries GradebookEntry[]
+  // studentNotes     StudentNote[]
+
+  @@index([title])
+}
+
+model GradebookEntry {
+  id           String   @id @default(cuid())
+  assignmentId String
+  studentId    String
+  courseId     String
+  grade        Float?   @default(0)
+  feedback     String?
+  progressPct  Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations (optional — include if you have related models)
+  // student   Student?   @relation(fields: [studentId], references: [id])
+  // course    Course?    @relation(fields: [courseId], references: [id])
+
+  @@index([studentId, courseId])
+}
 
 
 model UserKV {

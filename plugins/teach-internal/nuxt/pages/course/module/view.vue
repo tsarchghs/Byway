@@ -1,4 +1,5 @@
 <template>
+  <client-only>
   <a-config-provider
     :theme="{
       algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
@@ -616,27 +617,28 @@
 
                                   <a-divider />
 
-                                  <a-descriptions
-                                    bordered
-                                    size="small"
-                                    column="1"
-                                  >
-                                    <a-descriptions-item label="Docker image">{{
-                                      currentLesson.lab?.dockerImage
-                                    }}</a-descriptions-item>
-                                    <a-descriptions-item label="VS Code URL">
-                                      {{
-                                        currentLesson.lab?.codeServer?.url ||
-                                        "—"
-                                      }}
-                                    </a-descriptions-item>
-                                    <a-descriptions-item label="Container ID">
-                                      {{
-                                        currentLesson.lab?.codeServer
-                                          ?.containerId || "—"
-                                      }}
-                                    </a-descriptions-item>
-                                  </a-descriptions>
+<a-descriptions
+  bordered
+  size="small"
+  column="1"
+>
+  <a-descriptions-item label="Docker image">
+    {{ currentLesson.lab?.dockerImage || '—' }}
+  </a-descriptions-item>
+
+  <a-descriptions-item label="VS Code URL">
+    <template v-if="currentLesson.lab?.codeServer?.url">
+      <a :href="currentLesson.lab.codeServer.url" target="_blank">
+        {{ currentLesson.lab.codeServer.url }}
+      </a>
+    </template>
+    <template v-else>—</template>
+  </a-descriptions-item>
+
+  <a-descriptions-item label="Container ID">
+    {{ currentLesson.lab?.codeServer?.containerId || '—' }}
+  </a-descriptions-item>
+</a-descriptions>
                                 </a-card>
 
                                 <a-card v-if="currentLesson.lab?.kind === 'BACKEND_NODE'" class="mt-2" title="API tests (mock)">
@@ -1621,18 +1623,15 @@
 </a-collapse>
 <!-- /increment-3 -->
 
-</template>
+ </client-only></template>
 
-\1
+<script lang="ts">
+defineClientComponent()
 import { computed } from 'vue'
 import { useQuery, gql } from '@vue/apollo-composable'
-const Q_ME = gql`query Me { me { id email displayName roles } }`
-const { result: _meResult } = useQuery(Q_ME)
-const me = computed(() => _meResult.value?.me || null)
-
 import { CodeOutlined } from "@ant-design/icons-vue";
 import { watch } from "vue";
-import { reactive, ref, computed, onMounted } from "vue";
+import { reactive, ref, onMounted } from "vue";
 import { theme, message } from "ant-design-vue";
 import {
   BulbOutlined,
@@ -1645,6 +1644,13 @@ import {
   FieldTimeOutlined,
 } from "@ant-design/icons-vue";
 import { useRoute } from "vue-router";
+
+const Q_ME = gql`query Me { me { id email token } }`
+const { result: _meResult, error } = useQuery(Q_ME)
+const me = computed(() => _meResult.value?.me || null)
+watch(error, (e) => {
+  if (e) console.error("[GraphQL Error]", e, e.networkError, e.message);
+});
 type LabKind = "BACKEND_NODE" | "FRONTEND_NUXT";
 type ApiTestMock = {
   id: string;
@@ -1803,7 +1809,13 @@ const route = useRoute();
 const API_URL = "http://localhost:4000/api/teach-internal/graphql";
 // rely on HttpOnly auth cookie; no /* removed_localStorage */ null token
 function getAuthHeaders() {
-  return { "Content-Type": "application/json" } as Record<string, string>;
+  const token = getCookieToken();
+  return token
+    ? {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      }
+    : { "Content-Type": "application/json" };
 }
 // --- ADD: small utils for API testing ---
 const expectModeOptions = [
@@ -2222,27 +2234,51 @@ function removeUiLabTest(i: number) {
   currentLesson.value?.lab?.uiTests?.splice(i, 1);
   touch();
 }
+// const API_URL = process.env.BYWAY_GRAPHQL_URL || "http://localhost:4000/api"; // fallback
 
-async function fetchGraphQL<T = any>(
+
+export async function fetchGraphQL<T = any>(
   query: string,
   variables?: Record<string, any>,
+  endpoint: string = "/authentication/graphql", // default to auth; override per plugin
 ): Promise<T> {
-  const resp = await fetch(API_URL, {
-    method: "POST",
-    credentials: "include",
-    headers: getAuthHeaders(),
-    body: JSON.stringify({ query, variables }),
-  });
-  const json = await resp.json();
-  if (json.errors?.length)
-    throw new Error(json.errors[0]?.message || "GraphQL error");
-  return json.data as T;
+  const url = `${API_URL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
+  try {
+    const resp = await fetch(url, {
+      method: "POST",
+      credentials: "include",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ query, variables }),
+    });
+
+    if (!resp.ok) {
+      const text = await resp.text();
+      console.error(
+        `[GraphQL ${resp.status}] ${url}\n→ Response body:`,
+        text.slice(0, 500)
+      );
+      throw new Error(`HTTP ${resp.status}: ${text}`);
+    }
+
+    const json = await resp.json().catch(() => {
+      throw new Error("Invalid JSON response from server");
+    });
+
+    if (json.errors?.length) {
+      console.error("[GraphQL errors]", json.errors);
+      throw new Error(json.errors[0]?.message || "GraphQL error");
+    }
+
+    return json.data as T;
+  } catch (err: any) {
+    console.error("[fetchGraphQL failed]", { query, variables, endpoint, err });
+    throw err;
+  }
 }
 
-/** small helper if you keep JWT in cookie or /* removed_localStorage */ null */
 function getCookieToken(): string {
-  const m = document.cookie.match(/token=([^;]+)/);
-  return m ? m[1] : "";
+  const match = document.cookie.match(/(?:^|;\s*)token=([^;]*)/);
+  return match ? match[1] : "";
 }
 
 /** Theme & UI */
@@ -2926,7 +2962,7 @@ async function openTeacherCodeServer(teacherId: string) {
     const resp = await fetch(
       `${API_REST}/code-server/${encodeURIComponent(String(teacherId))}/${encodeURIComponent(String(currentLesson.value.id))}`,
       {
-        headers: { Authorization: `Bearer ${/* TODO: replace with gqlFetch to proper query */ undefined && ("token")}` }, // or adjust if using HttpOnly
+headers: { Authorization: `Bearer ${getCookieToken()}` },
         credentials: "include",
       },
     );
@@ -2952,22 +2988,32 @@ const study = reactive({
 
 const storageKey = computed(() => `byway:module:${moduleIdForStudy.value}:study`)
 
-function loadStudy() {
+async function loadStudy() {
   try {
-    const raw = /* TODO: replace with gqlFetch to proper query */ undefined && (storageKey.value)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      study.notes = parsed.notes || ''
-      study.tasks = Array.isArray(parsed.tasks) ? parsed.tasks : []
-      study.resources = Array.isArray(parsed.resources) ? parsed.resources : []
+    const data = await fetchGraphQL(
+      `query GetStudy($moduleId: String!){ myUiPrefs }`,
+      { moduleId: moduleIdForStudy.value }
+    );
+    if (data?.myUiPrefs) {
+      const parsed = JSON.parse(data.myUiPrefs);
+      Object.assign(study, parsed);
     }
-  } catch {}
+  } catch (e) {
+    console.warn("Load study failed:", e);
+  }
 }
-function saveStudy() {
+
+async function saveStudy() {
   try {
-    /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (storageKey.value, JSON.stringify(study))
-  } catch {}
+    await fetchGraphQL(
+      `mutation SaveStudy($json: String!){ setMyUiPrefs(json:$json){ ok } }`,
+      { json: JSON.stringify(study) }
+    );
+  } catch (e) {
+    console.warn("Save study failed:", e);
+  }
 }
+
 onMounted(loadStudy)
 watch(study, saveStudy, { deep: true })
 

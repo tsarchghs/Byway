@@ -62,3 +62,44 @@ export const StudentSubmission = objectType({
     t.field('submittedAt', { type: 'DateTime' })
   },
 })
+
+export const MyCoursesQuery = extendType({
+  type: "Query",
+  definition(t) {
+    t.list.field("myProgress", {
+      type: "StudentProgress",
+      description: "Return the current student's lesson progress entries",
+      args: {
+        courseId: "String", // optional filter
+        moduleId: "String", // optional filter
+        lessonId: "String", // optional filter
+      },
+      async resolve(_, args, ctx) {
+        if (!ctx.user?.id) throw new Error("Not authenticated");
+
+        const filters: any = { studentId: ctx.user.id };
+        if (args.courseId) filters.courseId = args.courseId;
+        if (args.moduleId) filters.moduleId = args.moduleId;
+        if (args.lessonId) filters.lessonId = args.lessonId;
+
+        return ctx.prisma.studentProgress.findMany({
+          where: filters,
+          orderBy: { updatedAt: "desc" },
+        });
+      },
+    });
+  },
+  definition(t) {
+    t.list.field("myCourses", {
+      type: "GqlCourse",
+      description: "Courses that the authenticated student is enrolled in",
+      resolve: async (_, __, ctx) => {
+        if (!ctx.user?.id) throw new Error("Not authenticated");
+        return ctx.prisma.course.findMany({
+          where: { enrollments: { some: { studentId: ctx.user.id } } },
+          include: { modules: true },
+        });
+      },
+    });
+  },
+});

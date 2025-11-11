@@ -311,7 +311,6 @@ watch([rows,rubric],()=>{ if(autoSave.value) persist() },{deep:true})
 definePageMeta({ layout:'institution' })
 
 
-definePageMeta({ layout:'institution' })
 </script>
 
 <style scoped>

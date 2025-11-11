@@ -1,4 +1,5 @@
 generator client {
+engineType = "node-api"
   provider = "prisma-client-js"
   output   = "./generated"
 }

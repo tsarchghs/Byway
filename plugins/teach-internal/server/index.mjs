@@ -208,7 +208,7 @@ router.get('/code-server/:teacherId/:lessonId', async (req, res) => {
 app.use('/api/teach-internal', router)
 
 app.use(cors({
-  origin: ['http://localhost:3000'], // your frontend(s)
+  origin: ['http://localhost:3001'], // your frontend(s)
   credentials: true, // allow cookies / auth headers
 }))
   console.log('[teach-internal] GraphQL available at /api/teach-internal/graphql')

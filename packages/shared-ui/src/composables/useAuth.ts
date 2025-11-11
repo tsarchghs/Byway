@@ -1,84 +1,38 @@
-
 import { ref, computed } from 'vue'
-import { useRouter } from '#imports'
 
-type User = { id: string; email?: string; firstName?: string; lastName?: string; roles?: string[] }
-
-const currentUser = ref<User|null>(null)
-const loading = ref(false)
-const error = ref<string| null>(null)
-
-async function gql(endpoint: string, query: string, variables?: any) {
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({ query, variables })
-  })
-  const json = await res.json()
-  if (json.errors?.length) throw new Error(json.errors[0].message || 'GraphQL error')
-  return json.data
-}
-
-async function fetchMe() {
-  loading.value = true
-  error.value = null
-  try {
-    const data = await gql('/api/authentication/graphql', `
-      query { me { id email firstName lastName roles } }
-    `)
-    currentUser.value = data?.me || null
-  } catch (e:any) {
-    error.value = e?.message || String(e)
-    currentUser.value = null
-  } finally {
-    loading.value = false
-  }
-}
-
-async function login(email: string, password: string) {
-  loading.value = true
-  error.value = null
-  try {
-    const data = await gql('/api/authentication/graphql', `
-      mutation ($email:String!,$password:String!) {
-        login(email:$email,password:$password) { ok }
-      }
-    `, { email, password })
-    await fetchMe()
-    return data?.login?.ok === true
-  } catch (e:any) {
-    error.value = e?.message || String(e)
-    return false
-  } finally {
-    loading.value = false
-  }
-}
-
-async function logout() {
-  try {
-    await gql('/api/authentication/graphql', `mutation { logout { ok } }`)
-  } catch {}
-  currentUser.value = null
-}
+const user = ref<any | null>(null)
+const token = ref<string | null>(null)
 
 export function useAuth() {
-  if (currentUser.value === null && !loading.value) {
-    // try once on first use
-    fetchMe()
-  }
-  const router = useRouter()
-  const isLoggedIn = computed(() => !!currentUser.value?.id)
-  const roles = computed(() => currentUser.value?.roles || [])
+  const isLoggedIn = computed(() => !!token.value)
 
-  return {
-    user: currentUser,
-    loading,
-    error,
-    isLoggedIn,
-    roles,
-    fetchMe,
-    login,
-    logout,
+  function login(payload: { user: any; token: string }) {
+    user.value = payload.user
+    token.value = payload.token
+    localStorage.setItem('token', token.value)
+    localStorage.setItem('user', JSON.stringify(user.value))
   }
+
+  function logout() {
+    user.value = null
+    token.value = null
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+  }
+
+  // Restore session from storage (for SSR-safe check)
+  if (typeof window !== 'undefined') {
+    const savedToken = localStorage.getItem('token')
+    const savedUser = localStorage.getItem('user')
+    if (savedToken && savedUser) {
+      token.value = savedToken
+      try {
+        user.value = JSON.parse(savedUser)
+      } catch {
+        user.value = null
+      }
+    }
+  }
+
+  return { user, token, isLoggedIn, login, logout }
 }

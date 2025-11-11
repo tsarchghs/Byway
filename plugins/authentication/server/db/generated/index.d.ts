@@ -674,10 +674,6 @@ export namespace Prisma {
             args: Prisma.UserCreateManyArgs<ExtArgs>
             result: BatchPayload
           }
-          createManyAndReturn: {
-            args: Prisma.UserCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$UserPayload>[]
-          }
           delete: {
             args: Prisma.UserDeleteArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$UserPayload>
@@ -693,10 +689,6 @@ export namespace Prisma {
           updateMany: {
             args: Prisma.UserUpdateManyArgs<ExtArgs>
             result: BatchPayload
-          }
-          updateManyAndReturn: {
-            args: Prisma.UserUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$UserPayload>[]
           }
           upsert: {
             args: Prisma.UserUpsertArgs<ExtArgs>
@@ -748,10 +740,6 @@ export namespace Prisma {
             args: Prisma.InstitutionCreateManyArgs<ExtArgs>
             result: BatchPayload
           }
-          createManyAndReturn: {
-            args: Prisma.InstitutionCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$InstitutionPayload>[]
-          }
           delete: {
             args: Prisma.InstitutionDeleteArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$InstitutionPayload>
@@ -767,10 +755,6 @@ export namespace Prisma {
           updateMany: {
             args: Prisma.InstitutionUpdateManyArgs<ExtArgs>
             result: BatchPayload
-          }
-          updateManyAndReturn: {
-            args: Prisma.InstitutionUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$InstitutionPayload>[]
           }
           upsert: {
             args: Prisma.InstitutionUpsertArgs<ExtArgs>
@@ -822,10 +806,6 @@ export namespace Prisma {
             args: Prisma.InstitutionUserCreateManyArgs<ExtArgs>
             result: BatchPayload
           }
-          createManyAndReturn: {
-            args: Prisma.InstitutionUserCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$InstitutionUserPayload>[]
-          }
           delete: {
             args: Prisma.InstitutionUserDeleteArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$InstitutionUserPayload>
@@ -841,10 +821,6 @@ export namespace Prisma {
           updateMany: {
             args: Prisma.InstitutionUserUpdateManyArgs<ExtArgs>
             result: BatchPayload
-          }
-          updateManyAndReturn: {
-            args: Prisma.InstitutionUserUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$InstitutionUserPayload>[]
           }
           upsert: {
             args: Prisma.InstitutionUserUpsertArgs<ExtArgs>
@@ -1054,34 +1030,47 @@ export namespace Prisma {
   }
 
   export type UserMinAggregateOutputType = {
+    uiPrefsJson: string | null
     id: string | null
     teacherProfileId: string | null
     email: string | null
     password: string | null
     firstName: string | null
     lastName: string | null
+    role: string | null
+    bannerUrl: string | null
+    primaryColor: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
 
   export type UserMaxAggregateOutputType = {
+    uiPrefsJson: string | null
     id: string | null
     teacherProfileId: string | null
     email: string | null
     password: string | null
     firstName: string | null
     lastName: string | null
+    role: string | null
+    bannerUrl: string | null
+    primaryColor: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
 
   export type UserCountAggregateOutputType = {
+    uiPrefsJson: number
     id: number
     teacherProfileId: number
     email: number
     password: number
     firstName: number
     lastName: number
+    role: number
+    uiPrefs: number
+    bannerUrl: number
+    primaryColor: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -1089,34 +1078,47 @@ export namespace Prisma {
 
 
   export type UserMinAggregateInputType = {
+    uiPrefsJson?: true
     id?: true
     teacherProfileId?: true
     email?: true
     password?: true
     firstName?: true
     lastName?: true
+    role?: true
+    bannerUrl?: true
+    primaryColor?: true
     createdAt?: true
     updatedAt?: true
   }
 
   export type UserMaxAggregateInputType = {
+    uiPrefsJson?: true
     id?: true
     teacherProfileId?: true
     email?: true
     password?: true
     firstName?: true
     lastName?: true
+    role?: true
+    bannerUrl?: true
+    primaryColor?: true
     createdAt?: true
     updatedAt?: true
   }
 
   export type UserCountAggregateInputType = {
+    uiPrefsJson?: true
     id?: true
     teacherProfileId?: true
     email?: true
     password?: true
     firstName?: true
     lastName?: true
+    role?: true
+    uiPrefs?: true
+    bannerUrl?: true
+    primaryColor?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -1195,12 +1197,17 @@ export namespace Prisma {
   }
 
   export type UserGroupByOutputType = {
+    uiPrefsJson: string | null
     id: string
     teacherProfileId: string | null
     email: string
     password: string
     firstName: string | null
     lastName: string | null
+    role: string
+    uiPrefs: JsonValue | null
+    bannerUrl: string | null
+    primaryColor: string | null
     createdAt: Date
     updatedAt: Date
     _count: UserCountAggregateOutputType | null
@@ -1223,61 +1230,56 @@ export namespace Prisma {
 
 
   export type UserSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    uiPrefsJson?: boolean
     id?: boolean
     teacherProfileId?: boolean
     email?: boolean
     password?: boolean
     firstName?: boolean
     lastName?: boolean
+    role?: boolean
+    uiPrefs?: boolean
+    bannerUrl?: boolean
+    primaryColor?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["user"]>
 
-  export type UserSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    teacherProfileId?: boolean
-    email?: boolean
-    password?: boolean
-    firstName?: boolean
-    lastName?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-  }, ExtArgs["result"]["user"]>
 
-  export type UserSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    teacherProfileId?: boolean
-    email?: boolean
-    password?: boolean
-    firstName?: boolean
-    lastName?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-  }, ExtArgs["result"]["user"]>
 
   export type UserSelectScalar = {
+    uiPrefsJson?: boolean
     id?: boolean
     teacherProfileId?: boolean
     email?: boolean
     password?: boolean
     firstName?: boolean
     lastName?: boolean
+    role?: boolean
+    uiPrefs?: boolean
+    bannerUrl?: boolean
+    primaryColor?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "teacherProfileId" | "email" | "password" | "firstName" | "lastName" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"uiPrefsJson" | "id" | "teacherProfileId" | "email" | "password" | "firstName" | "lastName" | "role" | "uiPrefs" | "bannerUrl" | "primaryColor" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 
   export type $UserPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "User"
     objects: {}
     scalars: $Extensions.GetPayloadResult<{
+      uiPrefsJson: string | null
       id: string
       teacherProfileId: string | null
       email: string
       password: string
       firstName: string | null
       lastName: string | null
+      role: string
+      uiPrefs: Prisma.JsonValue | null
+      bannerUrl: string | null
+      primaryColor: string | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["user"]>
@@ -1363,8 +1365,8 @@ export namespace Prisma {
      * // Get first 10 Users
      * const users = await prisma.user.findMany({ take: 10 })
      * 
-     * // Only select the `id`
-     * const userWithIdOnly = await prisma.user.findMany({ select: { id: true } })
+     * // Only select the `uiPrefsJson`
+     * const userWithUiPrefsJsonOnly = await prisma.user.findMany({ select: { uiPrefsJson: true } })
      * 
      */
     findMany<T extends UserFindManyArgs>(args?: SelectSubset<T, UserFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -1396,30 +1398,6 @@ export namespace Prisma {
      *     
      */
     createMany<T extends UserCreateManyArgs>(args?: SelectSubset<T, UserCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create many Users and returns the data saved in the database.
-     * @param {UserCreateManyAndReturnArgs} args - Arguments to create many Users.
-     * @example
-     * // Create many Users
-     * const user = await prisma.user.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many Users and only return the `id`
-     * const userWithIdOnly = await prisma.user.createManyAndReturn({
-     *   select: { id: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends UserCreateManyAndReturnArgs>(args?: SelectSubset<T, UserCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
 
     /**
      * Delete a User.
@@ -1484,36 +1462,6 @@ export namespace Prisma {
      * 
      */
     updateMany<T extends UserUpdateManyArgs>(args: SelectSubset<T, UserUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more Users and returns the data updated in the database.
-     * @param {UserUpdateManyAndReturnArgs} args - Arguments to update many Users.
-     * @example
-     * // Update many Users
-     * const user = await prisma.user.updateManyAndReturn({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Update zero or more Users and only return the `id`
-     * const userWithIdOnly = await prisma.user.updateManyAndReturn({
-     *   select: { id: true },
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    updateManyAndReturn<T extends UserUpdateManyAndReturnArgs>(args: SelectSubset<T, UserUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
 
     /**
      * Create or update one User.
@@ -1703,12 +1651,17 @@ export namespace Prisma {
    * Fields of the User model
    */
   interface UserFieldRefs {
+    readonly uiPrefsJson: FieldRef<"User", 'String'>
     readonly id: FieldRef<"User", 'String'>
     readonly teacherProfileId: FieldRef<"User", 'String'>
     readonly email: FieldRef<"User", 'String'>
     readonly password: FieldRef<"User", 'String'>
     readonly firstName: FieldRef<"User", 'String'>
     readonly lastName: FieldRef<"User", 'String'>
+    readonly role: FieldRef<"User", 'String'>
+    readonly uiPrefs: FieldRef<"User", 'Json'>
+    readonly bannerUrl: FieldRef<"User", 'String'>
+    readonly primaryColor: FieldRef<"User", 'String'>
     readonly createdAt: FieldRef<"User", 'DateTime'>
     readonly updatedAt: FieldRef<"User", 'DateTime'>
   }
@@ -1916,24 +1869,7 @@ export namespace Prisma {
      * The data used to create many Users.
      */
     data: UserCreateManyInput | UserCreateManyInput[]
-  }
-
-  /**
-   * User createManyAndReturn
-   */
-  export type UserCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the User
-     */
-    select?: UserSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the User
-     */
-    omit?: UserOmit<ExtArgs> | null
-    /**
-     * The data used to create many Users.
-     */
-    data: UserCreateManyInput | UserCreateManyInput[]
+    skipDuplicates?: boolean
   }
 
   /**
@@ -1962,32 +1898,6 @@ export namespace Prisma {
    * User updateMany
    */
   export type UserUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to update Users.
-     */
-    data: XOR<UserUpdateManyMutationInput, UserUncheckedUpdateManyInput>
-    /**
-     * Filter which Users to update
-     */
-    where?: UserWhereInput
-    /**
-     * Limit how many Users to update.
-     */
-    limit?: number
-  }
-
-  /**
-   * User updateManyAndReturn
-   */
-  export type UserUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the User
-     */
-    select?: UserSelectUpdateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the User
-     */
-    omit?: UserOmit<ExtArgs> | null
     /**
      * The data used to update Users.
      */
@@ -2265,27 +2175,7 @@ export namespace Prisma {
     bannerUrl?: boolean
   }, ExtArgs["result"]["institution"]>
 
-  export type InstitutionSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    name?: boolean
-    domain?: boolean
-    logoUrl?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    primaryColor?: boolean
-    bannerUrl?: boolean
-  }, ExtArgs["result"]["institution"]>
 
-  export type InstitutionSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    name?: boolean
-    domain?: boolean
-    logoUrl?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    primaryColor?: boolean
-    bannerUrl?: boolean
-  }, ExtArgs["result"]["institution"]>
 
   export type InstitutionSelectScalar = {
     id?: boolean
@@ -2430,30 +2320,6 @@ export namespace Prisma {
     createMany<T extends InstitutionCreateManyArgs>(args?: SelectSubset<T, InstitutionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Create many Institutions and returns the data saved in the database.
-     * @param {InstitutionCreateManyAndReturnArgs} args - Arguments to create many Institutions.
-     * @example
-     * // Create many Institutions
-     * const institution = await prisma.institution.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many Institutions and only return the `id`
-     * const institutionWithIdOnly = await prisma.institution.createManyAndReturn({
-     *   select: { id: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends InstitutionCreateManyAndReturnArgs>(args?: SelectSubset<T, InstitutionCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InstitutionPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
-
-    /**
      * Delete a Institution.
      * @param {InstitutionDeleteArgs} args - Arguments to delete one Institution.
      * @example
@@ -2516,36 +2382,6 @@ export namespace Prisma {
      * 
      */
     updateMany<T extends InstitutionUpdateManyArgs>(args: SelectSubset<T, InstitutionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more Institutions and returns the data updated in the database.
-     * @param {InstitutionUpdateManyAndReturnArgs} args - Arguments to update many Institutions.
-     * @example
-     * // Update many Institutions
-     * const institution = await prisma.institution.updateManyAndReturn({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Update zero or more Institutions and only return the `id`
-     * const institutionWithIdOnly = await prisma.institution.updateManyAndReturn({
-     *   select: { id: true },
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    updateManyAndReturn<T extends InstitutionUpdateManyAndReturnArgs>(args: SelectSubset<T, InstitutionUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InstitutionPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
 
     /**
      * Create or update one Institution.
@@ -2948,24 +2784,7 @@ export namespace Prisma {
      * The data used to create many Institutions.
      */
     data: InstitutionCreateManyInput | InstitutionCreateManyInput[]
-  }
-
-  /**
-   * Institution createManyAndReturn
-   */
-  export type InstitutionCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Institution
-     */
-    select?: InstitutionSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the Institution
-     */
-    omit?: InstitutionOmit<ExtArgs> | null
-    /**
-     * The data used to create many Institutions.
-     */
-    data: InstitutionCreateManyInput | InstitutionCreateManyInput[]
+    skipDuplicates?: boolean
   }
 
   /**
@@ -2994,32 +2813,6 @@ export namespace Prisma {
    * Institution updateMany
    */
   export type InstitutionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to update Institutions.
-     */
-    data: XOR<InstitutionUpdateManyMutationInput, InstitutionUncheckedUpdateManyInput>
-    /**
-     * Filter which Institutions to update
-     */
-    where?: InstitutionWhereInput
-    /**
-     * Limit how many Institutions to update.
-     */
-    limit?: number
-  }
-
-  /**
-   * Institution updateManyAndReturn
-   */
-  export type InstitutionUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Institution
-     */
-    select?: InstitutionSelectUpdateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the Institution
-     */
-    omit?: InstitutionOmit<ExtArgs> | null
     /**
      * The data used to update Institutions.
      */
@@ -3281,23 +3074,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }, ExtArgs["result"]["institutionUser"]>
 
-  export type InstitutionUserSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    userId?: boolean
-    institutionId?: boolean
-    role?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-  }, ExtArgs["result"]["institutionUser"]>
 
-  export type InstitutionUserSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    userId?: boolean
-    institutionId?: boolean
-    role?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-  }, ExtArgs["result"]["institutionUser"]>
 
   export type InstitutionUserSelectScalar = {
     id?: boolean
@@ -3438,30 +3215,6 @@ export namespace Prisma {
     createMany<T extends InstitutionUserCreateManyArgs>(args?: SelectSubset<T, InstitutionUserCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Create many InstitutionUsers and returns the data saved in the database.
-     * @param {InstitutionUserCreateManyAndReturnArgs} args - Arguments to create many InstitutionUsers.
-     * @example
-     * // Create many InstitutionUsers
-     * const institutionUser = await prisma.institutionUser.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many InstitutionUsers and only return the `id`
-     * const institutionUserWithIdOnly = await prisma.institutionUser.createManyAndReturn({
-     *   select: { id: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends InstitutionUserCreateManyAndReturnArgs>(args?: SelectSubset<T, InstitutionUserCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InstitutionUserPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
-
-    /**
      * Delete a InstitutionUser.
      * @param {InstitutionUserDeleteArgs} args - Arguments to delete one InstitutionUser.
      * @example
@@ -3524,36 +3277,6 @@ export namespace Prisma {
      * 
      */
     updateMany<T extends InstitutionUserUpdateManyArgs>(args: SelectSubset<T, InstitutionUserUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more InstitutionUsers and returns the data updated in the database.
-     * @param {InstitutionUserUpdateManyAndReturnArgs} args - Arguments to update many InstitutionUsers.
-     * @example
-     * // Update many InstitutionUsers
-     * const institutionUser = await prisma.institutionUser.updateManyAndReturn({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Update zero or more InstitutionUsers and only return the `id`
-     * const institutionUserWithIdOnly = await prisma.institutionUser.updateManyAndReturn({
-     *   select: { id: true },
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    updateManyAndReturn<T extends InstitutionUserUpdateManyAndReturnArgs>(args: SelectSubset<T, InstitutionUserUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InstitutionUserPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
 
     /**
      * Create or update one InstitutionUser.
@@ -3954,24 +3677,7 @@ export namespace Prisma {
      * The data used to create many InstitutionUsers.
      */
     data: InstitutionUserCreateManyInput | InstitutionUserCreateManyInput[]
-  }
-
-  /**
-   * InstitutionUser createManyAndReturn
-   */
-  export type InstitutionUserCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the InstitutionUser
-     */
-    select?: InstitutionUserSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the InstitutionUser
-     */
-    omit?: InstitutionUserOmit<ExtArgs> | null
-    /**
-     * The data used to create many InstitutionUsers.
-     */
-    data: InstitutionUserCreateManyInput | InstitutionUserCreateManyInput[]
+    skipDuplicates?: boolean
   }
 
   /**
@@ -4000,32 +3706,6 @@ export namespace Prisma {
    * InstitutionUser updateMany
    */
   export type InstitutionUserUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to update InstitutionUsers.
-     */
-    data: XOR<InstitutionUserUpdateManyMutationInput, InstitutionUserUncheckedUpdateManyInput>
-    /**
-     * Filter which InstitutionUsers to update
-     */
-    where?: InstitutionUserWhereInput
-    /**
-     * Limit how many InstitutionUsers to update.
-     */
-    limit?: number
-  }
-
-  /**
-   * InstitutionUser updateManyAndReturn
-   */
-  export type InstitutionUserUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the InstitutionUser
-     */
-    select?: InstitutionUserSelectUpdateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the InstitutionUser
-     */
-    omit?: InstitutionUserOmit<ExtArgs> | null
     /**
      * The data used to update InstitutionUsers.
      */
@@ -4118,6 +3798,9 @@ export namespace Prisma {
    */
 
   export const TransactionIsolationLevel: {
+    ReadUncommitted: 'ReadUncommitted',
+    ReadCommitted: 'ReadCommitted',
+    RepeatableRead: 'RepeatableRead',
     Serializable: 'Serializable'
   };
 
@@ -4125,12 +3808,17 @@ export namespace Prisma {
 
 
   export const UserScalarFieldEnum: {
+    uiPrefsJson: 'uiPrefsJson',
     id: 'id',
     teacherProfileId: 'teacherProfileId',
     email: 'email',
     password: 'password',
     firstName: 'firstName',
     lastName: 'lastName',
+    role: 'role',
+    uiPrefs: 'uiPrefs',
+    bannerUrl: 'bannerUrl',
+    primaryColor: 'primaryColor',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -4172,12 +3860,75 @@ export namespace Prisma {
   export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
+  export const NullableJsonNullValueInput: {
+    DbNull: typeof DbNull,
+    JsonNull: typeof JsonNull
+  };
+
+  export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+  export const JsonNullValueFilter: {
+    DbNull: typeof DbNull,
+    JsonNull: typeof JsonNull,
+    AnyNull: typeof AnyNull
+  };
+
+  export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
+
+
+  export const QueryMode: {
+    default: 'default',
+    insensitive: 'insensitive'
+  };
+
+  export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
+
+
   export const NullsOrder: {
     first: 'first',
     last: 'last'
   };
 
   export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
+  export const UserOrderByRelevanceFieldEnum: {
+    uiPrefsJson: 'uiPrefsJson',
+    id: 'id',
+    teacherProfileId: 'teacherProfileId',
+    email: 'email',
+    password: 'password',
+    firstName: 'firstName',
+    lastName: 'lastName',
+    role: 'role',
+    bannerUrl: 'bannerUrl',
+    primaryColor: 'primaryColor'
+  };
+
+  export type UserOrderByRelevanceFieldEnum = (typeof UserOrderByRelevanceFieldEnum)[keyof typeof UserOrderByRelevanceFieldEnum]
+
+
+  export const InstitutionOrderByRelevanceFieldEnum: {
+    id: 'id',
+    name: 'name',
+    domain: 'domain',
+    logoUrl: 'logoUrl',
+    primaryColor: 'primaryColor',
+    bannerUrl: 'bannerUrl'
+  };
+
+  export type InstitutionOrderByRelevanceFieldEnum = (typeof InstitutionOrderByRelevanceFieldEnum)[keyof typeof InstitutionOrderByRelevanceFieldEnum]
+
+
+  export const InstitutionUserOrderByRelevanceFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    institutionId: 'institutionId',
+    role: 'role'
+  };
+
+  export type InstitutionUserOrderByRelevanceFieldEnum = (typeof InstitutionUserOrderByRelevanceFieldEnum)[keyof typeof InstitutionUserOrderByRelevanceFieldEnum]
 
 
   /**
@@ -4189,6 +3940,20 @@ export namespace Prisma {
    * Reference to a field of type 'String'
    */
   export type StringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'String'>
+    
+
+
+  /**
+   * Reference to a field of type 'Json'
+   */
+  export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+  /**
+   * Reference to a field of type 'QueryMode'
+   */
+  export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
     
 
 
@@ -4213,25 +3978,36 @@ export namespace Prisma {
     AND?: UserWhereInput | UserWhereInput[]
     OR?: UserWhereInput[]
     NOT?: UserWhereInput | UserWhereInput[]
+    uiPrefsJson?: StringNullableFilter<"User"> | string | null
     id?: StringFilter<"User"> | string
     teacherProfileId?: StringNullableFilter<"User"> | string | null
     email?: StringFilter<"User"> | string
     password?: StringFilter<"User"> | string
     firstName?: StringNullableFilter<"User"> | string | null
     lastName?: StringNullableFilter<"User"> | string | null
+    role?: StringFilter<"User"> | string
+    uiPrefs?: JsonNullableFilter<"User">
+    bannerUrl?: StringNullableFilter<"User"> | string | null
+    primaryColor?: StringNullableFilter<"User"> | string | null
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
   }
 
   export type UserOrderByWithRelationInput = {
+    uiPrefsJson?: SortOrderInput | SortOrder
     id?: SortOrder
     teacherProfileId?: SortOrderInput | SortOrder
     email?: SortOrder
     password?: SortOrder
     firstName?: SortOrderInput | SortOrder
     lastName?: SortOrderInput | SortOrder
+    role?: SortOrder
+    uiPrefs?: SortOrderInput | SortOrder
+    bannerUrl?: SortOrderInput | SortOrder
+    primaryColor?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    _relevance?: UserOrderByRelevanceInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -4240,21 +4016,31 @@ export namespace Prisma {
     AND?: UserWhereInput | UserWhereInput[]
     OR?: UserWhereInput[]
     NOT?: UserWhereInput | UserWhereInput[]
+    uiPrefsJson?: StringNullableFilter<"User"> | string | null
     teacherProfileId?: StringNullableFilter<"User"> | string | null
     password?: StringFilter<"User"> | string
     firstName?: StringNullableFilter<"User"> | string | null
     lastName?: StringNullableFilter<"User"> | string | null
+    role?: StringFilter<"User"> | string
+    uiPrefs?: JsonNullableFilter<"User">
+    bannerUrl?: StringNullableFilter<"User"> | string | null
+    primaryColor?: StringNullableFilter<"User"> | string | null
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
   }, "id" | "email">
 
   export type UserOrderByWithAggregationInput = {
+    uiPrefsJson?: SortOrderInput | SortOrder
     id?: SortOrder
     teacherProfileId?: SortOrderInput | SortOrder
     email?: SortOrder
     password?: SortOrder
     firstName?: SortOrderInput | SortOrder
     lastName?: SortOrderInput | SortOrder
+    role?: SortOrder
+    uiPrefs?: SortOrderInput | SortOrder
+    bannerUrl?: SortOrderInput | SortOrder
+    primaryColor?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: UserCountOrderByAggregateInput
@@ -4266,12 +4052,17 @@ export namespace Prisma {
     AND?: UserScalarWhereWithAggregatesInput | UserScalarWhereWithAggregatesInput[]
     OR?: UserScalarWhereWithAggregatesInput[]
     NOT?: UserScalarWhereWithAggregatesInput | UserScalarWhereWithAggregatesInput[]
+    uiPrefsJson?: StringNullableWithAggregatesFilter<"User"> | string | null
     id?: StringWithAggregatesFilter<"User"> | string
     teacherProfileId?: StringNullableWithAggregatesFilter<"User"> | string | null
     email?: StringWithAggregatesFilter<"User"> | string
     password?: StringWithAggregatesFilter<"User"> | string
     firstName?: StringNullableWithAggregatesFilter<"User"> | string | null
     lastName?: StringNullableWithAggregatesFilter<"User"> | string | null
+    role?: StringWithAggregatesFilter<"User"> | string
+    uiPrefs?: JsonNullableWithAggregatesFilter<"User">
+    bannerUrl?: StringNullableWithAggregatesFilter<"User"> | string | null
+    primaryColor?: StringNullableWithAggregatesFilter<"User"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
   }
@@ -4299,6 +4090,7 @@ export namespace Prisma {
     updatedAt?: SortOrder
     primaryColor?: SortOrderInput | SortOrder
     bannerUrl?: SortOrderInput | SortOrder
+    _relevance?: InstitutionOrderByRelevanceInput
   }
 
   export type InstitutionWhereUniqueInput = Prisma.AtLeast<{
@@ -4362,6 +4154,7 @@ export namespace Prisma {
     role?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    _relevance?: InstitutionUserOrderByRelevanceInput
   }
 
   export type InstitutionUserWhereUniqueInput = Prisma.AtLeast<{
@@ -4401,78 +4194,113 @@ export namespace Prisma {
   }
 
   export type UserCreateInput = {
+    uiPrefsJson?: string | null
     id?: string
     teacherProfileId?: string | null
     email: string
     password: string
     firstName?: string | null
     lastName?: string | null
+    role?: string
+    uiPrefs?: NullableJsonNullValueInput | InputJsonValue
+    bannerUrl?: string | null
+    primaryColor?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
 
   export type UserUncheckedCreateInput = {
+    uiPrefsJson?: string | null
     id?: string
     teacherProfileId?: string | null
     email: string
     password: string
     firstName?: string | null
     lastName?: string | null
+    role?: string
+    uiPrefs?: NullableJsonNullValueInput | InputJsonValue
+    bannerUrl?: string | null
+    primaryColor?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
 
   export type UserUpdateInput = {
+    uiPrefsJson?: NullableStringFieldUpdateOperationsInput | string | null
     id?: StringFieldUpdateOperationsInput | string
     teacherProfileId?: NullableStringFieldUpdateOperationsInput | string | null
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     firstName?: NullableStringFieldUpdateOperationsInput | string | null
     lastName?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    uiPrefs?: NullableJsonNullValueInput | InputJsonValue
+    bannerUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    primaryColor?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type UserUncheckedUpdateInput = {
+    uiPrefsJson?: NullableStringFieldUpdateOperationsInput | string | null
     id?: StringFieldUpdateOperationsInput | string
     teacherProfileId?: NullableStringFieldUpdateOperationsInput | string | null
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     firstName?: NullableStringFieldUpdateOperationsInput | string | null
     lastName?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    uiPrefs?: NullableJsonNullValueInput | InputJsonValue
+    bannerUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    primaryColor?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type UserCreateManyInput = {
+    uiPrefsJson?: string | null
     id?: string
     teacherProfileId?: string | null
     email: string
     password: string
     firstName?: string | null
     lastName?: string | null
+    role?: string
+    uiPrefs?: NullableJsonNullValueInput | InputJsonValue
+    bannerUrl?: string | null
+    primaryColor?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
 
   export type UserUpdateManyMutationInput = {
+    uiPrefsJson?: NullableStringFieldUpdateOperationsInput | string | null
     id?: StringFieldUpdateOperationsInput | string
     teacherProfileId?: NullableStringFieldUpdateOperationsInput | string | null
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     firstName?: NullableStringFieldUpdateOperationsInput | string | null
     lastName?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    uiPrefs?: NullableJsonNullValueInput | InputJsonValue
+    bannerUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    primaryColor?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type UserUncheckedUpdateManyInput = {
+    uiPrefsJson?: NullableStringFieldUpdateOperationsInput | string | null
     id?: StringFieldUpdateOperationsInput | string
     teacherProfileId?: NullableStringFieldUpdateOperationsInput | string | null
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     firstName?: NullableStringFieldUpdateOperationsInput | string | null
     lastName?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    uiPrefs?: NullableJsonNullValueInput | InputJsonValue
+    bannerUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    primaryColor?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -4617,20 +4445,6 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type StringFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel>
-    in?: string[]
-    notIn?: string[]
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    not?: NestedStringFilter<$PrismaModel> | string
-  }
-
   export type StringNullableFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | null
@@ -4642,7 +4456,46 @@ export namespace Prisma {
     contains?: string | StringFieldRefInput<$PrismaModel>
     startsWith?: string | StringFieldRefInput<$PrismaModel>
     endsWith?: string | StringFieldRefInput<$PrismaModel>
+    search?: string
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
+  }
+
+  export type StringFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel>
+    in?: string[]
+    notIn?: string[]
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    search?: string
+    not?: NestedStringFilter<$PrismaModel> | string
+  }
+  export type JsonNullableFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonNullableFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonNullableFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue
+    lte?: InputJsonValue
+    gt?: InputJsonValue
+    gte?: InputJsonValue
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
   }
 
   export type DateTimeFilter<$PrismaModel = never> = {
@@ -4661,54 +4514,56 @@ export namespace Prisma {
     nulls?: NullsOrder
   }
 
+  export type UserOrderByRelevanceInput = {
+    fields: UserOrderByRelevanceFieldEnum | UserOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
   export type UserCountOrderByAggregateInput = {
+    uiPrefsJson?: SortOrder
     id?: SortOrder
     teacherProfileId?: SortOrder
     email?: SortOrder
     password?: SortOrder
     firstName?: SortOrder
     lastName?: SortOrder
+    role?: SortOrder
+    uiPrefs?: SortOrder
+    bannerUrl?: SortOrder
+    primaryColor?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
 
   export type UserMaxOrderByAggregateInput = {
+    uiPrefsJson?: SortOrder
     id?: SortOrder
     teacherProfileId?: SortOrder
     email?: SortOrder
     password?: SortOrder
     firstName?: SortOrder
     lastName?: SortOrder
+    role?: SortOrder
+    bannerUrl?: SortOrder
+    primaryColor?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
 
   export type UserMinOrderByAggregateInput = {
+    uiPrefsJson?: SortOrder
     id?: SortOrder
     teacherProfileId?: SortOrder
     email?: SortOrder
     password?: SortOrder
     firstName?: SortOrder
     lastName?: SortOrder
+    role?: SortOrder
+    bannerUrl?: SortOrder
+    primaryColor?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
-  }
-
-  export type StringWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel>
-    in?: string[]
-    notIn?: string[]
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    not?: NestedStringWithAggregatesFilter<$PrismaModel> | string
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedStringFilter<$PrismaModel>
-    _max?: NestedStringFilter<$PrismaModel>
   }
 
   export type StringNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -4722,10 +4577,55 @@ export namespace Prisma {
     contains?: string | StringFieldRefInput<$PrismaModel>
     startsWith?: string | StringFieldRefInput<$PrismaModel>
     endsWith?: string | StringFieldRefInput<$PrismaModel>
+    search?: string
     not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedStringNullableFilter<$PrismaModel>
     _max?: NestedStringNullableFilter<$PrismaModel>
+  }
+
+  export type StringWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel>
+    in?: string[]
+    notIn?: string[]
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    search?: string
+    not?: NestedStringWithAggregatesFilter<$PrismaModel> | string
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedStringFilter<$PrismaModel>
+    _max?: NestedStringFilter<$PrismaModel>
+  }
+  export type JsonNullableWithAggregatesFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue
+    lte?: InputJsonValue
+    gt?: InputJsonValue
+    gte?: InputJsonValue
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedJsonNullableFilter<$PrismaModel>
+    _max?: NestedJsonNullableFilter<$PrismaModel>
   }
 
   export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -4740,6 +4640,12 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedDateTimeFilter<$PrismaModel>
     _max?: NestedDateTimeFilter<$PrismaModel>
+  }
+
+  export type InstitutionOrderByRelevanceInput = {
+    fields: InstitutionOrderByRelevanceFieldEnum | InstitutionOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
   }
 
   export type InstitutionCountOrderByAggregateInput = {
@@ -4775,6 +4681,12 @@ export namespace Prisma {
     bannerUrl?: SortOrder
   }
 
+  export type InstitutionUserOrderByRelevanceInput = {
+    fields: InstitutionUserOrderByRelevanceFieldEnum | InstitutionUserOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
   export type InstitutionUserCountOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
@@ -4802,30 +4714,16 @@ export namespace Prisma {
     updatedAt?: SortOrder
   }
 
-  export type StringFieldUpdateOperationsInput = {
-    set?: string
-  }
-
   export type NullableStringFieldUpdateOperationsInput = {
     set?: string | null
   }
 
-  export type DateTimeFieldUpdateOperationsInput = {
-    set?: Date | string
+  export type StringFieldUpdateOperationsInput = {
+    set?: string
   }
 
-  export type NestedStringFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel>
-    in?: string[]
-    notIn?: string[]
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    not?: NestedStringFilter<$PrismaModel> | string
+  export type DateTimeFieldUpdateOperationsInput = {
+    set?: Date | string
   }
 
   export type NestedStringNullableFilter<$PrismaModel = never> = {
@@ -4839,7 +4737,23 @@ export namespace Prisma {
     contains?: string | StringFieldRefInput<$PrismaModel>
     startsWith?: string | StringFieldRefInput<$PrismaModel>
     endsWith?: string | StringFieldRefInput<$PrismaModel>
+    search?: string
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
+  }
+
+  export type NestedStringFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel>
+    in?: string[]
+    notIn?: string[]
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    search?: string
+    not?: NestedStringFilter<$PrismaModel> | string
   }
 
   export type NestedDateTimeFilter<$PrismaModel = never> = {
@@ -4853,6 +4767,35 @@ export namespace Prisma {
     not?: NestedDateTimeFilter<$PrismaModel> | Date | string
   }
 
+  export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | null
+    notIn?: string[] | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    search?: string
+    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedStringNullableFilter<$PrismaModel>
+    _max?: NestedStringNullableFilter<$PrismaModel>
+  }
+
+  export type NestedIntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  }
+
   export type NestedStringWithAggregatesFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[]
@@ -4864,6 +4807,7 @@ export namespace Prisma {
     contains?: string | StringFieldRefInput<$PrismaModel>
     startsWith?: string | StringFieldRefInput<$PrismaModel>
     endsWith?: string | StringFieldRefInput<$PrismaModel>
+    search?: string
     not?: NestedStringWithAggregatesFilter<$PrismaModel> | string
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedStringFilter<$PrismaModel>
@@ -4880,33 +4824,28 @@ export namespace Prisma {
     gte?: number | IntFieldRefInput<$PrismaModel>
     not?: NestedIntFilter<$PrismaModel> | number
   }
+  export type NestedJsonNullableFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<NestedJsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>,
+        Required<NestedJsonNullableFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>
 
-  export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel> | null
-    in?: string[] | null
-    notIn?: string[] | null
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedStringNullableFilter<$PrismaModel>
-    _max?: NestedStringNullableFilter<$PrismaModel>
-  }
-
-  export type NestedIntNullableFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null
-    in?: number[] | null
-    notIn?: number[] | null
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  export type NestedJsonNullableFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue
+    lte?: InputJsonValue
+    gt?: InputJsonValue
+    gte?: InputJsonValue
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
   }
 
   export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {

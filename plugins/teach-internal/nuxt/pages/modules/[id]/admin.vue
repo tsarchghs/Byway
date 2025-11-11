@@ -40,6 +40,11 @@
 </template>
 
 <script setup lang="ts">
+
+import { ref, onMounted, h } from 'vue'
+import { useRoute, useRuntimeConfig, definePageMeta } from '#imports'
+import { $fetch } from 'ofetch'
+
 const route = useRoute()
 const config = useRuntimeConfig()
 const baseUrl = config.public?.apiBase || 'http://localhost:4000'
@@ -93,7 +98,6 @@ async function checkTeacher(){
 async function init(){ await loadModule(); await loadLessons() }
 onMounted(init)
 
-definePageMeta({ layout: 'institution' })
 
 
 definePageMeta({ layout:'teacher', title:'Module Admin' })

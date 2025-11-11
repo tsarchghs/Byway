@@ -1,5 +1,5 @@
 // plugins/authentication/server/graphql/resolvers.mjs
-import { PrismaClient } from "../db/generated/client/index.js";
+import { PrismaClient } from "../db/generated/index";
 const prisma = new PrismaClient();
 
 function userFromCtx(ctx) {

@@ -160,8 +160,8 @@ const config = {
       }
     }
   },
-  "inlineSchema": "generator client {\n  provider = \"prisma-client-js\"\n  output   = \"./generated/client\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = \"file:./teach.db\"\n}\n\nmodel TeacherProfile {\n  id          String   @id @default(cuid())\n  bio         String\n  subjects    String\n  avatarUrl   String?\n  verified    Boolean  @default(false)\n  payoutEmail String?\n  createdAt   DateTime @default(now())\n}\n",
-  "inlineSchemaHash": "0bc883a73656ebab6695721e23a95786b5f37687f7b4559ca0caf368b0f39a53",
+  "inlineSchema": "generator client {\n  engineType = \"node-api\"\n  provider   = \"prisma-client-js\"\n  output     = \"./generated/client\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = \"file:./teach.db\"\n}\n\nmodel TeacherProfile {\n  id          String   @id @default(cuid())\n  bio         String\n  subjects    String\n  avatarUrl   String?\n  verified    Boolean  @default(false)\n  payoutEmail String?\n  createdAt   DateTime @default(now())\n}\n",
+  "inlineSchemaHash": "058663186db715fc80fdd8dd2d723aa28bab4351bbafea5ddeed12fe144b0806",
   "copyEngine": true
 }
 

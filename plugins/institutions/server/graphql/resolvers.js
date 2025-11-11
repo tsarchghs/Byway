@@ -1,45 +1,63 @@
+// plugins/institutions/server/graphql/resolvers.js
+
 async function getPrisma() {
+  // Try the primary client (custom output)
   try {
-    const modA = await import('../db/client.js').catch(()=>null)
-    if (modA && modA.prisma) return modA.prisma
-  } catch {}
+    const mod = await import('../db/client.js').catch(() => null)
+    if (mod?.prisma) return mod.prisma
+    if (mod?.PrismaClient) return new mod.PrismaClient()
+  } catch (e) {
+    console.warn('[institutions] Failed to load ../db/client.js:', e.message)
+  }
+
+  // Try the generated fallback (standard Prisma output)
   try {
-    const modB = await import('../db/generated/client/index.js').catch(()=>null)
-    if (modB && modB.PrismaClient) {
-      const prisma = new modB.PrismaClient()
-      return prisma
-    }
-  } catch {}
+    const mod = await import('../db/generated/client/index.js').catch(() => null)
+    if (mod?.PrismaClient) return new mod.PrismaClient()
+  } catch (e) {
+    console.warn('[institutions] Failed to load ../db/generated/client/index.js:', e.message)
+  }
+
+  console.error('[institutions] No usable Prisma client found.')
   return null
 }
-export default {
+
+export const resolvers = {
   Query: {
-    institutions: async ()=>{
+    institutions: async () => {
       const prisma = await getPrisma()
-      if (prisma?.institution) return prisma.institution.findMany({ orderBy: { createdAt: 'desc' } })
-      return []
+      if (!prisma?.institution) return []
+      return prisma.institution.findMany({ orderBy: { createdAt: 'desc' } })
     },
-    institutionBySlug: async (_p,{slug})=>{
+
+    institutionBySlug: async (_parent, { slug }) => {
       const prisma = await getPrisma()
-      if (prisma?.institution) return prisma.institution.findUnique({ where: { slug } })
-      return null
+      if (!prisma?.institution) return null
+      return prisma.institution.findUnique({ where: { slug } })
     },
-    classrooms: async (_p,{institutionId})=>{
+
+    classrooms: async (_parent, { institutionId }) => {
       const prisma = await getPrisma()
-      if (prisma?.classroom) return prisma.classroom.findMany({ where: { institutionId } })
-      return []
-    }
+      if (!prisma?.classroom) return []
+      return prisma.classroom.findMany({ where: { institutionId } })
+    },
   },
+
   Mutation: {
-    createInstitution: async (_p,{name, slug})=>{
+    createInstitution: async (_parent, { name, slug }) => {
       const prisma = await getPrisma()
       if (!prisma?.institution) throw new Error('Prisma not ready for Institution')
-      return prisma.institution.create({ data: { name, slug } })
+      return prisma.institution.create({
+        data: { name, slug },
+      })
     },
-    createClassroom: async (_p,{institutionId, name, code})=>{
+
+    createClassroom: async (_parent, { institutionId, name, code }) => {
       const prisma = await getPrisma()
       if (!prisma?.classroom) throw new Error('Prisma not ready for Classroom')
-      return prisma.classroom.create({ data: { institutionId, name, code } })
-    }
-  }
+      return prisma.classroom.create({
+        data: { institutionId, name, code },
+      })
+    },
+  },
 }

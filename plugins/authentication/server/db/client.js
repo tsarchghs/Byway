@@ -1,2 +1,2 @@
-import { PrismaClient } from "./generated/index"
+import { PrismaClient } from "./generated/client"
 export const prisma = new PrismaClient()

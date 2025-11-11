@@ -55,11 +55,8 @@ export const AuthMutation = extendType({
         lastName: stringArg(),
       },
       async resolve(_, args) {
-        // ✅ check if email already exists
         const existing = await prisma.user.findUnique({ where: { email: args.email } })
-        if (existing) {
-          throw new Error("Email is already registered")
-        }
+        if (existing) throw new Error("Email is already registered")
 
         const hashed = await bcrypt.hash(args.password, 10)
         const user = await prisma.user.create({
@@ -71,8 +68,7 @@ export const AuthMutation = extendType({
           },
         })
         const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "7d" })
-
-        return { ...user, token} 
+        return { ...user, token }
       },
     })
 
@@ -90,22 +86,22 @@ export const AuthMutation = extendType({
         if (!valid) throw new Error("Invalid password")
 
         const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "7d" })
-
         return { token, user }
       },
-    }),
-t.field("updateUserTeacherProfile", {
-  type: "GqlUser",
-  args: {
-    teacherProfileId: nonNull(stringArg()),
-  },
-  async resolve(_, { teacherProfileId }, ctx) {
-    if (!ctx.userId) throw new Error("Not authenticated")
-    return prisma.user.update({
-      where: { id: ctx.userId },
-      data: { teacherProfileId },
     })
-  },
-})
+
+    t.field("updateUserTeacherProfile", {
+      type: "GqlUser",
+      args: {
+        teacherProfileId: nonNull(stringArg()),
+      },
+      async resolve(_, { teacherProfileId }, ctx) {
+        if (!ctx.userId) throw new Error("Not authenticated")
+        return prisma.user.update({
+          where: { id: ctx.userId },
+          data: { teacherProfileId },
+        })
+      },
+    })
   },
 })

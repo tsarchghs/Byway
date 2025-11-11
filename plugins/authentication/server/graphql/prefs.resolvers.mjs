@@ -1,4 +1,4 @@
-import { PrismaClient } from '../db/generated/client/index.js'
+import { PrismaClient } from '../db/generated/index'
 
 const prisma = new PrismaClient()
 
@@ -13,7 +13,7 @@ export const prefsResolvers = {
         return {
           id: user.id,
           email: user.email,
-          role: (user as any).role || null,
+          role: (user).role || null,
           uiPrefs: user.uiPrefs ? JSON.stringify(user.uiPrefs) : "{}"
         }
       } catch (e) {
@@ -28,7 +28,7 @@ export const prefsResolvers = {
       const user = await prisma.user.findUnique({ where: { id } })
       const key = String(args.key)
       const value = String(args.value)
-      let uiPrefs = (user && (user as any).uiPrefs) || {}
+      let uiPrefs = (user && (user).uiPrefs) || {}
       try {
         if (typeof uiPrefs === 'string') uiPrefs = JSON.parse(uiPrefs)
       } catch { uiPrefs = {} }

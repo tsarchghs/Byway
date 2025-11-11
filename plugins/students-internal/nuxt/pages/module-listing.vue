@@ -732,15 +732,11 @@
     </a-layout>
   </a-config-provider>
 </template>
-
-\1
+<script setup lang="ts">
 import { computed } from 'vue'
-import { useQuery, gql } from '@vue/apollo-composable'
-const Q_ME = gql`query Me { me { id email displayName roles } }`
-const { result: _meResult } = useQuery(Q_ME)
-const me = computed(() => _meResult.value?.me || null)
-
-import { computed, onMounted, reactive, ref, watch, onBeforeUnmount, h, nextTick } from 'vue'
+import { useQuery } from '@vue/apollo-composable'
+import gql from 'graphql-tag'
+import { onMounted, reactive, ref, watch, onBeforeUnmount, h, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { theme, message, Modal } from 'ant-design-vue'
 import {
@@ -749,6 +745,9 @@ import {
    BugOutlined, CloudSyncOutlined, SortAscendingOutlined,
   UploadOutlined, BookOutlined, PrinterOutlined, ClockCircleOutlined
 } from '@ant-design/icons-vue'
+const Q_ME = gql`query Me { me { id email displayName roles } }`
+const { result: _meResult } = useQuery(Q_ME)
+const me = computed(() => _meResult.value?.me || null)
 
 /** ---------- Simple i18n (extendable) ---------- */
 const dict = {
@@ -860,7 +859,6 @@ const dict = {
 }
 function t(k: keyof typeof dict['en'] | string){ return (dict.en as any)[k] || k }
 
-/** ---------- Types ---------- */
 type QuizOption = { text: string; correct: boolean }
 type QuizQuestion = { id: string; text: string; type: 'mcq' | 'tf' | 'short'; options?: QuizOption[] }
 type Resource = { id?: string; name?: string; title?: string; kind?: 'pdf' | 'file' | 'link'; url: string }
@@ -973,9 +971,9 @@ const submitting = ref(false)
 const submitForm = reactive<{ notes: string; url: string }>({ notes: '', url: '' })
 
 /** ---------- Helpers ---------- */
-const selectedModuleId = computed(() => String(route.params.module_id || ''))
-const selectedCourseId = computed(() => String(route.params.course_id || route.params.courseId || ''))
-const selectedStudentId = computed(() => String(route.params.student_id || route.params.studentId || ''))
+const selectedModuleId = computed(() => String(route?.params?.module_id || ''))
+const selectedCourseId = computed(() => String(route?.params?.course_id || route?.params?.courseId || ''))
+const selectedStudentId = computed(() => String(route?.params?.student_id || route?.params?.studentId || ''))
 
 const hasModules = computed(() => modules.value.length > 0)
 const currentModuleReady = computed(() => !!moduleT.value && lessons.value.length > 0)
@@ -1611,15 +1609,19 @@ function syncVideoSpeed(){
 watch(videoSpeed, v => { if (html5Video.value) html5Video.value.playbackRate = v })
 
 /** Highlights */
-function addHighlight(){
+function addHighlight() {
   const id = currentLesson.value?.id || 'global'
   if (!notes[id]) notes[id] = { text: '', highlights: [] }
-  const text = newHighlight.value.trim()
+
+  const raw = newHighlight?.value ?? ''
+  const text = typeof raw === 'string' ? raw.trim() : ''
   if (!text) return
+
   notes[id].highlights.push(text)
   newHighlight.value = ''
   persistNotes(id)
 }
+
 function removeHighlight(index: number){
   const id = currentLesson.value?.id || 'global'
   notes[id]?.highlights.splice(index, 1)
@@ -1682,7 +1684,7 @@ function cryptoRandom(){ try { return crypto.randomUUID() } catch { return 'id-'
 /** ---------- Routing ---------- */
 async function switchModule(nextId: string) {
   if (!nextId || nextId === selectedModuleId.value) return
-  await router.replace({ params: { ...route.params, module_id: nextId } })
+  await router.replace({ params: { ...(route?.params || {}), module_id: nextId } })
 }
 
 /** ---------- Lifecycle ---------- */
@@ -1717,13 +1719,14 @@ onMounted(async () => {
 
   if (!moduleId || (hasModules.value && !modules.value.some(m => m.id === moduleId))) {
     const pick = modules.value[0]?.id
-    if (pick) await router.replace({ params: { ...route.params, module_id: pick } })
+    if (pick) await router.replace({ params: { ...(route?.params || {}), module_id: pick } })
   } else {
     await loadModule(studentId, courseId, moduleId)
   }
 })
 
-watch(() => route.params.module_id, async (next, prev) => {
+watch(() => route?.params?.module_id, async (next, prev) => {
+  if (!route?.params) return
   if (next === prev) return
   const studentId = selectedStudentId.value
   const courseId  = selectedCourseId.value
@@ -1735,7 +1738,7 @@ watch(() => route.params.module_id, async (next, prev) => {
   }
   if (hasModules.value && !modules.value.some(m => m.id === moduleId)) {
     const fallback = modules.value[0]?.id
-    if (fallback) await router.replace({ params: { ...route.params, module_id: fallback } })
+    if (fallback) await router.replace({ params: { ...(route?.params || {}), module_id: fallback } })
     return
   }
   await loadModule(studentId, courseId, moduleId)

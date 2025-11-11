@@ -114,16 +114,24 @@ Prisma.NullTypes = {
  */
 
 exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
+  ReadUncommitted: 'ReadUncommitted',
+  ReadCommitted: 'ReadCommitted',
+  RepeatableRead: 'RepeatableRead',
   Serializable: 'Serializable'
 });
 
 exports.Prisma.UserScalarFieldEnum = {
+  uiPrefsJson: 'uiPrefsJson',
   id: 'id',
   teacherProfileId: 'teacherProfileId',
   email: 'email',
   password: 'password',
   firstName: 'firstName',
   lastName: 'lastName',
+  role: 'role',
+  uiPrefs: 'uiPrefs',
+  bannerUrl: 'bannerUrl',
+  primaryColor: 'primaryColor',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -153,9 +161,54 @@ exports.Prisma.SortOrder = {
   desc: 'desc'
 };
 
+exports.Prisma.NullableJsonNullValueInput = {
+  DbNull: Prisma.DbNull,
+  JsonNull: Prisma.JsonNull
+};
+
+exports.Prisma.JsonNullValueFilter = {
+  DbNull: Prisma.DbNull,
+  JsonNull: Prisma.JsonNull,
+  AnyNull: Prisma.AnyNull
+};
+
+exports.Prisma.QueryMode = {
+  default: 'default',
+  insensitive: 'insensitive'
+};
+
 exports.Prisma.NullsOrder = {
   first: 'first',
   last: 'last'
+};
+
+exports.Prisma.UserOrderByRelevanceFieldEnum = {
+  uiPrefsJson: 'uiPrefsJson',
+  id: 'id',
+  teacherProfileId: 'teacherProfileId',
+  email: 'email',
+  password: 'password',
+  firstName: 'firstName',
+  lastName: 'lastName',
+  role: 'role',
+  bannerUrl: 'bannerUrl',
+  primaryColor: 'primaryColor'
+};
+
+exports.Prisma.InstitutionOrderByRelevanceFieldEnum = {
+  id: 'id',
+  name: 'name',
+  domain: 'domain',
+  logoUrl: 'logoUrl',
+  primaryColor: 'primaryColor',
+  bannerUrl: 'bannerUrl'
+};
+
+exports.Prisma.InstitutionUserOrderByRelevanceFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  institutionId: 'institutionId',
+  role: 'role'
 };
 
 

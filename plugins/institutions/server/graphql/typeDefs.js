@@ -1,4 +1,5 @@
-export default `#graphql
+// plugins/institutions/server/graphql/typeDefs.js
+export const typeDefs = `#graphql
 type Institution {
   id: ID!
   name: String!

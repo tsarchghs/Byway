@@ -1,0 +1,69 @@
+generator client {
+  engineType = "node-api"
+  provider   = "prisma-client-js"
+  output     = "./generated"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./students.db"
+}
+
+model StudentNote {
+  id        String   @id @default(cuid())
+  studentId String
+  courseId  String
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([studentId, courseId])
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  title       String
+  description String? // optional, useful for displaying course info
+  progressPct Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations (optional — uncomment if you have these models)
+  // gradebookEntries GradebookEntry[]
+  // studentNotes     StudentNote[]
+
+  @@index([title])
+}
+
+model GradebookEntry {
+  id           String   @id @default(cuid())
+  assignmentId String
+  studentId    String
+  courseId     String
+  grade        Float?   @default(0)
+  feedback     String?
+  progressPct  Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations (optional — include if you have related models)
+  // student   Student?   @relation(fields: [studentId], references: [id])
+  // course    Course?    @relation(fields: [courseId], references: [id])
+
+  @@index([studentId, courseId])
+}
+
+model UserKV {
+  id        String   @id @default(cuid())
+  userId    String?
+  sessionId String?
+  key       String
+  value     String
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
+
+model KV {
+  key   String  @id
+  value String?
+}

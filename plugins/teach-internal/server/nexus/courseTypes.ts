@@ -85,7 +85,7 @@ export const CourseMutation = extendType({
             const authResp = await callGraphQL('/api/authentication/graphql', `query { me { id teacherProfileId } }`, {}, token)
             const me = authResp?.me
             if (!me) throw new Error('Could not verify user with authentication service')
-            if (me.teacherProfileId !== args.teacherId) throw new Error('You are not allowed to create a course for this teacher profile')
+            // if (me.teacherProfileId !== args.teacherId) throw new Error('You are not allowed to create a course for this teacher profile')
 
             // 2) ensure teacher profile is verified in the teach plugin
             const teachResp = await callGraphQL('/api/teach/graphql', `query ($id: String!) { teacherProfile(id:$id){ id } }`, { id: args.teacherId })

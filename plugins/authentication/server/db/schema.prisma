@@ -1,11 +1,12 @@
 generator client {
+engineType = "node-api"
   provider = "prisma-client-js"
   output   = "./generated"
 }
 
 datasource db {
-  provider = "sqlite" // can be Postgres too
-  url      = "file:./auth.db" // e.g., file:./auth.db
+  provider = "mysql" // can be Postgres too
+  url      = "mysql://root:gjergji21@localhost:3306/bloggrs_authentication" // e.g., file:./auth.db
 }
 
 model User {

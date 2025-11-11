@@ -1,23 +1,22 @@
 <template>
   <a-layout class="p-6">
     <StudentsNav />
-    <a-page-header
-      title="Gradebook"
-      :sub-title="courseId ? `Course · ${courseId}` : 'Select course'"
-      @back="$router.push('/')" class="mb-4"
-    >
-      <template #tags>
-        <a-tag color="blue">Students</a-tag>
-        <a-tag color="purple">Assessments</a-tag>
-      </template>
-      <template #extra>
-        <a-space>
-          <a-button @click="refresh"><sync-outlined /> Refresh</a-button>
-          <a-button type="primary" @click="openRubric"><profile-outlined /> Rubric</a-button>
-        </a-space>
-      </template>
-      <template #extra>
-    <a-space>
+<a-page-header
+  title="Gradebook"
+  :sub-title="courseId ? `Course · ${courseId}` : 'Select course'"
+  @back="$router.push('/')"
+  class="mb-4"
+>
+  <template #tags>
+    <a-tag color="blue">Students</a-tag>
+    <a-tag color="purple">Assessments</a-tag>
+  </template>
+
+  <template #extra>
+    <a-space wrap>
+      <a-button @click="refresh"><sync-outlined /> Refresh</a-button>
+      <a-button type="primary" @click="openRubric"><profile-outlined /> Rubric</a-button>
+      <a-divider type="vertical" />
       <a-button @click="$router.push('/students/dashboard')">Dashboard</a-button>
       <a-button @click="$router.push('/courses')">My Courses</a-button>
     </a-space>

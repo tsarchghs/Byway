@@ -66,6 +66,31 @@ const Query = extendType({
 const Mutation = extendType({
   type: 'Mutation',
   definition(t) {
+    t.field('register', {
+      type: 'GqlUser',
+      args: {
+        email: stringArg(),
+        password: stringArg(),
+        firstName: stringArg(),
+        lastName: stringArg(),
+      },
+      async resolve(_, args) {
+        const existing = await prisma.user.findUnique({ where: { email: args.email } })
+        if (existing) throw new Error('User already exists')
+
+        const created = await prisma.user.create({
+          data: {
+            email: args.email,
+            password: args.password, // TODO: hash this
+            firstName: args.firstName,
+            lastName: args.lastName,
+          },
+        })
+        return created
+      },
+    })
+  },
+  definition(t) {
     t.field('loginWithEmail', {
       type: AuthPayload,
       args: {

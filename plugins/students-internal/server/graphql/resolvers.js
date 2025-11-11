@@ -1,5 +1,5 @@
 import { GraphQLScalarType, Kind } from 'graphql'
-import { PrismaClient } from '../db/generated/client/index.js'
+import { PrismaClient } from '../db/generated/index'
 
 const prisma = new PrismaClient()
 
@@ -21,22 +21,40 @@ const JSONScalar = new GraphQLScalarType({
 
 export const resolvers = {
   JSON: JSONScalar,
-  Query: {
-    async kvGet(_, { key }) {
-      const row = await prisma.kV.findUnique({ where: { key } })
-      return row ? { key: row.key, value: row.value ?? null } : null
-    },
-    async isEnrolled(_, { studentId, courseId }) {
-      const e = await prisma.enrollment.findFirst({ where: { studentId, courseId } })
-      return !!e
-    },
-    async enrollments(_, args) {
-      return prisma.enrollment.findMany({ where: { ...args } })
-    },
-    async courseGradebook(_, { courseId }) {
-      return prisma.gradebookEntry.findMany({ where: { courseId }, orderBy: { updatedAt: 'desc' } })
-    }
+Query: {
+  async kvGet(_, { key }) {
+    const row = await prisma.kV.findUnique({ where: { key } });
+    return row ? { key: row.key, value: row.value ?? null } : null;
   },
+  async isEnrolled(_, { studentId, courseId }) {
+    const e = await prisma.enrollment.findFirst({ where: { studentId, courseId } });
+    return !!e;
+  },
+  async enrollments(_, args) {
+    return prisma.enrollment.findMany({ where: { ...args } });
+  },
+  async courseGradebook(_, { courseId }) {
+    return prisma.gradebookEntry.findMany({
+      where: { courseId },
+      orderBy: { updatedAt: "desc" },
+    });
+  },
+
+  // 🧩 Add myProgress here
+  async myProgress(_, args, ctx) {
+    if (!ctx.user?.id) throw new Error("Not authenticated");
+    const filters = { studentId: ctx.user.id };
+    if (args.courseId) filters.courseId = args.courseId;
+    if (args.moduleId) filters.moduleId = args.moduleId;
+    if (args.lessonId) filters.lessonId = args.lessonId;
+
+    return prisma.studentProgress.findMany({
+      where: filters,
+      orderBy: { updatedAt: "desc" },
+    });
+  },
+},
+
   Mutation: {
     async kvSet(_, { key, value }) {
       const row = await prisma.kV.upsert({

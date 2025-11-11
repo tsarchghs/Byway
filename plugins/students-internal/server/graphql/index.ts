@@ -11,6 +11,7 @@ import {
   StudentProgress,
   StudentSubmission,
   Student,
+  MyCoursesQuery,
 } from './studentTypes.js'
 
 // shared types from teach-internal (now all prefixed with Gql)
@@ -31,6 +32,7 @@ export const schema = makeSchema({
     // shared
     GqlCourse,
     GqlModule,
+    MyCoursesQuery,
     GqlLesson,
     LessonStatus,
     // student
