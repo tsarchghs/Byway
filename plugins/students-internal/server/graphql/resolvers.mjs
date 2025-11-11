@@ -1,58 +1,142 @@
-import { PrismaClient } from "../db/generated/client/index.js";
+import { PrismaClient } from '../db/generated/client/index.js';
 const prisma = new PrismaClient();
 
-export const studentResolvers = {
+export const resolvers = {
   Query: {
-    gradebookOverview: async (_p, _a, ctx) => {
-      // Minimal implementation: pull some data if present, else return sensible defaults
-      // Try to infer userId from JWT (ctx.user?.id); otherwise return empty
-      const now = new Date().toISOString();
+    async isEnrolled(_, { studentId, courseId }) {
+      const sc = await prisma.studentCourse.findFirst({ where: { studentId, courseId } });
+      return !!sc;
+    },
+    async enrollments(_, { studentId }) {
+      const rows = await prisma.studentCourse.findMany({ where: { studentId } });
+      return rows.map(r => ({
+        id: r.id,
+        studentId: r.studentId,
+        courseId: r.courseId,
+        status: r.status || 'ENROLLED',
+        createdAt: r.createdAt,
+      }));
+    },
+    async gradebook(_, { studentId, courseId }) {
+      const where = { studentId, ...(courseId ? { courseId } : {}) };
+      const rows = await prisma.gradebookEntry.findMany({
+        where,
+        orderBy: { updatedAt: 'desc' },
+        include: { assignment: true, course: true },
+      });
+      return rows.map(r => ({
+        id: r.id,
+        studentId: r.studentId,
+        courseId: r.courseId,
+        assignmentId: r.assignmentId,
+        label: r.label,
+        points: r.points,
+        maxPoints: r.maxPoints,
+        percentage: r.maxPoints ? (r.points / r.maxPoints) * 100 : 0,
+        updatedAt: r.updatedAt,
+        assignment: r.assignment || null,
+        course: r.course || null,
+      }));
+    },
+    async gradebookOverview(_, { studentId }) {
+      const enrolls = await prisma.studentCourse.findMany({ where: { studentId } });
+      const entries = await prisma.gradebookEntry.findMany({
+        where: { studentId },
+        include: { assignment: true, course: true },
+      });
+
+      const totalCourses = enrolls.length;
+      const completed = enrolls.filter(e => (e.status || '').toUpperCase() == 'COMPLETED').length;
+      const percentages = entries.map(e => (e.maxPoints ? (e.points / e.maxPoints) * 100 : 0));
+      const avg = percentages.length ? percentages.reduce((a,b)=>a+b,0) / percentages.length : 0;
+
+      const byCourseMap = new Map();
+      for (const e of entries) {
+        const cid = e.courseId || 'unknown';
+        const name = e.course?.title || cid;
+        const pct = e.maxPoints ? (e.points / e.maxPoints) * 100 : 0;
+        const agg = byCourseMap.get(cid) || { id: cid, name, sum:0, count:0 };
+        agg.sum += pct; agg.count += 1;
+        byCourseMap.set(cid, agg);
+      }
+      const byCourse = Array.from(byCourseMap.values()).map(v => ({
+        id: v.id, name: v.name, avg: v.count ? v.sum / v.count : 0, count: v.count
+      }));
+
+      const byAssMap = new Map();
+      for (const e of entries) {
+        const aid = e.assignmentId || e.label || 'unlabeled';
+        const name = e.assignment?.title || e.label || String(aid);
+        const pct = e.maxPoints ? (e.points / e.maxPoints) * 100 : 0;
+        const agg = byAssMap.get(aid) || { id: String(aid), name, sum:0, count:0 };
+        agg.sum += pct; agg.count += 1;
+        byAssMap.set(aid, agg);
+      }
+      const byAssignment = Array.from(byAssMap.values()).map(v => ({
+        id: v.id, name: v.name, avg: v.count ? v.sum / v.count : 0, count: v.count
+      }));
+
+      entries.sort((a,b)=> (b.updatedAt?.getTime?.()||0) - (a.updatedAt?.getTime?.()||0));
+      const recent = entries.slice(0, 8).map(r => ({
+        id: r.id,
+        studentId: r.studentId,
+        courseId: r.courseId,
+        assignmentId: r.assignmentId,
+        label: r.label,
+        points: r.points,
+        maxPoints: r.maxPoints,
+        percentage: r.maxPoints ? (r.points / r.maxPoints) * 100 : 0,
+        updatedAt: r.updatedAt,
+        assignment: r.assignment || null,
+        course: r.course || null,
+      }));
+
       return {
-        byCourse: [],
-        byAssignment: [],
-        activity: [{ at: now, message: "Gradebook ready." }],
+        totalCourses,
+        completed,
+        avg,
+        recentUpdates: recent,
+        byCourse,
+        byAssignment,
+      };
+    },
+  },
+  Mutation: {
+    async enrollStudent(_, { studentId, courseId }) {
+      const rec = await prisma.studentCourse.upsert({
+        where: { unique_student_course: { studentId, courseId } },
+        update: { status: 'ENROLLED' },
+        create: { studentId, courseId, status: 'ENROLLED' },
+      });
+      return {
+        id: rec.id,
+        studentId: rec.studentId,
+        courseId: rec.courseId,
+        status: rec.status || 'ENROLLED',
+        createdAt: rec.createdAt,
+      };
+    },
+    async upsertGrade(_, { input }) {
+      const { studentId, courseId, assignmentId, label, points, maxPoints } = input;
+      const rec = await prisma.gradebookEntry.upsert({
+        where: { unique_grade: { studentId, courseId, assignmentId: assignmentId || null, label: label || null } },
+        update: { points, maxPoints, label, assignmentId },
+        create: { studentId, courseId, assignmentId: assignmentId || null, label: label || null, points, maxPoints },
+        include: { assignment: true, course: true },
+      });
+      return {
+        id: rec.id,
+        studentId: rec.studentId,
+        courseId: rec.courseId,
+        assignmentId: rec.assignmentId,
+        label: rec.label,
+        points: rec.points,
+        maxPoints: rec.maxPoints,
+        percentage: rec.maxPoints ? (rec.points / rec.maxPoints) * 100 : 0,
+        updatedAt: rec.updatedAt,
+        assignment: rec.assignment || null,
+        course: rec.course || null,
       };
     },
   },
 };
-
-import { PrismaClient } from '../db/generated/client/index.js'
-const prisma = new PrismaClient()
-
-export const resolvers = {
-  Query: {
-    async studentCourses(_, { studentId }) {
-      // join enrollments->courses
-      const enr = await prisma.enrollment.findMany({ where: { studentId } })
-      const ids = [...new Set(enr.map(e=>e.courseId))]
-      if (!ids.length) return []
-      const courses = await prisma.course.findMany({ where: { id: { in: ids } } })
-      return courses
-    },
-    async enrollments(_,{ studentId, courseId }) {
-      return prisma.enrollment.findMany({ where: { ...(studentId?{studentId}:{}), ...(courseId?{courseId}:{}), } })
-    },
-    async gradebook(_,{ courseId }) {
-      return prisma.gradebookEntry.findMany({ where: { courseId }, orderBy:{ updatedAt: 'desc' } })
-    },
-    async isEnrolled(_,{ studentId, courseId }) {
-      const e = await prisma.enrollment.findFirst({ where: { studentId, courseId } })
-      return !!e
-    }
-  },
-  Mutation: {
-    async upsertGrade(_,{ input }) {
-      const { studentId, assignmentId, courseId, grade, feedback } = input
-      const existing = await prisma.gradebookEntry.findFirst({ where: { studentId, assignmentId, courseId } })
-      if (existing) {
-        return prisma.gradebookEntry.update({ where: { id: existing.id }, data: { grade, feedback, updatedAt: new Date() } })
-      }
-      return prisma.gradebookEntry.create({ data: { studentId, assignmentId, courseId, grade, feedback } })
-    },
-    async enrollStudent(_,{ studentId, courseId }) {
-      const existing = await prisma.enrollment.findFirst({ where: { studentId, courseId } })
-      if (existing) return existing
-      return prisma.enrollment.create({ data: { studentId, courseId, progressPct: 0 } })
-    }
-  }
-}

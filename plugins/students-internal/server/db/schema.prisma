@@ -8,19 +8,7 @@ datasource db {
   url      = "file:./students.db"
 }
 
-model Enrollment {
-  id          String   @id @default(cuid())
-  studentId   String
-  courseId    String
-  progress Int      @default(0)
-  score       Float?
-  rubric      Json?
-  isActive    Boolean  @default(true)
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@unique([studentId, courseId])
+\1  progressPct Int @default(0)
 }
 
 model StudentNote {
@@ -47,4 +35,10 @@ model UserKV {
   value     String
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
+}
+
+
+model KV {
+  key   String @id
+  value String?
 }

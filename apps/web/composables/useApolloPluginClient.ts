@@ -1,3 +1,5 @@
+import { useKV } from '~/composables/useKV';
+const kv = useKV();
 import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client/core'
 import { setContext } from '@apollo/client/link/context'
 import { provideApolloClient } from '@vue/apollo-composable'
@@ -32,7 +34,7 @@ export function useApolloPluginClient(manualName?: string) {
   const httpLink = createHttpLink({ uri })
   const authLink = setContext((_, { headers }) => {
     // SSR-safe token access
-    const token = typeof window !== 'undefined' ? (null /* was localStorage.getItem('token') */) : null
+    const token = typeof window !== 'undefined' ? (null /* was (await kv.get('token')) */) : null
     return {
       headers: {
         ...headers,

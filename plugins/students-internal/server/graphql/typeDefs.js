@@ -1,36 +1,31 @@
-import { gql } from 'apollo-server-express';
-
+import { gql } from 'apollo-server-express'
 export const typeDefs = gql`
   scalar JSON
-
-  type Course { id: ID!, title: String! }
-  type Enrollment { id: ID!, studentId: ID!, courseId: ID!, progressPct: Int!, createdAt: String!, updatedAt: String! }
-  type GradebookEntry { 
-    id: ID!, 
-    assignmentId: ID!, 
-    studentId: ID!, 
-    courseId: ID!, 
-    grade: Float, 
-    feedback: String, 
-    updatedAt: String! 
-  }
-
-  type KVPair { key: String!, value: String }
-
-  input GradebookInput { assignmentId: ID!, studentId: ID!, courseId: ID!, grade: Float, feedback: String }
+  type KV { key: String!, value: String }
+  type Enrollment { id: ID!, studentId: String!, courseId: String!, progressPct: Int!, createdAt: String!, updatedAt: String! }
+  type GradebookEntry { id: ID!, assignmentId: String!, studentId: String!, courseId: String!, grade: Float, feedback: String, createdAt: String!, updatedAt: String! }
 
   type Query {
-    studentCourses(studentId: ID!): [Course!]!
-    enrollments(studentId: ID, courseId: ID): [Enrollment!]!
+    kvGet(key: String!): KV
+    isEnrolled(studentId: String!, courseId: String!): Boolean!
+    enrollments(studentId: String, courseId: String): [Enrollment!]!
     courseGradebook(courseId: ID!): [GradebookEntry!]!
-    isEnrolled(studentId: ID!, courseId: ID!): Boolean!
-    kvGet(key: String!): KVPair
+  }
+
+  input GradebookInput {
+    id: ID
+    assignmentId: String!
+    studentId: String!
+    courseId: String!
+    grade: Float
+    feedback: String
   }
 
   type Mutation {
-    enrollStudent(studentId: ID!, courseId: ID!): Enrollment!
-    upsertGrade(input: GradebookInput!): GradebookEntry!
-    kvSet(key: String!, value: String): KVPair!
+    kvSet(key: String!, value: String): KV
     kvDelete(key: String!): Boolean!
+    enrollStudent(studentId: String!, courseId: String!): Enrollment!
+    upsertGrade(input: GradebookInput!): GradebookEntry!
+    setProgress(enrollmentId: ID!, progressPct: Int!): Enrollment!
   }
-`;
+`

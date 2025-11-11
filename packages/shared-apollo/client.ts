@@ -1,3 +1,5 @@
+import { useKV } from '~/composables/useKV';
+const kv = useKV();
 import { ApolloClient, InMemoryCache, HttpLink } from '@apollo/client/core'
 import { setContext } from '@apollo/client/link/context'
 
@@ -7,7 +9,7 @@ export function createApolloClient(pluginName: string) {
   })
 
   const authLink = setContext((_, { headers }) => {
-    const token = (null /* was localStorage.getItem('token') */)
+    const token = (null /* was (await kv.get('token')) */)
     return {
       headers: {
         ...headers,

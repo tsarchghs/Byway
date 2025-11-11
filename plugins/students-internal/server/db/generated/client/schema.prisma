@@ -136,3 +136,21 @@ model QuizAttempt {
 
   @@index([studentId, lessonId])
 }
+
+
+model KV {
+  key   String @id
+  value String?
+}
+
+
+model GradebookEntry {
+  id           String   @id @default(cuid())
+  assignmentId String
+  studentId    String
+  courseId     String
+  grade        Float?
+  feedback     String?
+  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now())
+}

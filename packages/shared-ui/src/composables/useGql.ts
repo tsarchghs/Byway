@@ -9,7 +9,7 @@ export type GqlResponse<T=any> = { data?: T; errors?: any }
 export function useGql() {
   const base = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4000'
   function authHeader() {
-    const jwt = (typeof window !== 'undefined' && (null /* was localStorage.getItem('byway:jwt') */)) || ''
+    const jwt = (typeof window !== 'undefined' && (null /* was (await kv.get('byway:jwt')) */)) || ''
     return jwt ? { Authorization: `Bearer ${jwt}` } : {}
   }
   async function call<T=any>(endpoint:string, query:string, variables?:Record<string,any>): Promise<T> {

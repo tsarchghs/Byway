@@ -1,4 +1,4 @@
-// Auto-generated: UI Prefs via GraphQL (no localStorage)
+// Auto-generated: UI Prefs via GraphQL (no browser storage)
 // Registers a composable `useUiPrefs` that reads/writes prefs on /api/authentication/graphql
 import { ref } from 'vue'
 

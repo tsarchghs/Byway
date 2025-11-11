@@ -1,71 +1,76 @@
-export const studentTypeDefs = /* GraphQL */ `
-  type GradebookCourse {
+export const typeDefs = /* GraphQL */ `
+  scalar DateTime
+  scalar JSON
+
+  enum StudentCourseStatus { ENROLLED COMPLETED DROPPED }
+
+  type Enrollment { 
     id: ID!
-    title: String!
-    progressPct: Int!
-    avgGrade: Float
-  }
-  type GradebookAssignment {
-    id: ID!
-    title: String!
-    courseTitle: String!
+    studentId: String!
+    courseId: String!
     status: String!
-    grade: Float
-    submittedAt: String
+    createdAt: DateTime!
   }
-  type FeedItem { at: String!, message: String! }
+
+  type GradebookEntry {
+    id: ID!
+    studentId: String!
+    courseId: String!
+    assignmentId: String
+    label: String
+    points: Float!
+    maxPoints: Float!
+    percentage: Float!
+    updatedAt: DateTime!
+    assignment: Assignment
+    course: Course
+  }
+
+  type Course {
+    id: ID!
+    title: String!
+  }
+
+  type Assignment {
+    id: ID!
+    title: String!
+    dueDate: DateTime
+  }
+
+  input GradeInput {
+    studentId: String!
+    courseId: String!
+    assignmentId: String
+    label: String
+    points: Float!
+    maxPoints: Float!
+  }
+
+  type GradeGroup {
+    id: ID!
+    name: String!
+    avg: Float!
+    count: Int!
+  }
+
   type GradebookOverview {
-    byCourse: [GradebookCourse!]!
-    byAssignment: [GradebookAssignment!]!
-    activity: [FeedItem!]!
+    totalCourses: Int!
+    completed: Int!
+    avg: Float!
+    recentUpdates: [GradebookEntry!]!
+    byCourse: [GradeGroup!]!
+    byAssignment: [GradeGroup!]!
   }
+
   type Query {
-    gradebookOverview: GradebookOverview!
+    isEnrolled(studentId: String!, courseId: String!): Boolean!
+    enrollments(studentId: String!): [Enrollment!]!
+    gradebook(studentId: String!, courseId: String): [GradebookEntry!]!
+    gradebookOverview(studentId: String!): GradebookOverview!
   }
-`;
 
-export const typeDefs = `#graphql
-scalar JSON
-
-type Course {
-  id: ID!
-  title: String!
-}
-
-type Enrollment {
-  id: ID!
-  studentId: ID!
-  courseId: ID!
-  progressPct: Int!
-}
-
-type GradebookEntry {
-  id: ID!
-  assignmentId: ID!
-  studentId: ID!
-  courseId: ID!
-  grade: Float
-  feedback: String
-  updatedAt: String
-}
-
-type Query {
-  studentCourses(studentId: ID!): [Course!]!
-  enrollments(studentId: ID, courseId: ID): [Enrollment!]!
-  gradebook(courseId: ID!): [GradebookEntry!]!
-  isEnrolled(studentId: ID!, courseId: ID!): Boolean!
-}
-
-input GradebookInput {
-  studentId: ID!
-  assignmentId: ID!
-  courseId: ID!
-  grade: Float
-  feedback: String
-}
-
-type Mutation {
-  upsertGrade(input: GradebookInput!): GradebookEntry!
-  enrollStudent(studentId: ID!, courseId: ID!): Enrollment!
-}
+  type Mutation {
+    enrollStudent(studentId: String!, courseId: String!): Enrollment!
+    upsertGrade(input: GradeInput!): GradebookEntry!
+  }
 `;

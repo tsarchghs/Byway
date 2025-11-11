@@ -1,0 +1,20 @@
+extend type User {
+  role: Role!
+  uiPrefs: JSON
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+  INSTITUTION
+}
+
+extend type Query {
+  me: User
+}
+
+extend type Mutation {
+  setUiPref(key: String!, value: String!): Boolean!
+  setUiPrefs(prefs: JSON!): Boolean!
+}

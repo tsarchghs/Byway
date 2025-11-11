@@ -1,0 +1,66 @@
+{
+  "changes": [
+    {
+      "write": "/mnt/data/byway_workspace_incrementD/plugins/students-internal/server/graphql/typeDefs.js"
+    },
+    {
+      "write": "/mnt/data/byway_workspace_incrementD/plugins/students-internal/server/graphql/resolvers.js"
+    },
+    {
+      "write": "/mnt/data/byway_workspace_incrementD/plugins/students-internal/server/index.mjs"
+    },
+    {
+      "write": "/mnt/data/byway_workspace_incrementD/plugins/students-internal/nuxt/composables/useKV.ts"
+    },
+    {
+      "write": "/mnt/data/byway_workspace_incrementD/plugins/students-internal/nuxt/composables/useGradebook.ts"
+    },
+    {
+      "write": "/mnt/data/byway_workspace_incrementD/plugins/students-internal/nuxt/pages/gradebook.vue"
+    },
+    {
+      "write": "/mnt/data/byway_workspace_incrementD/plugins/students-internal/nuxt/pages/dashboard.vue"
+    }
+  ],
+  "notes": [],
+  "localStorage_files": [
+    "apps/web/composables/useApolloPluginClient.ts",
+    "packages/shared-ui/src/composables/useGql.ts",
+    "packages/shared-ui/src/composables/useRoles.ts",
+    "plugins/articles/nuxt/plugins/ui-prefs-shim.client.ts",
+    "plugins/articles/nuxt/plugins/uiPrefs.graphql.client.ts",
+    "plugins/authentication/nuxt/plugins/ui-prefs-shim.client.ts",
+    "plugins/authentication/nuxt/plugins/uiPrefs.graphql.client.ts",
+    "plugins/contact-page/nuxt/plugins/ui-prefs-shim.client.ts",
+    "plugins/contact-page/nuxt/plugins/uiPrefs.graphql.client.ts",
+    "plugins/course-author/nuxt/plugins/ui-prefs-shim.client.ts",
+    "plugins/course-author/nuxt/plugins/uiPrefs.graphql.client.ts",
+    "plugins/course-platform/nuxt/plugins/ui-prefs-shim.client.ts",
+    "plugins/course-platform/nuxt/plugins/uiPrefs.graphql.client.ts",
+    "plugins/courses-details/nuxt/pages/courses-detail.vue",
+    "plugins/courses-details/nuxt/plugins/ui-prefs-shim.client.ts",
+    "plugins/courses-details/nuxt/plugins/uiPrefs.graphql.client.ts",
+    "plugins/courses-listing/nuxt/plugins/ui-prefs-shim.client.ts",
+    "plugins/courses-listing/nuxt/plugins/uiPrefs.graphql.client.ts",
+    "plugins/ecommerce/nuxt/plugins/ui-prefs-shim.client.ts",
+    "plugins/ecommerce/nuxt/plugins/uiPrefs.graphql.client.ts",
+    "plugins/footer-links-pages/nuxt/plugins/ui-prefs-shim.client.ts",
+    "plugins/footer-links-pages/nuxt/plugins/uiPrefs.graphql.client.ts",
+    "plugins/homepage/nuxt/plugins/ui-prefs-shim.client.ts",
+    "plugins/homepage/nuxt/plugins/uiPrefs.graphql.client.ts",
+    "plugins/institutions/nuxt/plugins/ui-prefs-shim.client.ts",
+    "plugins/institutions/nuxt/plugins/uiPrefs.graphql.client.ts",
+    "plugins/profile-page/nuxt/plugins/ui-prefs-shim.client.ts",
+    "plugins/profile-page/nuxt/plugins/uiPrefs.graphql.client.ts",
+    "plugins/students-internal/nuxt/composables/useKV.ts",
+    "plugins/students-internal/nuxt/pages/gradebook.vue",
+    "plugins/students-internal/nuxt/pages/module-listing.vue",
+    "plugins/students-internal/nuxt/plugins/uiPrefs.graphql.client.ts",
+    "plugins/teach-internal/nuxt/pages/course/module/create.vue",
+    "plugins/teach-internal/nuxt/pages/course/module/view.vue",
+    "plugins/teach-internal/nuxt/plugins/ui-prefs-shim.client.ts",
+    "plugins/teach-internal/nuxt/plugins/uiPrefs.graphql.client.ts",
+    "plugins/teach/nuxt/plugins/ui-prefs-shim.client.ts",
+    "plugins/teach/nuxt/plugins/uiPrefs.graphql.client.ts"
+  ]
+}

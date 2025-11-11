@@ -1,37 +1,54 @@
-import gql from 'graphql-tag';
+import { ref } from 'vue';
+import { useApolloClient, gql } from '@vue/apollo-composable';
 
-const API = (path: string) => `${process.env.API_BASE_URL || 'http://localhost:4000'}${path}`;
+const COURSE_GRADEBOOK = gql`
+  query CourseGradebook($courseId: ID!) {
+    courseGradebook(courseId: $courseId) {
+      id assignmentId studentId courseId grade feedback updatedAt createdAt
+    }
+  }
+`;
+
+const UPSERT_GRADE = gql`
+  mutation UpsertGrade($input: GradebookInput!) {
+    upsertGrade(input: $input) {
+      id assignmentId studentId courseId grade feedback updatedAt createdAt
+    }
+  }
+`;
 
 export function useGradebook() {
-  async function courseGradebook(courseId: string) {
-    const q = gql`query($courseId: ID!) {
-      courseGradebook(courseId: $courseId) {
-        id assignmentId studentId courseId grade feedback updatedAt
-      }
-    }`;
-    const r = await fetch(API('/api/students-internal/graphql'), {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ query: q.loc?.source.body, variables: { courseId } })
-    });
-    const j = await r.json();
-    if (j.errors) throw new Error(j.errors[0]?.message || 'GraphQL error');
-    return j.data.courseGradebook;
+  const { client } = useApolloClient();
+  const rows = ref<any[]>([]);
+  const loading = ref(false);
+  const error = ref<string | null>(null);
+
+  async function fetchGradebook(courseId: string) {
+    loading.value = true;
+    try {
+      const { data } = await client.query({
+        query: COURSE_GRADEBOOK,
+        variables: { courseId },
+        fetchPolicy: 'network-only',
+        context: { uri: '/api/students-internal/graphql' },
+      });
+      rows.value = data?.courseGradebook || [];
+      error.value = null;
+    } catch (e:any) {
+      error.value = e?.message || String(e);
+    } finally {
+      loading.value = false;
+    }
   }
 
-  async function upsertGrade(input: { assignmentId: string, studentId: string, courseId: string, grade?: number, feedback?: string }) {
-    const m = gql`mutation($input: GradebookInput!) {
-      upsertGrade(input:$input){ id assignmentId studentId courseId grade feedback updatedAt }
-    }`;
-    const r = await fetch(API('/api/students-internal/graphql'), {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ query: m.loc?.source.body, variables: { input } })
+  async function upsertGrade(input: any) {
+    const { data } = await client.mutate({
+      mutation: UPSERT_GRADE,
+      variables: { input },
+      context: { uri: '/api/students-internal/graphql' },
     });
-    const j = await r.json();
-    if (j.errors) throw new Error(j.errors[0]?.message || 'GraphQL error');
-    return j.data.upsertGrade;
+    return data?.upsertGrade;
   }
 
-  return { courseGradebook, upsertGrade };
+  return { rows, loading, error, fetchGradebook, upsertGrade };
 }

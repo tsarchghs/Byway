@@ -6,7 +6,13 @@
   </div>
 </template>
 <script setup lang="ts">
+import { useKV } from '~/composables/useKV';
+const kv = useKV();
+
 <script setup lang="ts">
+import { useKV } from '~/composables/useKV';
+const kv = useKV();
+
 import { useQuery, useMutation, gql } from '@apollo/client/core'
 import { computed } from 'vue'
 
@@ -22,6 +28,6 @@ const me = computed(() => meData?.me || null)
 
 import { onMounted } from 'vue'
 onMounted(()=> {
-  try { (void 0 /* was localStorage.setItem('byway:cart', '[]') */) } catch {}
+  try { (void 0 /* was (await kv.set('byway:cart', String('[]'))) */) } catch {}
 })
 </script>

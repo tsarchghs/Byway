@@ -1,3 +1,5 @@
+import { mergeUiPrefs } from './graphql/merge.uiPrefs.js';
+import { loadPrefsTypeDefs, prefsResolversExport, mergeResolvers } from './graphql/prefs.merge.mjs'
 import { authUiResolvers } from "./graphql/resolvers.mjs";
 import { authUiTypeDefs } from "./graphql/typeDefs.mjs";
 import { sdk } from '../../../apps/api/src/sdk/index.js'
