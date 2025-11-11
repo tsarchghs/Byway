@@ -31,7 +31,7 @@ export interface NexusGenScalars {
 }
 
 export interface NexusGenObjects {
-  Course: { // root type
+  GqlCourse: { // root type
     category?: string | null; // String
     coverUrl?: string | null; // String
     createdAt: NexusGenScalars['DateTime']; // DateTime!
@@ -39,13 +39,13 @@ export interface NexusGenObjects {
     difficulty?: string | null; // String
     discount: number; // Float!
     id: string; // String!
-    modules: NexusGenRootTypes['Module'][]; // [Module!]!
+    modules: NexusGenRootTypes['GqlModule'][]; // [GqlModule!]!
     price: number; // Float!
     teacherId: string; // String!
     title: string; // String!
     updatedAt: NexusGenScalars['DateTime']; // DateTime!
   }
-  Lesson: { // root type
+  GqlLesson: { // root type
     content?: string | null; // String
     createdAt: NexusGenScalars['DateTime']; // DateTime!
     duration?: number | null; // Int
@@ -58,38 +58,28 @@ export interface NexusGenObjects {
     type: string; // String!
     videoUrl?: string | null; // String
   }
-  Module: { // root type
+  GqlModule: { // root type
     courseId: string; // String!
     id: string; // String!
-    lessons: NexusGenRootTypes['Lesson'][]; // [Lesson!]!
+    lessons: NexusGenRootTypes['GqlLesson'][]; // [GqlLesson!]!
     title: string; // String!
   }
-  Mutation: {};
-  Query: {};
-  Student: { // root type
+  GqlStudent: { // root type
     createdAt: NexusGenScalars['DateTime']; // DateTime!
     displayName?: string | null; // String
     id: string; // String!
     userId?: string | null; // String
   }
-  StudentCourse: { // root type
+  GqlStudentCourse: { // root type
     completed: boolean; // Boolean!
-    course?: NexusGenRootTypes['Course'] | null; // Course
+    course?: NexusGenRootTypes['GqlCourse'] | null; // GqlCourse
     courseId: string; // String!
     enrolledAt: NexusGenScalars['DateTime']; // DateTime!
     id: string; // String!
     progress?: number | null; // Int
     studentId: string; // String!
   }
-  StudentProgress: { // root type
-    id: string; // String!
-    lessonId: string; // String!
-    score?: number | null; // Float
-    status: NexusGenEnums['LessonStatus']; // LessonStatus!
-    studentId: string; // String!
-    updatedAt?: NexusGenScalars['DateTime'] | null; // DateTime
-  }
-  StudentSubmission: { // root type
+  GqlStudentSubmission: { // root type
     content?: string | null; // String
     grade?: number | null; // Float
     id: string; // String!
@@ -97,6 +87,16 @@ export interface NexusGenObjects {
     studentId: string; // String!
     submittedAt: NexusGenScalars['DateTime']; // DateTime!
     type: string; // String!
+  }
+  Mutation: {};
+  Query: {};
+  StudentProgress: { // root type
+    id: string; // String!
+    lessonId: string; // String!
+    score?: number | null; // Float
+    status: NexusGenEnums['LessonStatus']; // LessonStatus!
+    studentId: string; // String!
+    updatedAt?: NexusGenScalars['DateTime'] | null; // DateTime
   }
 }
 
@@ -111,7 +111,7 @@ export type NexusGenRootTypes = NexusGenObjects
 export type NexusGenAllTypes = NexusGenRootTypes & NexusGenScalars & NexusGenEnums
 
 export interface NexusGenFieldTypes {
-  Course: { // field return type
+  GqlCourse: { // field return type
     category: string | null; // String
     coverUrl: string | null; // String
     createdAt: NexusGenScalars['DateTime']; // DateTime!
@@ -120,13 +120,13 @@ export interface NexusGenFieldTypes {
     discount: number; // Float!
     id: string; // String!
     isEnrolled: boolean; // Boolean!
-    modules: NexusGenRootTypes['Module'][]; // [Module!]!
+    modules: NexusGenRootTypes['GqlModule'][]; // [GqlModule!]!
     price: number; // Float!
     teacherId: string; // String!
     title: string; // String!
     updatedAt: NexusGenScalars['DateTime']; // DateTime!
   }
-  Lesson: { // field return type
+  GqlLesson: { // field return type
     content: string | null; // String
     createdAt: NexusGenScalars['DateTime']; // DateTime!
     duration: number | null; // Int
@@ -139,20 +139,44 @@ export interface NexusGenFieldTypes {
     type: string; // String!
     videoUrl: string | null; // String
   }
-  Module: { // field return type
+  GqlModule: { // field return type
     courseId: string; // String!
     id: string; // String!
-    lessons: NexusGenRootTypes['Lesson'][]; // [Lesson!]!
+    lessons: NexusGenRootTypes['GqlLesson'][]; // [GqlLesson!]!
     title: string; // String!
+  }
+  GqlStudent: { // field return type
+    createdAt: NexusGenScalars['DateTime']; // DateTime!
+    displayName: string | null; // String
+    id: string; // String!
+    userId: string | null; // String
+  }
+  GqlStudentCourse: { // field return type
+    completed: boolean; // Boolean!
+    course: NexusGenRootTypes['GqlCourse'] | null; // GqlCourse
+    courseId: string; // String!
+    enrolledAt: NexusGenScalars['DateTime']; // DateTime!
+    id: string; // String!
+    progress: number | null; // Int
+    studentId: string; // String!
+  }
+  GqlStudentSubmission: { // field return type
+    content: string | null; // String
+    grade: number | null; // Float
+    id: string; // String!
+    lessonId: string; // String!
+    studentId: string; // String!
+    submittedAt: NexusGenScalars['DateTime']; // DateTime!
+    type: string; // String!
   }
   Mutation: { // field return type
     bulkEnrollCsv: number; // Int!
-    createStudent: NexusGenRootTypes['Student']; // Student!
-    enrollCourse: NexusGenRootTypes['StudentCourse']; // StudentCourse!
+    createStudent: NexusGenRootTypes['GqlStudent']; // GqlStudent!
+    enrollCourse: NexusGenRootTypes['GqlStudentCourse']; // GqlStudentCourse!
     enrollInClassroom: string; // String!
-    enrollMe: NexusGenRootTypes['StudentCourse']; // StudentCourse!
-    enrollStudent: NexusGenRootTypes['StudentCourse']; // StudentCourse!
-    submitLesson: NexusGenRootTypes['StudentSubmission']; // StudentSubmission!
+    enrollMe: NexusGenRootTypes['GqlStudentCourse']; // GqlStudentCourse!
+    enrollStudent: NexusGenRootTypes['GqlStudentCourse']; // GqlStudentCourse!
+    submitLesson: NexusGenRootTypes['GqlStudentSubmission']; // GqlStudentSubmission!
     updateProgress: NexusGenRootTypes['StudentProgress']; // StudentProgress!
   }
   Query: { // field return type
@@ -160,26 +184,11 @@ export interface NexusGenFieldTypes {
     hasEnrollment: boolean; // Boolean!
     isEnrolled: boolean; // Boolean!
     isEnrolledMe: boolean; // Boolean!
-    myCourses: NexusGenRootTypes['StudentCourse'][]; // [StudentCourse!]!
+    myCourses: NexusGenRootTypes['GqlStudentCourse'][]; // [GqlStudentCourse!]!
     myProgress: NexusGenRootTypes['StudentProgress'][]; // [StudentProgress!]!
-    mySubmissions: NexusGenRootTypes['StudentSubmission'][]; // [StudentSubmission!]!
-    studentByUserId: NexusGenRootTypes['Student']; // Student!
+    mySubmissions: NexusGenRootTypes['GqlStudentSubmission'][]; // [GqlStudentSubmission!]!
+    studentByUserId: NexusGenRootTypes['GqlStudent']; // GqlStudent!
     studentExists: boolean; // Boolean!
-  }
-  Student: { // field return type
-    createdAt: NexusGenScalars['DateTime']; // DateTime!
-    displayName: string | null; // String
-    id: string; // String!
-    userId: string | null; // String
-  }
-  StudentCourse: { // field return type
-    completed: boolean; // Boolean!
-    course: NexusGenRootTypes['Course'] | null; // Course
-    courseId: string; // String!
-    enrolledAt: NexusGenScalars['DateTime']; // DateTime!
-    id: string; // String!
-    progress: number | null; // Int
-    studentId: string; // String!
   }
   StudentProgress: { // field return type
     completed: boolean; // Boolean!
@@ -190,19 +199,10 @@ export interface NexusGenFieldTypes {
     studentId: string; // String!
     updatedAt: NexusGenScalars['DateTime'] | null; // DateTime
   }
-  StudentSubmission: { // field return type
-    content: string | null; // String
-    grade: number | null; // Float
-    id: string; // String!
-    lessonId: string; // String!
-    studentId: string; // String!
-    submittedAt: NexusGenScalars['DateTime']; // DateTime!
-    type: string; // String!
-  }
 }
 
 export interface NexusGenFieldTypeNames {
-  Course: { // field return type name
+  GqlCourse: { // field return type name
     category: 'String'
     coverUrl: 'String'
     createdAt: 'DateTime'
@@ -211,13 +211,13 @@ export interface NexusGenFieldTypeNames {
     discount: 'Float'
     id: 'String'
     isEnrolled: 'Boolean'
-    modules: 'Module'
+    modules: 'GqlModule'
     price: 'Float'
     teacherId: 'String'
     title: 'String'
     updatedAt: 'DateTime'
   }
-  Lesson: { // field return type name
+  GqlLesson: { // field return type name
     content: 'String'
     createdAt: 'DateTime'
     duration: 'Int'
@@ -230,20 +230,44 @@ export interface NexusGenFieldTypeNames {
     type: 'String'
     videoUrl: 'String'
   }
-  Module: { // field return type name
+  GqlModule: { // field return type name
     courseId: 'String'
     id: 'String'
-    lessons: 'Lesson'
+    lessons: 'GqlLesson'
     title: 'String'
+  }
+  GqlStudent: { // field return type name
+    createdAt: 'DateTime'
+    displayName: 'String'
+    id: 'String'
+    userId: 'String'
+  }
+  GqlStudentCourse: { // field return type name
+    completed: 'Boolean'
+    course: 'GqlCourse'
+    courseId: 'String'
+    enrolledAt: 'DateTime'
+    id: 'String'
+    progress: 'Int'
+    studentId: 'String'
+  }
+  GqlStudentSubmission: { // field return type name
+    content: 'String'
+    grade: 'Float'
+    id: 'String'
+    lessonId: 'String'
+    studentId: 'String'
+    submittedAt: 'DateTime'
+    type: 'String'
   }
   Mutation: { // field return type name
     bulkEnrollCsv: 'Int'
-    createStudent: 'Student'
-    enrollCourse: 'StudentCourse'
+    createStudent: 'GqlStudent'
+    enrollCourse: 'GqlStudentCourse'
     enrollInClassroom: 'String'
-    enrollMe: 'StudentCourse'
-    enrollStudent: 'StudentCourse'
-    submitLesson: 'StudentSubmission'
+    enrollMe: 'GqlStudentCourse'
+    enrollStudent: 'GqlStudentCourse'
+    submitLesson: 'GqlStudentSubmission'
     updateProgress: 'StudentProgress'
   }
   Query: { // field return type name
@@ -251,26 +275,11 @@ export interface NexusGenFieldTypeNames {
     hasEnrollment: 'Boolean'
     isEnrolled: 'Boolean'
     isEnrolledMe: 'Boolean'
-    myCourses: 'StudentCourse'
+    myCourses: 'GqlStudentCourse'
     myProgress: 'StudentProgress'
-    mySubmissions: 'StudentSubmission'
-    studentByUserId: 'Student'
+    mySubmissions: 'GqlStudentSubmission'
+    studentByUserId: 'GqlStudent'
     studentExists: 'Boolean'
-  }
-  Student: { // field return type name
-    createdAt: 'DateTime'
-    displayName: 'String'
-    id: 'String'
-    userId: 'String'
-  }
-  StudentCourse: { // field return type name
-    completed: 'Boolean'
-    course: 'Course'
-    courseId: 'String'
-    enrolledAt: 'DateTime'
-    id: 'String'
-    progress: 'Int'
-    studentId: 'String'
   }
   StudentProgress: { // field return type name
     completed: 'Boolean'
@@ -280,15 +289,6 @@ export interface NexusGenFieldTypeNames {
     status: 'LessonStatus'
     studentId: 'String'
     updatedAt: 'DateTime'
-  }
-  StudentSubmission: { // field return type name
-    content: 'String'
-    grade: 'Float'
-    id: 'String'
-    lessonId: 'String'
-    studentId: 'String'
-    submittedAt: 'DateTime'
-    type: 'String'
   }
 }
 

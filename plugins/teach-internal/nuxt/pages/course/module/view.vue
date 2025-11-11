@@ -2937,12 +2937,6 @@ async function openTeacherCodeServer(teacherId: string) {
   }
 }
 
-
-// increment-3: Study Toolkit logic
-import { useRoute } from 'vue-router'
-import { onMounted, onBeforeUnmount } from 'vue'
-
-const route = useRoute()
 const moduleIdForStudy = computed(() => route.params.moduleId || route.params.id || 'unknown')
 const study = reactive({
   notes: '',
@@ -3044,28 +3038,12 @@ const focusPercent = computed(() => {
 // Resources
 const resourceLabel = ref('')
 const resourceUrl = ref('')
-function addResource() {
-  if (!resourceUrl.value) return
-  study.resources.push({ label: resourceLabel.value, url: resourceUrl.value })
-  resourceLabel.value = ''
-  resourceUrl.value = ''
-  saveStudy()
-}
-function removeResource(idx: number) {
-  study.resources.splice(idx, 1)
-  saveStudy()
-}
 
-
-
-// === University Mode: Surgical Additions v10-increment4 ===
-import { ref, reactive, computed, watch, onMounted } from 'vue'
 // Prefer Nuxt's $fetch to avoid coupling to apollo setup on client
 // We'll call the existing GraphQL gateway exposed by teach-internal plugin.
 const uniActiveKey = ref('cohorts')
 const uniLoading = ref(false)
 
-const route = typeof useRoute === 'function' ? useRoute() : { params: {} }
 const courseId = computed(() => (route?.params?.courseId || route?.query?.courseId || (typeof currentCourse !== 'undefined' && currentCourse?.id) || (typeof props !== 'undefined' && props?.courseId) || null))
 
 const institution = ref(null)
@@ -3357,3 +3335,4 @@ onMounted(async () => {
 @media (max-width: 640px){ .grid-analytics{ grid-template-columns: 1fr; } }
 
 </style>
+a

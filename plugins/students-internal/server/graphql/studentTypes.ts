@@ -25,7 +25,7 @@ export const StudentCourse = objectType({
     t.string('studentId')
     t.string('courseId')
     // optional course relation (in GraphQL only, not Prisma enforced)
-    t.nullable.field('course', { type: 'Course' })
+    t.nullable.field('course', { type: 'GqlCourse' })
     t.boolean('completed')
     t.nullable.int('progress')
     t.field('enrolledAt', { type: 'DateTime' })
