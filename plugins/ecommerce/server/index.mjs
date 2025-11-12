@@ -83,7 +83,7 @@ export async function register(app) {
   })
 
   // CORS before everything else
-  router.use(cors({ origin: ['http://localhost:3001'], credentials: true }))
+  router.use(cors({ origin: ['http://localhost:3000'], credentials: true }))
 
   // --- Webhook must use raw body (no JSON parser!) ---
   router.post('/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {

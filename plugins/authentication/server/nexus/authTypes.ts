@@ -13,22 +13,37 @@ export const GqlUser = objectType({
     t.nonNull.field("user", { type: "GqlUser" })
   },
 })
+import { objectType, list } from 'nexus'
 
 export const User = objectType({
   name: 'GqlUser',
   definition(t) {
-    t.nonNull.id("id")
-    t.nonNull.string("email")
-    t.string("firstName")
-    t.string("token")
+    t.nonNull.id('id')
+    t.nonNull.string('email')
+    t.string('firstName')
+    t.string('displayName')
+    t.string('token')
+    t.nullable.string('teacherProfileId')
+    t.string('lastName')
+    t.nonNull.string('createdAt')
+    t.nonNull.string('updatedAt')
 
-        t.nullable.string("teacherProfileId") // ✅ add this line
-
-    t.string("lastName")
-    t.nonNull.string("createdAt")
-    t.nonNull.string("updatedAt")
+    // 👇 Add roles field (array of strings)
+    t.list.string('roles', {
+      description: 'List of user roles such as student, teacher, admin, etc.',
+      resolve: async (user, _args, ctx) => {
+        // Try to resolve roles from your DB or context
+        if (user.roles) return user.roles // already present on the user object
+        if (!ctx.prisma?.userRole) return []
+        const roleRecords = await ctx.prisma.userRole.findMany({
+          where: { userId: user.id },
+        })
+        return roleRecords.map((r) => r.name)
+      },
+    })
   },
 })
+
 
 export const AuthQuery = extendType({
   type: "Query",

@@ -11,7 +11,7 @@ export async function register(app) {
   if (mod?.registerInstitutionsGraphQL) await mod.registerInstitutionsGraphQL(app)
 
   const router = express.Router()
-  router.use(cors({ origin: ['http://localhost:3001'], credentials: true }))
+  router.use(cors({ origin: ['http://localhost:3000'], credentials: true }))
 
   const server = new ApolloServer({
     typeDefs,

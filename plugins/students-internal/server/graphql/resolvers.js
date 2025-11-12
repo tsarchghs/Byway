@@ -1,6 +1,5 @@
 import { GraphQLScalarType, Kind } from 'graphql'
-import { PrismaClient } from '../db/generated/index'
-
+import { PrismaClient } from '../db/generated/client'
 const prisma = new PrismaClient()
 
 const JSONScalar = new GraphQLScalarType({
@@ -26,6 +25,13 @@ Query: {
     const row = await prisma.kV.findUnique({ where: { key } });
     return row ? { key: row.key, value: row.value ?? null } : null;
   },
+  async myCourses(_, { studentId }, ctx) {
+    return prisma.studentCourse.findMany({
+      where: { studentId },
+      include: { course: true },
+      orderBy: { enrolledAt: 'desc' },
+    })
+  },
   async isEnrolled(_, { studentId, courseId }) {
     const e = await prisma.enrollment.findFirst({ where: { studentId, courseId } });
     return !!e;
@@ -41,18 +47,13 @@ Query: {
   },
 
   // 🧩 Add myProgress here
-  async myProgress(_, args, ctx) {
-    if (!ctx.user?.id) throw new Error("Not authenticated");
-    const filters = { studentId: ctx.user.id };
-    if (args.courseId) filters.courseId = args.courseId;
-    if (args.moduleId) filters.moduleId = args.moduleId;
-    if (args.lessonId) filters.lessonId = args.lessonId;
-
-    return prisma.studentProgress.findMany({
-      where: filters,
-      orderBy: { updatedAt: "desc" },
-    });
-  },
+async myProgress(_, { studentId }) {
+  const filters = { studentId };
+  return prisma.studentProgress.findMany({
+    where: filters,
+    orderBy: { updatedAt: "desc" },
+  });
+}
 },
 
   Mutation: {

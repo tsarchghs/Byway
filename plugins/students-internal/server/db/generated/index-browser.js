@@ -147,6 +147,19 @@ exports.Prisma.GradebookEntryScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.StudentProgressScalarFieldEnum = {
+  id: 'id',
+  studentId: 'studentId',
+  courseId: 'courseId',
+  moduleId: 'moduleId',
+  lessonId: 'lessonId',
+  completed: 'completed',
+  score: 'score',
+  progressPct: 'progressPct',
+  updatedAt: 'updatedAt',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.UserKVScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -160,6 +173,16 @@ exports.Prisma.UserKVScalarFieldEnum = {
 exports.Prisma.KVScalarFieldEnum = {
   key: 'key',
   value: 'value'
+};
+
+exports.Prisma.StudentCourseScalarFieldEnum = {
+  id: 'id',
+  studentId: 'studentId',
+  courseId: 'courseId',
+  completed: 'completed',
+  progress: 'progress',
+  enrolledAt: 'enrolledAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.SortOrder = {
@@ -177,8 +200,10 @@ exports.Prisma.ModelName = {
   StudentNote: 'StudentNote',
   Course: 'Course',
   GradebookEntry: 'GradebookEntry',
+  StudentProgress: 'StudentProgress',
   UserKV: 'UserKV',
-  KV: 'KV'
+  KV: 'KV',
+  StudentCourse: 'StudentCourse'
 };
 
 /**

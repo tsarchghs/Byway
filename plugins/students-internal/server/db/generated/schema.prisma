@@ -16,6 +16,7 @@ model StudentNote {
   body      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  Course    Course   @relation(fields: [courseId], references: [id])
 
   @@index([studentId, courseId])
 }
@@ -28,9 +29,11 @@ model Course {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Relations (optional — uncomment if you have these models)
-  // gradebookEntries GradebookEntry[]
-  // studentNotes     StudentNote[]
+  // Relations
+  studentProgress  StudentProgress[]
+  gradebookEntries GradebookEntry[]
+  studentNotes     StudentNote[]
+  StudentCourse    StudentCourse[]
 
   @@index([title])
 }
@@ -46,11 +49,29 @@ model GradebookEntry {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  // Relations (optional — include if you have related models)
-  // student   Student?   @relation(fields: [studentId], references: [id])
-  // course    Course?    @relation(fields: [courseId], references: [id])
+  // Relations
+  course Course? @relation(fields: [courseId], references: [id])
 
   @@index([studentId, courseId])
+}
+
+model StudentProgress {
+  id          String   @id @default(cuid())
+  studentId   String
+  courseId    String
+  moduleId    String? // optional, for finer granularity
+  lessonId    String? // optional, for per-lesson tracking
+  completed   Boolean  @default(false)
+  score       Float?   @default(0)
+  progressPct Int      @default(0)
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  // Relations
+  course Course? @relation(fields: [courseId], references: [id])
+
+  @@index([studentId, courseId])
+  @@index([studentId, courseId, lessonId])
 }
 
 model UserKV {
@@ -66,4 +87,19 @@ model UserKV {
 model KV {
   key   String  @id
   value String?
+}
+
+model StudentCourse {
+  id         String   @id @default(cuid())
+  studentId  String
+  courseId   String
+  completed  Boolean  @default(false)
+  progress   Int      @default(0)
+  enrolledAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@index([studentId, courseId])
 }

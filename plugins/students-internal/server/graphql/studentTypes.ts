@@ -82,7 +82,7 @@ export const MyCoursesQuery = extendType({
         if (args.moduleId) filters.moduleId = args.moduleId;
         if (args.lessonId) filters.lessonId = args.lessonId;
 
-        return ctx.prisma.studentProgress.findMany({
+        return ctx.prisma.StudentProgress.findMany({
           where: filters,
           orderBy: { updatedAt: "desc" },
         });

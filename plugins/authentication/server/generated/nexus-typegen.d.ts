@@ -65,6 +65,7 @@ export interface NexusGenObjects {
   }
   GqlUser: { // root type
     createdAt: string; // String!
+    displayName?: string | null; // String
     email: string; // String!
     firstName?: string | null; // String
     id: string; // ID!
@@ -110,10 +111,12 @@ export interface NexusGenFieldTypes {
   }
   GqlUser: { // field return type
     createdAt: string; // String!
+    displayName: string | null; // String
     email: string; // String!
     firstName: string | null; // String
     id: string; // ID!
     lastName: string | null; // String
+    roles: Array<string | null> | null; // [String]
     teacherProfileId: string | null; // String
     token: string | null; // String
     updatedAt: string; // String!
@@ -157,10 +160,12 @@ export interface NexusGenFieldTypeNames {
   }
   GqlUser: { // field return type name
     createdAt: 'String'
+    displayName: 'String'
     email: 'String'
     firstName: 'String'
     id: 'ID'
     lastName: 'String'
+    roles: 'String'
     teacherProfileId: 'String'
     token: 'String'
     updatedAt: 'String'

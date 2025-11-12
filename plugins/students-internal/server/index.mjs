@@ -7,7 +7,7 @@ import { prisma } from './db/client.js';
 
 export async function register(app) {
   const router = express.Router();
-  router.use(cors({ origin: ['http://localhost:3001'], credentials: true }));
+  router.use(cors({ origin: ['http://localhost:3000'], credentials: true }));
 
   const server = new ApolloServer({
     typeDefs,

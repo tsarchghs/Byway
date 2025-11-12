@@ -119,6 +119,19 @@ exports.Prisma.GradebookEntryScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.StudentProgressScalarFieldEnum = {
+  id: 'id',
+  studentId: 'studentId',
+  courseId: 'courseId',
+  moduleId: 'moduleId',
+  lessonId: 'lessonId',
+  completed: 'completed',
+  score: 'score',
+  progressPct: 'progressPct',
+  updatedAt: 'updatedAt',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.UserKVScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -132,6 +145,16 @@ exports.Prisma.UserKVScalarFieldEnum = {
 exports.Prisma.KVScalarFieldEnum = {
   key: 'key',
   value: 'value'
+};
+
+exports.Prisma.StudentCourseScalarFieldEnum = {
+  id: 'id',
+  studentId: 'studentId',
+  courseId: 'courseId',
+  completed: 'completed',
+  progress: 'progress',
+  enrolledAt: 'enrolledAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.SortOrder = {
@@ -149,8 +172,10 @@ exports.Prisma.ModelName = {
   StudentNote: 'StudentNote',
   Course: 'Course',
   GradebookEntry: 'GradebookEntry',
+  StudentProgress: 'StudentProgress',
   UserKV: 'UserKV',
-  KV: 'KV'
+  KV: 'KV',
+  StudentCourse: 'StudentCourse'
 };
 /**
  * Create the Client
@@ -198,13 +223,13 @@ const config = {
       }
     }
   },
-  "inlineSchema": "generator client {\n  engineType = \"node-api\"\n  provider   = \"prisma-client-js\"\n  output     = \"./generated\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = \"file:./students.db\"\n}\n\nmodel StudentNote {\n  id        String   @id @default(cuid())\n  studentId String\n  courseId  String\n  body      String\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@index([studentId, courseId])\n}\n\nmodel Course {\n  id          String   @id @default(cuid())\n  title       String\n  description String? // optional, useful for displaying course info\n  progressPct Int      @default(0)\n  createdAt   DateTime @default(now())\n  updatedAt   DateTime @updatedAt\n\n  // Relations (optional — uncomment if you have these models)\n  // gradebookEntries GradebookEntry[]\n  // studentNotes     StudentNote[]\n\n  @@index([title])\n}\n\nmodel GradebookEntry {\n  id           String   @id @default(cuid())\n  assignmentId String\n  studentId    String\n  courseId     String\n  grade        Float?   @default(0)\n  feedback     String?\n  progressPct  Int      @default(0)\n  createdAt    DateTime @default(now())\n  updatedAt    DateTime @updatedAt\n\n  // Relations (optional — include if you have related models)\n  // student   Student?   @relation(fields: [studentId], references: [id])\n  // course    Course?    @relation(fields: [courseId], references: [id])\n\n  @@index([studentId, courseId])\n}\n\nmodel UserKV {\n  id        String   @id @default(cuid())\n  userId    String?\n  sessionId String?\n  key       String\n  value     String\n  updatedAt DateTime @updatedAt\n  createdAt DateTime @default(now())\n}\n\nmodel KV {\n  key   String  @id\n  value String?\n}\n",
-  "inlineSchemaHash": "76c299e8c5774fc5591f2411e071428190c9af36e4a0b3da5ad3e2261844b53d",
+  "inlineSchema": "generator client {\n  engineType = \"node-api\"\n  provider   = \"prisma-client-js\"\n  output     = \"./generated\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = \"file:./students.db\"\n}\n\nmodel StudentNote {\n  id        String   @id @default(cuid())\n  studentId String\n  courseId  String\n  body      String\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n  Course    Course   @relation(fields: [courseId], references: [id])\n\n  @@index([studentId, courseId])\n}\n\nmodel Course {\n  id          String   @id @default(cuid())\n  title       String\n  description String? // optional, useful for displaying course info\n  progressPct Int      @default(0)\n  createdAt   DateTime @default(now())\n  updatedAt   DateTime @updatedAt\n\n  // Relations\n  studentProgress  StudentProgress[]\n  gradebookEntries GradebookEntry[]\n  studentNotes     StudentNote[]\n  StudentCourse    StudentCourse[]\n\n  @@index([title])\n}\n\nmodel GradebookEntry {\n  id           String   @id @default(cuid())\n  assignmentId String\n  studentId    String\n  courseId     String\n  grade        Float?   @default(0)\n  feedback     String?\n  progressPct  Int      @default(0)\n  createdAt    DateTime @default(now())\n  updatedAt    DateTime @updatedAt\n\n  // Relations\n  course Course? @relation(fields: [courseId], references: [id])\n\n  @@index([studentId, courseId])\n}\n\nmodel StudentProgress {\n  id          String   @id @default(cuid())\n  studentId   String\n  courseId    String\n  moduleId    String? // optional, for finer granularity\n  lessonId    String? // optional, for per-lesson tracking\n  completed   Boolean  @default(false)\n  score       Float?   @default(0)\n  progressPct Int      @default(0)\n  updatedAt   DateTime @updatedAt\n  createdAt   DateTime @default(now())\n\n  // Relations\n  course Course? @relation(fields: [courseId], references: [id])\n\n  @@index([studentId, courseId])\n  @@index([studentId, courseId, lessonId])\n}\n\nmodel UserKV {\n  id        String   @id @default(cuid())\n  userId    String?\n  sessionId String?\n  key       String\n  value     String\n  updatedAt DateTime @updatedAt\n  createdAt DateTime @default(now())\n}\n\nmodel KV {\n  key   String  @id\n  value String?\n}\n\nmodel StudentCourse {\n  id         String   @id @default(cuid())\n  studentId  String\n  courseId   String\n  completed  Boolean  @default(false)\n  progress   Int      @default(0)\n  enrolledAt DateTime @default(now())\n  updatedAt  DateTime @updatedAt\n\n  // Relations\n  course Course @relation(fields: [courseId], references: [id])\n\n  @@index([studentId, courseId])\n}\n",
+  "inlineSchemaHash": "61370ab02191df0c383e15bcd07ab1e7d89c09ed8c225caeee3bd4e22b4c400a",
   "copyEngine": true
 }
 config.dirname = '/'
 
-config.runtimeDataModel = JSON.parse("{\"models\":{\"StudentNote\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"studentId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"courseId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"body\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"Course\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"title\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"progressPct\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"GradebookEntry\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"assignmentId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"studentId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"courseId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"grade\",\"kind\":\"scalar\",\"type\":\"Float\"},{\"name\":\"feedback\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"progressPct\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"UserKV\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"userId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"sessionId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"key\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"value\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"KV\":{\"fields\":[{\"name\":\"key\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"value\",\"kind\":\"scalar\",\"type\":\"String\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
+config.runtimeDataModel = JSON.parse("{\"models\":{\"StudentNote\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"studentId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"courseId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"body\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"Course\",\"kind\":\"object\",\"type\":\"Course\",\"relationName\":\"CourseToStudentNote\"}],\"dbName\":null},\"Course\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"title\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"progressPct\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"studentProgress\",\"kind\":\"object\",\"type\":\"StudentProgress\",\"relationName\":\"CourseToStudentProgress\"},{\"name\":\"gradebookEntries\",\"kind\":\"object\",\"type\":\"GradebookEntry\",\"relationName\":\"CourseToGradebookEntry\"},{\"name\":\"studentNotes\",\"kind\":\"object\",\"type\":\"StudentNote\",\"relationName\":\"CourseToStudentNote\"},{\"name\":\"StudentCourse\",\"kind\":\"object\",\"type\":\"StudentCourse\",\"relationName\":\"CourseToStudentCourse\"}],\"dbName\":null},\"GradebookEntry\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"assignmentId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"studentId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"courseId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"grade\",\"kind\":\"scalar\",\"type\":\"Float\"},{\"name\":\"feedback\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"progressPct\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"course\",\"kind\":\"object\",\"type\":\"Course\",\"relationName\":\"CourseToGradebookEntry\"}],\"dbName\":null},\"StudentProgress\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"studentId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"courseId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"moduleId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"lessonId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"completed\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"score\",\"kind\":\"scalar\",\"type\":\"Float\"},{\"name\":\"progressPct\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"course\",\"kind\":\"object\",\"type\":\"Course\",\"relationName\":\"CourseToStudentProgress\"}],\"dbName\":null},\"UserKV\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"userId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"sessionId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"key\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"value\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"KV\":{\"fields\":[{\"name\":\"key\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"value\",\"kind\":\"scalar\",\"type\":\"String\"}],\"dbName\":null},\"StudentCourse\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"studentId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"courseId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"completed\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"progress\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"enrolledAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"course\",\"kind\":\"object\",\"type\":\"Course\",\"relationName\":\"CourseToStudentCourse\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
 defineDmmfProperty(exports.Prisma, config.runtimeDataModel)
 config.engineWasm = {
   getRuntime: async () => require('./query_engine_bg.js'),

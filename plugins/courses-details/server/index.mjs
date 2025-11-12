@@ -25,6 +25,6 @@ export async function register(app) {
   router.get('/health', (_, res) => res.json({ ok: true, plugin: 'courses-details' }))
   app.use('/api/courses-details', router)
 
-  app.use(cors({ origin: ['http://localhost:3001'], credentials: true }))
+  app.use(cors({ origin: ['http://localhost:3000'], credentials: true }))
   console.log('[courses-details] GraphQL available at /api/courses-details/graphql')
 }

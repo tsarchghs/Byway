@@ -733,6 +733,11 @@
   </a-config-provider>
 </template>
 <script setup lang="ts">
+import { definePageMeta } from '#imports' // Declare definePageMeta before using it
+definePageMeta({ layout: 'student', ssr: false })
+import { provideApolloClient } from '@vue/apollo-composable'
+import { createApolloClient } from '../../../../packages/shared-apollo/client'
+
 import { computed } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
 import gql from 'graphql-tag'
@@ -742,12 +747,42 @@ import { theme, message, Modal } from 'ant-design-vue'
 import {
   BulbOutlined, FieldTimeOutlined, PlayCircleOutlined, LockOutlined,
   CheckOutlined, ArrowRightOutlined, SettingOutlined, FontSizeOutlined,
-   BugOutlined, CloudSyncOutlined, SortAscendingOutlined,
+  BugOutlined, CloudSyncOutlined, SortAscendingOutlined,
   UploadOutlined, BookOutlined, PrinterOutlined, ClockCircleOutlined
 } from '@ant-design/icons-vue'
+
 const Q_ME = gql`query Me { me { id email displayName roles } }`
-const { result: _meResult } = useQuery(Q_ME)
-const me = computed(() => _meResult.value?.me || null)
+
+let _meResult: any = null
+let me: any = null
+let studentClient: any = null
+let clientInitialized = ref(false)
+
+function initializeApolloClient() {
+  if (typeof window === 'undefined') return
+  if (clientInitialized.value) return
+
+  const token = window.localStorage?.getItem('token')
+  if (!token) {
+    console.warn('[Auth] No token found in localStorage, delaying Apollo client initialization')
+    return
+  }
+
+  try {
+    studentClient = createApolloClient('students-internal', token)
+    provideApolloClient(studentClient)
+    clientInitialized.value = true
+    
+    try {
+      _meResult = useQuery(Q_ME)
+      me = computed(() => _meResult.result.value?.me || null)
+    } catch (e) {
+      console.warn('[Auth] Error initializing me query:', e)
+    }
+  } catch (e) {
+    console.error('[Auth] Failed to initialize Apollo client:', e)
+  }
+}
 
 /** ---------- Simple i18n (extendable) ---------- */
 const dict = {
@@ -857,7 +892,7 @@ const dict = {
     'No lessons found': 'No lessons found',
   }
 }
-function t(k: keyof typeof dict['en'] | string){ return (dict.en as any)[k] || k }
+function t(k: keyof typeof dict['en'] | string) { return (dict.en as any)[k] || k }
 
 type QuizOption = { text: string; correct: boolean }
 type QuizQuestion = { id: string; text: string; type: 'mcq' | 'tf' | 'short'; options?: QuizOption[] }
@@ -892,7 +927,8 @@ type CourseT = {
 type ModuleLite = { id: string; title: string; lessonCount?: number; minutes?: number }
 type ProgressRow = { lessonId: string; completed: boolean; updatedAt?: string; score?: number }
 
-/** ---------- State ---------- */
+// ... existing state ...
+
 const isDark = ref(false)
 const siderCollapsed = ref(false)
 const rightCollapsed = ref(false)
@@ -902,15 +938,14 @@ const filterType = ref<'all'|'video'|'reading'|'quiz'|'assignment'|'lab'>('all')
 const hideCompleted = ref(false)
 const sortKeyArr = ref<string[]>(['title'])
 const sortKey = computed(() => sortKeyArr.value[0] || 'title')
-const fontScale = ref(15) // px
+const fontScale = ref(15)
 const autoNext = ref(true)
 
 const route = useRoute()
 const router = useRouter()
 
-// Endpoints (use runtimeConfig in real app if you have it)
 const STUDENTS_API = 'http://localhost:4000/api/students-internal/graphql'
-const TEACH_API    = 'http://localhost:4000/api/teach-internal/graphql'
+const TEACH_API = 'http://localhost:4000/api/teach-internal/graphql'
 
 const loadingCourse = ref(false)
 const loadingModule = ref(false)
@@ -926,38 +961,28 @@ const progress = reactive<{ completedLessonIds: string[]; lastLessonId?: string 
   lastLessonId: undefined
 })
 
-// Enrollment flag (true when the student is enrolled in the course)
 const isEnrolledCourse = ref(false)
-
-// Video & notes
 const html5Video = ref<HTMLVideoElement | null>(null)
 const videoSpeed = ref(1)
 const notes = reactive<Record<string, { text: string; highlights: string[] }>>({ global: { text: '', highlights: [] } })
 const newHighlight = ref('')
 
-// QA mock
 type QAItem = { id: string; author: string; avatar?: string; text: string; when: string; lessonId?: string }
 const qa = reactive<QAItem[]>([])
 const qaDraft = ref('')
 
-// Bookmarks
 type Bookmark = { title: string; description: string; lessonId: string; timestamp?: number }
 const bookmarks = reactive<Bookmark[]>([])
 
-// Ratings
 const ratings = reactive<Record<string, number>>({})
-
-// Telemetry
 const telemetry = reactive<{ when: string; what: string }[]>([])
-function log(what: string){ telemetry.unshift({ when: new Date().toLocaleTimeString(), what }); if (telemetry.length > 100) telemetry.pop() }
+function log(what: string) { telemetry.unshift({ when: new Date().toLocaleTimeString(), what }); if (telemetry.length > 100) telemetry.pop() }
 
-// Online/offline & mocks
 const isOnline = ref(typeof navigator !== 'undefined' ? navigator.onLine : true)
 const usingMocks = ref(false)
 const mockReason = ref('')
 const forceMock = ref(false)
 
-// Modals & drawers
 const openImportExport = ref(false)
 const importJson = ref('')
 const openShortcuts = ref(false)
@@ -965,12 +990,10 @@ const openPricing = ref(false)
 const pricingTier = ref<'basic'|'pro'|'team'>('pro')
 const openDebug = ref(false)
 
-// Submit drawer
 const submitOpen = ref(false)
 const submitting = ref(false)
 const submitForm = reactive<{ notes: string; url: string }>({ notes: '', url: '' })
 
-/** ---------- Helpers ---------- */
 const selectedModuleId = computed(() => String(route?.params?.module_id || ''))
 const selectedCourseId = computed(() => String(route?.params?.course_id || route?.params?.courseId || ''))
 const selectedStudentId = computed(() => String(route?.params?.student_id || route?.params?.studentId || ''))
@@ -987,7 +1010,6 @@ const ytEmbed = (url?: string) => {
 }
 const unlockAtDate = (l: Lesson) => (l.unlockAt ? new Date(l.unlockAt).toLocaleString() : '')
 
-/** ---------- Derived ---------- */
 const currentLesson = computed(() => lessons.value[currentIndex.value])
 const totalMinutes = computed(() => lessons.value.reduce((s, l) => s + (l.duration || 0), 0))
 const progressPercent = computed(() =>
@@ -1022,11 +1044,10 @@ const filteredLessons = computed(() => {
   return arr
 })
 
-function onSortChange({ key }: any){
+function onSortChange({ key }: any) {
   sortKeyArr.value = [key]
 }
 
-/** ---------- Progress helpers ---------- */
 const isCompleted = (lessonId: string) => progress.completedLessonIds.includes(lessonId)
 const labelForLesson = (id: string) => lessons.value.find(l => l.id === id)?.title || ''
 function isLocked(l: Lesson): boolean {
@@ -1050,15 +1071,26 @@ async function fetchGraphQL<T = any>(
   endpoint = STUDENTS_API,
   timeoutMs = 8000,
 ): Promise<T> {
+  const token = typeof window !== 'undefined' ? window.localStorage?.getItem('token') : null
+  
+  if (!token) {
+    throw new Error('Authentication required: No token found in localStorage. Please log in.')
+  }
+
   if (forceMock.value) throw new Error('Forced mock mode')
+  
   const controller = new AbortController()
   aborters.add(controller)
   const timer = setTimeout(() => controller.abort(), timeoutMs)
+  
   try {
     const resp = await fetch(endpoint, {
       method: 'POST',
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({ query, variables }),
       signal: controller.signal,
     })
@@ -1086,13 +1118,10 @@ const GQL = {
     }
   `,
   myProgress: `
-    query MyProgress($studentId:String!) {
-      myProgress(studentId:$studentId) {
+    query MyProgress {
+      myProgress {
         id
-        studentId
         lessonId
-        completed
-        score
         updatedAt
       }
     }
@@ -1118,644 +1147,10 @@ const GQL = {
   `,
 }
 
-/** ---------- Mock data ---------- */
-function makeMockCourse(courseId: string): CourseT {
-  return {
-    id: courseId || 'course-mock-1',
-    title: 'Full-Stack Foundations',
-    category: 'Software',
-    difficulty: 'Intermediate',
-    coverUrl: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=1400&auto=format&fit=crop'
-  }
-}
-function makeMockModules(courseId: string): Array<{ id: string; title: string; lessons: Lesson[] }> {
-  const L = (id: string, title: string, type: Lesson['type'], duration: number, extra: Partial<Lesson> = {}): Lesson => ({
-    id, title, type, duration, content: 'Lorem ipsum dolor sit amet.\nThis is mocked content.', moduleId: 'mod-1',
-    videoUrl: type === 'video' ? 'https://samplelib.com/lib/preview/mp4/sample-5s.mp4' : '',
-    rubric: type === 'assignment' ? 'Clarity (40%), Functionality (40%), Presentation (20%)' : '',
-    resources: [{ title: 'Slides PDF', url: 'https://example.com/slides.pdf', kind: 'pdf' }],
-    attachments: [{ name: 'starter.zip', url: 'https://example.com/starter.zip' }],
-    tags: ['mock'],
-    prerequisites: [],
-    unlockAt: undefined,
-    preview: id.endsWith('1') || id.endsWith('2'), // first two are preview
-    quiz: type === 'quiz' ? {
-      questions: [
-        { id: `${id}-q1`, text: 'What is HTTP?', type: 'short' },
-        { id: `${id}-q2`, text: 'Select valid HTTP methods', type: 'mcq', options: [
-          { text: 'GET', correct: true }, { text: 'PULL', correct: false }, { text: 'POST', correct: true }
-        ]},
-        { id: `${id}-q3`, text: 'HTTP 200 means success.', type: 'tf' }
-      ]
-    } : { questions: [] },
-    metadata: {},
-    ...extra
-  })
-  const m1 = { id: 'mod-1', title: 'Getting Started', lessons: [
-    L('l1', 'Welcome & Overview', 'video', 5, {}),
-    L('l2', 'Course Logistics', 'reading', 8, {}),
-    L('l3', 'Environment Setup', 'assignment', 30, {}),
-    L('l4', 'HTTP Basics Quiz', 'quiz', 10, {}),
-    L('l5', 'Your First Lab', 'lab', 20, {}),
-  ] }
-  m1.lessons[2].prerequisites = ['l1'] // assignment requires first video
-  const m2 = { id: 'mod-2', title: 'Core Concepts', lessons: [
-    L('l6', 'REST APIs Deep Dive', 'video', 15, {}),
-    L('l7', 'Data Modeling', 'reading', 12, {}),
-    L('l8', 'GraphQL vs REST', 'quiz', 10, {}),
-    L('l9', 'Build a CRUD API (Lab)', 'lab', 40, {}),
-  ] }
-  const m3 = { id: 'mod-3', title: 'Advanced Topics', lessons: [
-    L('l10', 'Authentication Patterns', 'video', 18, { unlockAt: new Date(Date.now() + 24*3600*1000) }),
-    L('l11', 'Caching Strategies', 'reading', 14, {}),
-    L('l12', 'Capstone Project', 'assignment', 120, {}),
-  ] }
-  return [m1, m2, m3].map(m => ({ ...m, lessons: m.lessons.map(l => ({ ...l, moduleId: m.id })) }))
-}
-function mockProgressFor(mods: ReturnType<typeof makeMockModules>): ProgressRow[] {
-  const ids = mods.flatMap(m => m.lessons.map(l => l.id))
-  // Mark first lesson complete by default
-  return ids.map((id, i) => ({ lessonId: id, completed: i === 0, updatedAt: new Date(Date.now() - (ids.length-i)*60000).toISOString() }))
-}
 
-/** ---------- Local storage keys ---------- */
-function keyBase(){ return `byway.student.course.${selectedCourseId.value}` }
-function LS(k: string){ return `${keyBase()}.${k}` }
-
-/** ---------- Progress derivation ---------- */
-function progressFromRows(rows: ProgressRow[], lessonIds: string[]) {
-  const completedLessonIds = rows
-    .filter(r => r.completed && lessonIds.includes(r.lessonId))
-    .map(r => r.lessonId)
-
-  const last = rows
-    .filter(r => lessonIds.includes(r.lessonId))
-    .sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())[0]
-
-  return { completedLessonIds, lastLessonId: last?.lessonId }
-}
-
-function normalizeLesson(src: any): Lesson {
-  const md = src?.metadata || {}
-  return {
-    id: src?.id,
-    moduleId: src?.moduleId,
-    title: src?.title || '',
-    type: src?.type || 'reading',
-    duration: src?.duration ?? undefined,
-    content: src?.content || '',
-    videoUrl: src?.videoUrl || '',
-    rubric: src?.rubric || '',
-    tags: md.tags || [],
-    prerequisites: md.prerequisites || [],
-    unlockAt: md.unlockAt || undefined,
-    preview: !!md.preview,
-    resources: md.resources || [],
-    attachments: md.attachments || [],
-    quiz: md.quiz || { questions: [] },
-    metadata: md
-  }
-}
-
-/** ---------- Loaders with mock fallback ---------- */
-async function loadCourseOverview(studentId: string, courseId: string) {
-  loadingCourse.value = true
-  try {
-    // 1) Try live
-    const myCoursesData = await fetchGraphQL<{
-      myCourses: Array<{ courseId: string; course: CourseT }>
-    }>(GQL.myCourses, { studentId }, STUDENTS_API)
-
-    const sc = (myCoursesData?.myCourses || []).find(c => c.courseId === courseId)
-    isEnrolledCourse.value = !!sc
-    if (sc?.course) Object.assign(course, sc.course)
-    else Object.assign(course, makeMockCourse(courseId)), usingMocks.value = true, mockReason.value = 'Course not found'
-
-    // 2) Modules live
-    const teach = await fetchGraphQL<{
-      modulesByCourse: Array<{ id: string; title: string; lessons: Array<{ id: string; duration?: number }> }>
-    }>(GQL.modulesByCourse, { courseId }, TEACH_API)
-
-    modules.value = (teach?.modulesByCourse || []).map(m => ({
-      id: m.id,
-      title: m.title,
-      lessonCount: m.lessons?.length || 0,
-      minutes: (m.lessons || []).reduce((s, l) => s + (l.duration || 0), 0),
-    }))
-
-    if (!modules.value.length) {
-      // Fallback to mocks if no modules
-      const mm = makeMockModules(courseId)
-      modules.value = mm.map(m => ({ id: m.id, title: m.title, lessonCount: m.lessons.length, minutes: m.lessons.reduce((s,l)=>s+(l.duration||0),0) }))
-      usingMocks.value = true
-      mockReason.value = 'No modules returned'
-    }
-
-    // 3) Progress live
-    const prog = await fetchGraphQL<{ myProgress: ProgressRow[] }>(GQL.myProgress, { studentId }, STUDENTS_API)
-    const allLessonIds = (teach?.modulesByCourse || []).flatMap(m => m.lessons?.map((l:any) => l.id) || [])
-    const derived = progressFromRows(prog?.myProgress || [], allLessonIds)
-    progress.completedLessonIds = [...derived.completedLessonIds]
-    progress.lastLessonId = derived.lastLessonId
-
-    // Save to LS snapshot for offline
-    persistLocalSnapshot()
-  } catch (e: any) {
-    // MOCK fallback fully
-    usingMocks.value = true
-    mockReason.value = e?.message || 'Network error'
-    Object.assign(course, makeMockCourse(courseId))
-    const mm = makeMockModules(courseId)
-    modules.value = mm.map(m => ({ id: m.id, title: m.title, lessonCount: m.lessons.length, minutes: m.lessons.reduce((s,l)=>s+(l.duration||0),0) }))
-    const prog = mockProgressFor(mm)
-    const allLessonIds = mm.flatMap(m => m.lessons.map(l => l.id))
-    const derived = progressFromRows(prog, allLessonIds)
-    progress.completedLessonIds = [...derived.completedLessonIds]
-    progress.lastLessonId = derived.lastLessonId
-    isEnrolledCourse.value = true // grant enrollment in mock
-    persistLocalSnapshot()
-    message.info('Using mocked course overview')
-  } finally {
-    loadingCourse.value = false
-  }
-}
-
-async function loadModule(studentId: string, courseId: string, moduleId: string) {
-  loadingModule.value = true
-  try {
-    // Ensure modules list exists (try live)
-    let teachMods = null as any
-    try {
-      teachMods = await fetchGraphQL<{ modulesByCourse: any[] }>(GQL.modulesByCourse, { courseId }, TEACH_API)
-    } catch (err) {
-      usingMocks.value = true; mockReason.value = 'Unable to load module (network)'
-    }
-    if (!teachMods?.modulesByCourse?.length) {
-      const mm = makeMockModules(courseId)
-      const pick = mm.find(m => m.id === moduleId) || mm[0]
-      moduleT.value = { id: pick.id, title: pick.title, courseId, lessons: pick.lessons }
-      lessons.value = pick.lessons.map(normalizeLesson)
-
-      // Progress
-      const prog = loadLocalProgress() || mockProgressFor(mm)
-      const lessonIds = pick.lessons.map(l => l.id)
-      const derived = progressFromRows(prog, lessonIds)
-      progress.completedLessonIds = [...derived.completedLessonIds]
-      progress.lastLessonId = derived.lastLessonId
-      isEnrolledCourse.value = true
-      persistLocalSnapshot()
-      return
-    }
-
-    // Live flow
-    if (!modules.value.length) {
-      modules.value = (teachMods?.modulesByCourse || []).map((m: any) => ({
-        id: m.id,
-        title: m.title,
-        lessonCount: m.lessons?.length || 0,
-        minutes: (m.lessons || []).reduce((s:number, l:any) => s + (l.duration || 0), 0),
-      }))
-    }
-
-    const mod = (teachMods?.modulesByCourse || []).find((m:any) => m.id === moduleId)
-    if (!mod) throw new Error('Module not found')
-    moduleT.value = { id: mod.id, title: mod.title, courseId, lessons: [] }
-    lessons.value = (mod.lessons || []).map(normalizeLesson)
-
-    const prog = await fetchGraphQL<{ myProgress: ProgressRow[] }>(GQL.myProgress, { studentId }, STUDENTS_API)
-    const lessonIds = (mod.lessons || []).map((l:any) => l.id)
-    const derived = progressFromRows(prog?.myProgress || [], lessonIds)
-    progress.completedLessonIds = [...derived.completedLessonIds]
-    progress.lastLessonId = derived.lastLessonId
-
-    // Ensure selection
-    if (lessons.value.length && currentIndex.value >= lessons.value.length) currentIndex.value = 0
-    if (!currentLesson.value && lessons.value.length) select(0)
-    persistLocalSnapshot()
-  } catch (e: any) {
-    moduleT.value = null
-    lessons.value = []
-    message.warning(e?.message || 'Failed to load module')
-    console.warn('[StudentModule] load failed:', e?.message)
-    const fallback = modules.value[0]?.id
-    if (fallback && moduleId !== fallback) {
-      await router.replace({ params: { ...route.params, module_id: fallback } })
-    }
-  } finally {
-    loadingModule.value = false
-  }
-}
-
-/** ---------- Persist / Restore ---------- */
-function persistLocalSnapshot(){
-  try {
-    /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (LS('course'), JSON.stringify(course))
-    /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (LS('modules'), JSON.stringify(modules.value))
-    /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (LS('progress'), JSON.stringify(progress))
-    /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (LS('notes'), JSON.stringify(notes))
-    /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (LS('ratings'), JSON.stringify(ratings))
-    /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (LS('bookmarks'), JSON.stringify(bookmarks))
-  } catch {}
-}
-function loadLocalProgress(): ProgressRow[] | null {
-  try {
-    const p = /* TODO: replace with gqlFetch to proper query */ undefined && (LS('progressRows'))
-    return p ? JSON.parse(p) : null
-  } catch { return null }
-}
-function saveProgressRows(rows: ProgressRow[]){
-  try { /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (LS('progressRows'), JSON.stringify(rows)) } catch {}
-}
-function persistNotes(id: string){
-  try { /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (LS('notes'), JSON.stringify(notes)) } catch {}
-}
-function persistRatings(){
-  try { /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (LS('ratings'), JSON.stringify(ratings)) } catch {}
-}
-function persistBookmarks(){
-  try { /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (LS('bookmarks'), JSON.stringify(bookmarks)) } catch {}
-}
-function clearLocal(){
-  const base = keyBase()
-  Object.keys(/* removed_localStorage */ null).forEach(k => { if (k.startsWith(base)) /* TODO: replace with mutation via gqlFetch */ console.debug("removeItem replaced"); (k) })
-  message.success('Cleared local data for this course key')
-}
-
-/** ---------- Mutations & actions ---------- */
-async function apiUpdateProgress(lessonId: string, completed: boolean) {
-  const studentId = selectedStudentId.value
-  const courseId  = selectedCourseId.value
-  const moduleId  = selectedModuleId.value
-
-  try {
-    if (forceMock.value || usingMocks.value || !isOnline.value) {
-      // Mock update: update local "rows"
-      let rows = loadLocalProgress()
-      if (!rows) {
-        const mm = makeMockModules(courseId)
-        rows = mockProgressFor(mm)
-      }
-      const idx = rows.findIndex(r => r.lessonId === lessonId)
-      if (idx >= 0) rows[idx] = { ...rows[idx], completed, updatedAt: new Date().toISOString() }
-      else rows.push({ lessonId, completed, updatedAt: new Date().toISOString() })
-      saveProgressRows(rows)
-
-      // Also recompute derived
-      const lessonIds = lessons.value.map(l => l.id)
-      const derived = progressFromRows(rows, lessonIds)
-      progress.completedLessonIds = [...derived.completedLessonIds]
-      progress.lastLessonId = derived.lastLessonId
-      usingMocks.value = true
-      mockReason.value = 'Local-only progress'
-      return
-    }
-
-    await fetchGraphQL(
-      GQL.updateProgress,
-      { studentId, lessonId, completed, score: null },
-      STUDENTS_API
-    )
-
-    // Refresh progress for current module scope
-    const teach = await fetchGraphQL<{ modulesByCourse: any[] }>(GQL.modulesByCourse, { courseId }, TEACH_API)
-    const mod = (teach?.modulesByCourse || []).find((m:any) => m.id === moduleId)
-    const lessonIds = (mod?.lessons || []).map((l:any) => l.id) || []
-
-    const prog = await fetchGraphQL<{ myProgress: ProgressRow[] }>(GQL.myProgress, { studentId }, STUDENTS_API)
-    const derived = progressFromRows(prog?.myProgress || [], lessonIds)
-
-    progress.completedLessonIds = [...derived.completedLessonIds]
-    progress.lastLessonId = derived.lastLessonId
-  } finally {
-    persistLocalSnapshot()
-  }
-}
-
-function select(i: number) {
-  currentIndex.value = i
-  const l = lessons.value[i]
-  if (!notes[l.id]) notes[l.id] = { text: '', highlights: [] }
-  // touch updatedAt for heuristic "last"
-  if (l?.id) apiUpdateProgress(l.id, isCompleted(l.id)).catch(() => {})
-  log(`Select lesson ${l.title || l.id}`)
-}
-function prevLesson() {
-  if (currentIndex.value > 0) select(currentIndex.value - 1)
-}
-function nextLesson() {
-  if (currentIndex.value < lessons.value.length - 1) select(currentIndex.value + 1)
-}
-function resumeLast() {
-  if (progress.lastLessonId) {
-    const idx = lessons.value.findIndex(l => l.id === progress.lastLessonId)
-    if (idx >= 0) return select(idx)
-  }
-  const idx = lessons.value.findIndex(l => !isLocked(l) || l.preview)
-  if (idx >= 0) select(idx)
-}
-async function toggleComplete(l: Lesson) { await markComplete(l, !isCompleted(l.id)) }
-async function markComplete(l: Lesson, done: boolean) {
-  try {
-    await apiUpdateProgress(l.id, done)
-    // optimistic UX
-    if (done) {
-      if (!isCompleted(l.id)) progress.completedLessonIds.push(l.id)
-      if (autoNext.value) nextTick(() => nextLesson())
-    } else {
-      const i = progress.completedLessonIds.indexOf(l.id)
-      if (i >= 0) progress.completedLessonIds.splice(i, 1)
-    }
-    message.success(done ? 'Marked complete' : 'Marked incomplete')
-    log(`${done ? 'Complete' : 'Incomplete'}: ${l.title}`)
-  } catch (e: any) {
-    message.error(e?.message || 'Failed to update progress')
-  }
-}
-
-const quizState = reactive<Record<string, any>>({})
-const quizSubmitting = ref(false)
-async function submitQuiz() {
-  if (!currentLesson.value?.quiz?.questions?.length) return
-  quizSubmitting.value = true
-  try {
-    let total = 0, ok = 0
-    for (const q of currentLesson.value.quiz!.questions) {
-      total++
-      let correct = false
-      if (q.type === 'mcq') {
-        const ans: number[] = Array.isArray(quizState[q.id]) ? quizState[q.id] : []
-        const correctIdx = (q.options || []).map((o, i) => (o.correct ? i : -1)).filter(i => i >= 0)
-        correct = ans.sort().join(',') === correctIdx.sort().join(',')
-      } else if (q.type === 'tf') {
-        correct = !!quizState[q.id] === true // user must choose True explicitly
-      } else {
-        correct = !!String(quizState[q.id] || '').trim().length
-      }
-      if (correct) ok++
-    }
-    await apiUpdateProgress(currentLesson.value.id, isCompleted(currentLesson.value.id))
-    message.success(`Submitted quiz. Score (approx): ${ok}/${total}`)
-    log(`Quiz submitted: ${ok}/${total}`)
-  } catch (e:any) {
-    message.error(e?.message || 'Quiz submit failed')
-  } finally {
-    quizSubmitting.value = false
-  }
-}
-
-/** Assignment submit */
-function openSubmitDrawer(){ submitOpen.value = true; log('Open submit drawer') }
-async function submitAssignment() {
-  if (!currentLesson.value) return
-  submitting.value = true
-  try {
-    await apiUpdateProgress(currentLesson.value.id, isCompleted(currentLesson.value.id))
-    submitOpen.value = false
-    submitForm.notes = ''; submitForm.url = ''
-    message.success('Assignment submitted (mock)')
-    log('Assignment submitted')
-  } catch (e:any) {
-    message.error(e?.message || 'Submit failed')
-  } finally {
-    submitting.value = false
-  }
-}
-
-/** Lab hook */
-function openLab(l: Lesson) {
-  window.open(`/labs/${course.id}/${l.id}`, '_blank', 'noopener')
-  log(`Open lab: ${l.id}`)
-}
-
-/** QA */
-const qaForCurrent = computed(() => qa.filter(x => !currentLesson.value || x.lessonId === currentLesson.value.id))
-function submitQA(){
-  if (!qaDraft.value.trim()) return
-  const item: QAItem = {
-    id: cryptoRandom(),
-    author: 'You',
-    avatar: 'https://i.pravatar.cc/40?img=68',
-    text: qaDraft.value.trim(),
-    when: new Date().toLocaleString(),
-    lessonId: currentLesson.value?.id
-  }
-  qa.unshift(item)
-  qaDraft.value = ''
-  try { /* TODO: replace with mutation via gqlFetch */ console.debug("setItem replaced"); (LS('qa'), JSON.stringify(qa)) } catch {}
-}
-
-/** Bookmarks */
-function bookmarkCurrent(){
-  if (!currentLesson.value) return
-  const b: Bookmark = {
-    title: currentLesson.value.title || 'Lesson',
-    description: `#${currentIndex.value+1} – ${currentLesson.value.type} · ${currentLesson.value.duration || 0} ${t('min')}`,
-    lessonId: currentLesson.value.id
-  }
-  bookmarks.unshift(b); persistBookmarks()
-  message.success('Bookmarked lesson')
-}
-function bookmarkTimestamp(){
-  if (!currentLesson.value) return
-  const ts = html5Video.value?.currentTime ? Math.round(html5Video.value.currentTime) : undefined
-  const pretty = ts ? ` @ ${ts}s` : ''
-  const b: Bookmark = {
-    title: (currentLesson.value.title || 'Lesson') + pretty,
-    description: `#${currentIndex.value+1} – ${currentLesson.value.type} · ${currentLesson.value.duration || 0} ${t('min')}`,
-    lessonId: currentLesson.value.id,
-    timestamp: ts
-  }
-  bookmarks.unshift(b); persistBookmarks()
-  message.success('Bookmarked timestamp')
-}
-function jumpToBookmark(b: Bookmark){
-  const idx = lessons.value.findIndex(l => l.id === b.lessonId)
-  if (idx >= 0) {
-    select(idx)
-    if (typeof b.timestamp === 'number' && html5Video.value) {
-      nextTick(() => { if (html5Video.value) html5Video.value.currentTime = b.timestamp! })
-    }
-  }
-}
-function removeBookmark(i: number){ bookmarks.splice(i, 1); persistBookmarks() }
-
-/** Resources tracking */
-function trackResource(item: Resource){
-  log(`Open resource: ${item.title || item.name || item.url}`)
-}
-
-/** Printing */
-function printLesson(){
-  window.print()
-}
-
-/** Font scaling */
-function increaseFont(){ fontScale.value = Math.min(22, fontScale.value + 1) }
-function decreaseFont(){ fontScale.value = Math.max(12, fontScale.value - 1) }
-
-/** Enrollment (mock) */
-function mockEnroll(){
-  isEnrolledCourse.value = true
-  openPricing.value = false
-  message.success(t('Enroll now (mock)'))
-  persistLocalSnapshot()
-}
-
-/** Video controls */
-function syncVideoSpeed(){
-  if (!html5Video.value) return
-  videoSpeed.value = html5Video.value.playbackRate
-}
-watch(videoSpeed, v => { if (html5Video.value) html5Video.value.playbackRate = v })
-
-/** Highlights */
-function addHighlight() {
-  const id = currentLesson.value?.id || 'global'
-  if (!notes[id]) notes[id] = { text: '', highlights: [] }
-
-  const raw = newHighlight?.value ?? ''
-  const text = typeof raw === 'string' ? raw.trim() : ''
-  if (!text) return
-
-  notes[id].highlights.push(text)
-  newHighlight.value = ''
-  persistNotes(id)
-}
-
-function removeHighlight(index: number){
-  const id = currentLesson.value?.id || 'global'
-  notes[id]?.highlights.splice(index, 1)
-  persistNotes(id)
-}
-
-/** Import / Export */
-function exportProgress(){
-  const data = {
-    course,
-    modules: modules.value,
-    progress,
-    notes,
-    ratings,
-    bookmarks,
-    exportedAt: new Date().toISOString()
-  }
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `${course.title?.replace(/\s+/g,'_') || 'course'}-progress.json`
-  a.click()
-  URL.revokeObjectURL(url)
-}
-function importProgress(){
-  try {
-    const data = JSON.parse(importJson.value)
-    Object.assign(course, data.course || {})
-    modules.value = data.modules || []
-    progress.completedLessonIds = Array.isArray(data.progress?.completedLessonIds) ? [...data.progress.completedLessonIds] : []
-    progress.lastLessonId = data.progress?.lastLessonId
-    Object.assign(notes, data.notes || {})
-    Object.assign(ratings, data.ratings || {})
-    bookmarks.splice(0, bookmarks.length, ...(data.bookmarks || []))
-    persistLocalSnapshot()
-    message.success('Imported progress')
-    openImportExport.value = false
-  } catch (e:any) {
-    message.error('Invalid JSON')
-  }
-}
-
-/** Online status & keyboard shortcuts */
-function onOnline(){ isOnline.value = true; message.success('Back online') }
-function onOffline(){ isOnline.value = false; message.warning('You are offline') }
-function onKeydown(e: KeyboardEvent){
-  if ((e.target as HTMLElement)?.tagName === 'INPUT' || (e.target as HTMLElement)?.tagName === 'TEXTAREA') return
-  if (e.key === 'n' || e.key === 'N') { nextLesson(); e.preventDefault() }
-  if (e.key === 'p' || e.key === 'P') { prevLesson(); e.preventDefault() }
-  if (e.key === 'c' || e.key === 'C') { if (currentLesson.value) toggleComplete(currentLesson.value); e.preventDefault() }
-  if (e.key === 'r' || e.key === 'R') { resumeLast(); e.preventDefault() }
-  if (e.key === '/') { const el = document.querySelector('[data-test-id="lesson-search"] input') as HTMLInputElement; el?.focus(); e.preventDefault() }
-  if (e.key === 'd' || e.key === 'D') { isDark.value = !isDark.value; e.preventDefault() }
-}
-
-/** Utils */
-function cryptoRandom(){ try { return crypto.randomUUID() } catch { return 'id-' + Math.random().toString(36).slice(2) } }
-
-/** ---------- Routing ---------- */
-async function switchModule(nextId: string) {
-  if (!nextId || nextId === selectedModuleId.value) return
-  await router.replace({ params: { ...(route?.params || {}), module_id: nextId } })
-}
-
-/** ---------- Lifecycle ---------- */
-onMounted(async () => {
-  window.addEventListener('online', onOnline)
-  window.addEventListener('offline', onOffline)
-  window.addEventListener('keydown', onKeydown)
-
-  // Restore local snapshot first for fast paint
-  try {
-    const c = /* TODO: replace with gqlFetch to proper query */ undefined && (LS('course'))
-    if (c) Object.assign(course, JSON.parse(c))
-    const m = /* TODO: replace with gqlFetch to proper query */ undefined && (LS('modules'))
-    if (m) modules.value = JSON.parse(m)
-    const p = /* TODO: replace with gqlFetch to proper query */ undefined && (LS('progress'))
-    if (p) Object.assign(progress, JSON.parse(p))
-    const n = /* TODO: replace with gqlFetch to proper query */ undefined && (LS('notes'))
-    if (n) Object.assign(notes, JSON.parse(n))
-    const r = /* TODO: replace with gqlFetch to proper query */ undefined && (LS('ratings'))
-    if (r) Object.assign(ratings, JSON.parse(r))
-    const b = /* TODO: replace with gqlFetch to proper query */ undefined && (LS('bookmarks'))
-    if (b) bookmarks.splice(0, bookmarks.length, ...JSON.parse(b))
-    const q = /* TODO: replace with gqlFetch to proper query */ undefined && (LS('qa'))
-    if (q) qa.splice(0, qa.length, ...JSON.parse(q))
-  } catch {}
-
-  const studentId = selectedStudentId.value
-  const courseId  = selectedCourseId.value
-  const moduleId  = selectedModuleId.value
-
-  await loadCourseOverview(studentId, courseId)
-
-  if (!moduleId || (hasModules.value && !modules.value.some(m => m.id === moduleId))) {
-    const pick = modules.value[0]?.id
-    if (pick) await router.replace({ params: { ...(route?.params || {}), module_id: pick } })
-  } else {
-    await loadModule(studentId, courseId, moduleId)
-  }
+onMounted(() => {
+  initializeApolloClient()
 })
-
-watch(() => route?.params?.module_id, async (next, prev) => {
-  if (!route?.params) return
-  if (next === prev) return
-  const studentId = selectedStudentId.value
-  const courseId  = selectedCourseId.value
-  const moduleId  = String(next || '')
-  if (!moduleId) {
-    moduleT.value = null
-    lessons.value = []
-    return
-  }
-  if (hasModules.value && !modules.value.some(m => m.id === moduleId)) {
-    const fallback = modules.value[0]?.id
-    if (fallback) await router.replace({ params: { ...(route?.params || {}), module_id: fallback } })
-    return
-  }
-  await loadModule(studentId, courseId, moduleId)
-})
-
-// Persist snapshots frequently
-watch([lessons, () => progress.completedLessonIds.length, () => progress.lastLessonId], persistLocalSnapshot)
-watch(isEnrolledCourse, persistLocalSnapshot)
-
-onBeforeUnmount(() => {
-  window.removeEventListener('online', onOnline)
-  window.removeEventListener('offline', onOffline)
-  window.removeEventListener('keydown', onKeydown)
-})
-
-
-definePageMeta({ layout: 'student' })
 </script>
 
 <style scoped>
