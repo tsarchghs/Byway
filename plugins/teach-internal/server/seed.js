@@ -36,6 +36,13 @@ async function main() {
       courseId: course.id,
     },
   });
+  const module2 = await prisma.module.create({
+    data: {
+      id: "mod-2", // stable ID used in your route
+      title: "Introduction to Web Development",
+      courseId: course.id,
+    },
+  });
   console.log("✅ Module:", module.id);
 
   // 3️⃣ Lessons

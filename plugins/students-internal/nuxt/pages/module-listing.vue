@@ -465,10 +465,11 @@
                 <a-form layout="vertical" class="mt-2" @finish.prevent>
                   <a-form-item :label="t('Your notes for this lesson')">
                     <a-textarea
-                      v-model:value="notes[currentLesson.id].text"
-                      :rows="4"
-                      @change="persistNotes(currentLesson.id)"
-                      data-test-id="lesson-notes"
+  v-model:value="ensureNoteForLesson(currentLesson.id).text"
+  :rows="4"
+  @change="persistNotes(currentLesson.id)"
+  data-test-id="lesson-notes"
+
                     />
                   </a-form-item>
                 </a-form>
@@ -961,7 +962,7 @@ const progress = reactive<{ completedLessonIds: string[]; lastLessonId?: string 
   lastLessonId: undefined
 })
 
-const isEnrolledCourse = ref(false)
+const isEnrolledCourse = ref(true)
 const html5Video = ref<HTMLVideoElement | null>(null)
 const videoSpeed = ref(1)
 const notes = reactive<Record<string, { text: string; highlights: string[] }>>({ global: { text: '', highlights: [] } })
@@ -1051,6 +1052,7 @@ function onSortChange({ key }: any) {
 const isCompleted = (lessonId: string) => progress.completedLessonIds.includes(lessonId)
 const labelForLesson = (id: string) => lessons.value.find(l => l.id === id)?.title || ''
 function isLocked(l: Lesson): boolean {
+  return false
   if (!isEnrolledCourse.value && !l.preview) return true
   if (l.preview) return false
   if (l.unlockAt && new Date(l.unlockAt).getTime() > Date.now()) return true
@@ -1146,11 +1148,337 @@ const GQL = {
     }
   `,
 }
+type MyCourseRow = {
+  id: string
+  studentId: string
+  courseId: string
+  completed: boolean
+  progress: number
+  course: CourseT
+}
+
+
+const loading = reactive({
+  course: false,
+  modules: false,
+  progress: false,
+})
+
+async function loadCourseAndModules() {
+  if (!clientInitialized.value) return
+  if (!selectedCourseId.value || !selectedStudentId.value) return
+
+  loading.course = true
+  loading.modules = true
+  usingMocks.value = false
+  mockReason.value = ''
+
+  try {
+    // 1️⃣ Get enrollment + course meta from students-internal
+    const { myCourses } = await fetchGraphQL<{ myCourses: MyCourseRow[] }>(
+      GQL.myCourses,
+      { studentId: selectedStudentId.value },
+      STUDENTS_API,
+    )
+
+    const row = myCourses?.find(c => c.courseId === selectedCourseId.value)
+    if (row?.course) {
+      Object.assign(course, row.course)
+      isEnrolledCourse.value = !!row.completed || row.progress > 0 || true // tweak later
+    } else {
+      // Not enrolled but we still show course layout, maybe with limited access
+      isEnrolledCourse.value = false
+    }
+
+    // 2️⃣ Get modules + lessons structure from teach-internal
+    const { modulesByCourse } = await fetchGraphQL<{ modulesByCourse: ModuleT[] }>(
+      GQL.modulesByCourse,
+      { courseId: selectedCourseId.value },
+      TEACH_API,
+    )
+
+    // map into your lite structure for sidebar
+    modules.value = (modulesByCourse || []).map(m => ({
+      id: m.id,
+      title: m.title,
+      lessonCount: m.lessons?.length ?? 0,
+      minutes: m.lessons?.reduce((s, l) => s + (l.duration || 0), 0),
+    }))
+
+    // pick current module
+    const initialModule =
+      modulesByCourse.find(m => m.id === selectedModuleId.value) ||
+      modulesByCourse[0] ||
+      null
+
+    moduleT.value = initialModule
+    lessons.value = initialModule?.lessons || []
+    currentIndex.value = 0
+  } catch (err: any) {
+    console.warn('[Course] Falling back to mocks:', err?.message || err)
+    usingMocks.value = true
+    mockReason.value = err?.message || 'Network error'
+    useMockCourse()
+  } finally {
+    loading.course = false
+    loading.modules = false
+  }
+}
+
+async function loadProgress() {
+  if (!clientInitialized.value) return
+  if (!selectedStudentId.value) return
+
+  loading.progress = true
+  try {
+    const { myProgress } = await fetchGraphQL<{ myProgress: ProgressRow[] }>(
+      GQL.myProgress,
+      { studentId: selectedStudentId.value },
+      STUDENTS_API,
+    )
+
+    progress.completedLessonIds.length = 0
+    const completedIds = (myProgress || [])
+      .filter(p => p.completed)
+      .map(p => p.lessonId)
+    progress.completedLessonIds.push(...completedIds)
+
+    const last = myProgress?.[0]
+    progress.lastLessonId = last?.lessonId
+
+    if (progress.lastLessonId) {
+      const idx = lessons.value.findIndex(l => l.id === progress.lastLessonId)
+      if (idx >= 0) currentIndex.value = idx
+    }
+  } catch (err: any) {
+    console.warn('[Progress] Using local-only mock progress:', err?.message || err)
+    // leave progress as-is; your local toggling will still work
+  } finally {
+    loading.progress = false
+  }
+}
+function useMockCourse() {
+  course.id = selectedCourseId.value || 'mock-course'
+  course.title = 'Mock Full Stack Course'
+  course.category = 'Software'
+  course.difficulty = 'Intermediate'
+
+  const mockModuleId = 'mock-module-1'
+  modules.value = [
+    { id: mockModuleId, title: 'Getting started', lessonCount: 3, minutes: 30 },
+  ]
+  const mockLessons: Lesson[] = [
+    { id: 'l1', moduleId: mockModuleId, title: 'Welcome', type: 'video', duration: 5, preview: true },
+    { id: 'l2', moduleId: mockModuleId, title: 'Setup', type: 'reading', duration: 10 },
+    { id: 'l3', moduleId: mockModuleId, title: 'First project', type: 'lab', duration: 15 },
+  ]
+  moduleT.value = { id: mockModuleId, courseId: course.id, title: 'Getting started', lessons: mockLessons }
+  lessons.value = mockLessons
+  currentIndex.value = 0
+}
+async function bootstrap() {
+  try {
+    await loadCourseAndModules()
+    await loadProgress()
+  } catch (e) {
+    console.error('[Bootstrap] Failed:', e)
+  }
+}
+
+onMounted(() => {
+  initializeApolloClient()
+
+  watch(
+    () => clientInitialized.value,
+    (ready) => {
+      if (ready) bootstrap()
+    },
+    { immediate: true },
+  )
+
+  watch(
+    () => [selectedCourseId.value, selectedModuleId.value, selectedStudentId.value],
+    () => {
+      if (clientInitialized.value) bootstrap()
+    },
+  )
+
+  window.addEventListener('online', () => {
+    isOnline.value = true
+    if (clientInitialized.value) bootstrap()
+  })
+  window.addEventListener('offline', () => {
+    isOnline.value = false
+  })
+})
+async function toggleLessonCompletion(lesson: Lesson, score?: number) {
+  const wasCompleted = isCompleted(lesson.id)
+  const completed = !wasCompleted
+
+  // optimistic update
+  if (completed) {
+    if (!progress.completedLessonIds.includes(lesson.id)) {
+      progress.completedLessonIds.push(lesson.id)
+    }
+  } else {
+    const idx = progress.completedLessonIds.indexOf(lesson.id)
+    if (idx >= 0) progress.completedLessonIds.splice(idx, 1)
+  }
+  progress.lastLessonId = lesson.id
+
+  try {
+    await fetchGraphQL(
+      GQL.updateProgress,
+      {
+        studentId: selectedStudentId.value,
+        lessonId: lesson.id,
+        completed,
+        score: typeof score === 'number' ? score : null,
+      },
+      STUDENTS_API,
+    )
+  } catch (err) {
+    // rollback on error
+    console.warn('[Progress] Failed to persist, rolling back', err)
+    if (completed) {
+      const idx = progress.completedLessonIds.indexOf(lesson.id)
+      if (idx >= 0) progress.completedLessonIds.splice(idx, 1)
+    } else {
+      progress.completedLessonIds.push(lesson.id)
+    }
+  }
+}
+
+function onModuleClick(info: any) {
+  const modId = info.key as string
+  if (!modId || !moduleT.value) return
+
+  // if we already have full modules list in memory:
+  // ideally keep a map: id -> full module; for now: reload modules
+  moduleT.value = { ...(moduleT.value as ModuleT), id: modId }
+  // simplest: reload from API to get lessons for that module
+  loadCourseAndModules()
+}
+
+const renderLessonItem = (item: Lesson) => {
+  const locked = isLocked(item)
+  const completed = isCompleted(item.id)
+
+  return h(
+    'div',
+    {
+      class: [
+        'flex items-center justify-between px-3 py-2 cursor-pointer rounded mb-1',
+        locked ? 'opacity-60 cursor-not-allowed' : 'hover:bg-slate-800',
+        completed ? 'bg-slate-900/70' : '',
+      ],
+      onClick: () => {
+        if (locked) return
+        const idx = lessons.value.findIndex(l => l.id === item.id)
+        if (idx >= 0) currentIndex.value = idx
+      },
+    },
+    [
+      h('div', [
+        h('div', { class: 'text-sm' }, item.title || t('Untitled lesson')),
+        h(
+          'div',
+          { class: 'text-xs text-slate-500' },
+          `${item.duration || 0} ${t('min')} · ${item.type}`,
+        ),
+      ]),
+      h(
+        'div',
+        { class: 'flex items-center gap-2' },
+        [
+          completed && h(CheckOutlined),
+          locked && h(LockOutlined),
+        ].filter(Boolean),
+      ),
+    ],
+  )
+}
 
 
 onMounted(() => {
   initializeApolloClient()
 })
+function select(i: number) {
+  const lesson = lessons.value[i]
+  if (!lesson) return
+
+  // if locked, do nothing
+  if (isLocked(lesson) && false) {
+    message.warning(t('This lesson is locked'))
+    return
+  }
+
+  currentIndex.value = i
+
+  // optional: scroll active lesson into view
+  nextTick(() => {
+    const el = document.querySelector(`[data-test-id="lesson-row-${i}"]`)
+    el?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  })
+}
+
+function goPrev() {
+  if (currentIndex.value > 0) {
+    currentIndex.value -= 1
+    scrollToActive()
+  } else {
+    message.info(t('Previous') + ': ' + t('No more lessons'))
+  }
+}
+
+function goNext() {
+  if (currentIndex.value < lessons.value.length - 1) {
+    currentIndex.value += 1
+    scrollToActive()
+  } else {
+    message.info(t('Next') + ': ' + t('No more lessons'))
+  }
+}
+
+function scrollToActive() {
+  nextTick(() => {
+    const el = document.querySelector(
+      `[data-test-id="lesson-row-${currentIndex.value}"]`
+    )
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  })
+}
+
+/**
+ * When user clicks “Mark complete”
+ * optionally auto-navigate to next lesson.
+ */
+async function markCurrentLessonComplete() {
+  if (!currentLesson.value) return
+
+  await toggleLessonCompletion(currentLesson.value)
+
+  if (autoNext.value) {
+    goNext()
+  }
+}
+function ensureNoteForLesson(id: string) {
+  if (!notes[id]) {
+    notes[id] = { text: '', highlights: [] }
+  }
+  return notes[id]
+}
+function switchModule(newModuleId: string) {
+  if (!newModuleId) return
+
+  router.replace({
+    name: route.name, // keep same page
+    params: {
+      ...route.params,
+      module_id: newModuleId, // update only this part
+    },
+  })
+}
 </script>
 
 <style scoped>

@@ -32,6 +32,10 @@
     {
       "path": "/students/gradebook",
       "file": "nuxt/pages/gradebook.vue"
+    },
+      {
+      "path": "/students/gradebook/[id]",
+      "file": "nuxt/pages/gradebook/[id].vue"
     }
   ],
   "endpoints": {
