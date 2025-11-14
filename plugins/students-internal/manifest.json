@@ -57,16 +57,5 @@
       "path": "/students/gradebook/[id]",
       "file": "nuxt/pages/gradebook/[id].vue"
     }
-  ],
-  "endpoints": {
-    "GET /api/students": true,
-    "GET /api/students/:id": true,
-    "GET /api/students/by-user/:userId": true,
-    "POST /api/students": true,
-    "PUT /api/students/:id": true,
-    "DELETE /api/students/:id": true,
-    "GET /api/student-courses": true,
-    "POST /api/student-courses": true,
-    "DELETE /api/student-courses/:id": true
-  }
+  ]
 }
