@@ -14,6 +14,26 @@
       "file": "nuxt/pages/module-listing.vue"
     },
     {
+      "path": "/classrooms/[id]/assignments",
+      "file": "nuxt/pages/assignments/index.vue"
+    },
+  {
+      "path": "/classrooms/",
+      "file": "nuxt/pages/classrooms/index.vue"
+    },
+  {
+      "path": "/gradebook/[courseId]",
+      "file": "nuxt/pages/gradebook/[courseId].vue"
+    },
+    {
+      "path": "/gradebook",
+      "file": "nuxt/pages/gradebook/[id].vue"
+    },
+    {
+      "path": "/classrooms/[id]",
+      "file": "nuxt/pages/classrooms/[id].vue"
+    },
+    {
       "path": "/classrooms/[id]",
       "file": "nuxt/pages/classrooms/[id].vue"
     },

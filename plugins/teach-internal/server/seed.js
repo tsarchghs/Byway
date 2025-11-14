@@ -61,7 +61,7 @@ async function main() {
     {
       id: "lesson-css",
       title: "CSS Fundamentals",
-      moduleId: module.id,
+      moduleId: module2.id,
       type: "video",
       duration: 12,
       content: "Master colors, layouts, and typography.",

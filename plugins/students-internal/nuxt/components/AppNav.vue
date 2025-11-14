@@ -15,7 +15,8 @@
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useQuery, gql } from '@vue/apollo-composable'
+import { useQuery } from '@vue/apollo-composable'
+import gql from 'graphql-tag'
 const Q_ME = gql`query Me { me { id email displayName roles } }`
 const { result: meRes } = useQuery(Q_ME)
 const me = computed(()=> meRes.value?.me || null)
