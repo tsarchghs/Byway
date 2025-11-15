@@ -1,0 +1,28 @@
+// Gradebook plugin Prisma schema
+generator client {
+  provider   = "prisma-client-js"
+  output     = "./generated/client"
+  engineType = "binary"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./gradebook.db"
+}
+
+model GradebookEntry {
+  id                 String   @id @default(cuid())
+  courseId           String
+  courseTitle        String?
+  studentId          String
+  studentDisplayName String?
+  assignmentId       String?
+  assignmentTitle    String?
+  score              Float?
+  maxScore           Float?
+  letter             String?
+  feedback           String?
+  metadata           Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
