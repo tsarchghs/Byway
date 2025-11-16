@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, h } from 'vue'
 import { message } from 'ant-design-vue'
 
 const challengeId = ref('')
@@ -12,6 +12,16 @@ const sessions = ref<any[]>([])
 const sessionColumns = [
   { title: 'Challenge', dataIndex: ['challenge', 'title'], key: 'challenge' },
   { title: 'Status', dataIndex: 'status', key: 'status' },
+  { 
+    title: 'Code-Server', 
+    key: 'codeServer',
+    customRender: ({ record }: any) => {
+      if (record.codeServerUrl) {
+        return h('a', { href: record.codeServerUrl, target: '_blank' }, 'Open')
+      }
+      return h('span', { style: 'color: #999' }, 'Not started')
+    }
+  },
   { title: 'Last Result', dataIndex: ['lastSubmission', 'status'], key: 'lastStatus' },
   { title: 'Grade %', dataIndex: ['lastSubmission', 'gradePct'], key: 'gradePct' },
   { title: 'Attempts', dataIndex: 'attempts', key: 'attempts' },
@@ -21,7 +31,13 @@ const sessionColumns = [
 async function loadSessions() {
   loadingSessions.value = true
   try {
-    const res = await fetch('/api/teacher-course-lab/sessions/me')
+    const res = await fetch('http://localhost:4000/api/teacher-course-lab/sessions/me',
+      {
+        headers: {
+          Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWh5dmN4cjgwMDAwdHcwa3JyODR5eHk4IiwiaWF0IjoxNzYzMTI1NTc1LCJleHAiOjE3NjM3MzAzNzV9.Q7ZrBeM8oZlFUQLKp5YtJsObOQ9AeChhXV3ZXc6797U"
+        }
+      }
+    )
     if (!res.ok) throw new Error(await res.text())
     const data = await res.json()
     sessions.value = (data.sessions || []).map((s: any) => {
@@ -45,9 +61,9 @@ async function startSession() {
 
   starting.value = true
   try {
-    const res = await fetch('/api/teacher-course-lab/session/start', {
+    const res = await fetch('http://localhost:4000/api/teacher-course-lab/session/start', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWh5dmN4cjgwMDAwdHcwa3JyODR5eHk4IiwiaWF0IjoxNzYzMTI1NTc1LCJleHAiOjE3NjM3MzAzNzV9.Q7ZrBeM8oZlFUQLKp5YtJsObOQ9AeChhXV3ZXc6797U", 'Content-Type': 'application/json' },
       body: JSON.stringify({ challengeId: challengeId.value })
     })
     const data = await res.json()
@@ -108,13 +124,21 @@ onMounted(() => {
                     :content="session.id"
                   />
                 </div>
+                <div v-if="session.codeServerUrl" class="mb-2">
+                  <strong>Code-Server URL:</strong>
+                  <a-typography-paragraph
+                    style="display:inline-block;margin-left:4px;"
+                    copyable
+                    :content="session.codeServerUrl"
+                  />
+                </div>
                 <a-button
                   v-if="session.codeServerUrl"
-                  type="link"
+                  type="primary"
                   :href="session.codeServerUrl"
                   target="_blank"
                 >
-                  Open code-server
+                  Open code-server in new tab
                 </a-button>
               </template>
             </a-result>

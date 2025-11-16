@@ -1,6 +1,6 @@
 // Sample seed script (run manually)
 //   node plugins/teacher-course-lab/server/seed.mjs
-import pkg from '@prisma/client';
+import pkg from './db/generated/client/index.js';
 const { PrismaClient } = pkg;
 const prisma = new PrismaClient();
 

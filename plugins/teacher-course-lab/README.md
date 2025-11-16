@@ -20,10 +20,16 @@ CS50-style labs for Byway/Bloggrs: challenges, code-server sessions, submissions
    npx prisma db push
    ```
 
-2. **Run code-server locally**:
+2. **Start Traefik** (required for docker-per-session mode):
 
    ```bash
    cd plugins/teacher-course-lab/docker
+   docker compose up -d traefik
+   # Traefik dashboard: http://localhost:8081
+   ```
+
+   For shared mode, also start code-server:
+   ```bash
    CODE_SERVER_PASSWORD=changeme CODE_SERVER_HOST=codeserver.localhost docker compose up -d
    # open http://codeserver.localhost (or http://localhost:8080)
    ```
@@ -57,13 +63,32 @@ challenges, start sessions, or submit work.
 Configure via environment variables:
 
 - `TCLAB_SPAWNER_MODE`:
-  - `shared` (default): reuse a single code-server instance at `CODE_SERVER_BASE_URL`.
-  - `docker-per-session`: each lab session gets its own `docker run`-spawned code-server.
-- `CODE_SERVER_BASE_URL`: e.g. `http://codeserver.localhost` (matches Traefik host rule).
+  - `shared`: reuse a single code-server instance at `CODE_SERVER_BASE_URL`.
+  - `docker-per-session` (default): each lab session gets its own `docker run`-spawned code-server with Traefik routing.
+- `CODE_SERVER_BASE_URL`: e.g. `http://codeserver.localhost` (used in shared mode, matches Traefik host rule).
 - `CODE_SERVER_DEFAULT_TOKEN` / `CODE_SERVER_PASSWORD`: used as code-server password.
 - `TCLAB_WORKSPACES_ROOT`: host path for per-session workspaces (default:
   `plugins/teacher-course-lab/docker/workspaces`).
 - `TCLAB_CODE_SERVER_IMAGE`: override image (default `codercom/code-server:4.21.1`).
+- `TCLAB_TRAEFIK_NETWORK`: Docker network name for Traefik (default: `tclab-traefik-network`).
+- `TCLAB_TRAEFIK_DOMAIN`: Domain for Traefik routing (default: `localhost`).
+- `TCLAB_TRAEFIK_ENTRYPOINT`: Traefik entrypoint name (default: `web`).
+
+### Traefik Setup
+
+For `docker-per-session` mode, Traefik must be running to route requests to per-session code-server containers:
+
+1. **Start Traefik** (required before spawning sessions):
+   ```bash
+   cd plugins/teacher-course-lab/docker
+   docker compose up -d traefik
+   ```
+
+2. **Session URLs**: Each session gets a unique subdomain like `lab-<sessionId>.localhost`.
+   - Example: `http://lab-abc123def456.localhost`
+   - Containers are automatically added to the Traefik network and configured with proper labels.
+
+3. **Network**: The spawner automatically creates/verifies the Traefik network (`tclab-traefik-network`) exists.
 
 ## Grading Runner
 

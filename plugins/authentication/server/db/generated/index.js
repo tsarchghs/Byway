@@ -201,7 +201,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/Users/gjergjkadriu/Documents/GitHub/Byway/plugins/authentication/server/db/generated",
+      "value": "C:\\Users\\PC\\Documents\\GitHub\\byway\\plugins\\authentication\\server\\db\\generated",
       "fromEnvVar": null
     },
     "config": {
@@ -210,12 +210,12 @@ const config = {
     "binaryTargets": [
       {
         "fromEnvVar": null,
-        "value": "darwin-arm64",
+        "value": "windows",
         "native": true
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "/Users/gjergjkadriu/Documents/GitHub/Byway/plugins/authentication/server/db/schema.prisma",
+    "sourceFilePath": "C:\\Users\\PC\\Documents\\GitHub\\byway\\plugins\\authentication\\server\\db\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
@@ -228,6 +228,7 @@ const config = {
     "db"
   ],
   "activeProvider": "mysql",
+  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {
@@ -246,8 +247,8 @@ const fs = require('fs')
 config.dirname = __dirname
 if (!fs.existsSync(path.join(__dirname, 'schema.prisma'))) {
   const alternativePaths = [
-    "plugins/authentication/server/db/generated",
-    "authentication/server/db/generated",
+    "generated",
+    "",
   ]
   
   const alternativePath = alternativePaths.find((altPath) => {
@@ -276,8 +277,8 @@ exports.PrismaClient = PrismaClient
 Object.assign(exports, Prisma)
 
 // file annotations for bundling tools to include these files
-path.join(__dirname, "libquery_engine-darwin-arm64.dylib.node");
-path.join(process.cwd(), "plugins/authentication/server/db/generated/libquery_engine-darwin-arm64.dylib.node")
+path.join(__dirname, "query_engine-windows.dll.node");
+path.join(process.cwd(), "generated/query_engine-windows.dll.node")
 // file annotations for bundling tools to include these files
 path.join(__dirname, "schema.prisma");
-path.join(process.cwd(), "plugins/authentication/server/db/generated/schema.prisma")
+path.join(process.cwd(), "generated/schema.prisma")

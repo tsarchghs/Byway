@@ -8,7 +8,7 @@ const items = ref<any[]>([])
 async function load() {
   loading.value = true
   try {
-    const res = await fetch('/api/teacher-course-lab/challenges')
+    const res = await fetch('http://localhost:4000/api/teacher-course-lab/challenges')
     const data = await res.json()
     items.value = data.items ?? []
   } catch (e) {
@@ -27,14 +27,13 @@ onMounted(load)
       title="Teacher • Course Labs"
       sub-title="Manage CS50-style challenges, course bindings, and lab sessions"
     />
+
     <a-card :loading="loading" title="Challenges">
-      <a-list
-        :data-source="items"
-        :renderItem="item => (
+      <a-list :data-source="items">
+        <!-- Correct Vue template slot -->
+        <template #renderItem="{ item }">
           <a-list-item>
-            <a-list-item-meta
-              :title="item.title"
-            >
+            <a-list-item-meta :title="item.title">
               <template #description>
                 <div class="text-sm text-gray-600">
                   <div>{{ item.description }}</div>
@@ -46,13 +45,14 @@ onMounted(load)
                 </div>
               </template>
             </a-list-item-meta>
+
             <template #actions>
               <a-tag>{{ item.difficulty }}</a-tag>
               <a-tag>{{ item.visibility }}</a-tag>
             </template>
           </a-list-item>
-        )"
-      />
+        </template>
+      </a-list>
     </a-card>
   </div>
 </template>

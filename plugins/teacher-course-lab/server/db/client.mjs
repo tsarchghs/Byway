@@ -1,4 +1,4 @@
-import pkg from '@prisma/client';
+import pkg from './generated/client/index';
 const { PrismaClient } = pkg;
 
 let prisma;

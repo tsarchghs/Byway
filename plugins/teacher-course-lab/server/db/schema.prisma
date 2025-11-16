@@ -1,6 +1,6 @@
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL_TEACHER_COURSE_LAB")
+  url      = "file:./teacher-course-lab.db"
 }
 
 generator client {

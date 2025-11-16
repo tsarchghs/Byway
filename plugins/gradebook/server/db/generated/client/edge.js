@@ -147,7 +147,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/Users/gjergjkadriu/Documents/GitHub/Byway/plugins/gradebook/server/db/generated/client",
+      "value": "C:\\Users\\PC\\Documents\\GitHub\\byway\\plugins\\gradebook\\server\\db\\generated\\client",
       "fromEnvVar": null
     },
     "config": {
@@ -156,12 +156,12 @@ const config = {
     "binaryTargets": [
       {
         "fromEnvVar": null,
-        "value": "darwin-arm64",
+        "value": "windows",
         "native": true
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "/Users/gjergjkadriu/Documents/GitHub/Byway/plugins/gradebook/server/db/schema.prisma",
+    "sourceFilePath": "C:\\Users\\PC\\Documents\\GitHub\\byway\\plugins\\gradebook\\server\\db\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {

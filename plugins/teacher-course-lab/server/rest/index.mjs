@@ -3,9 +3,9 @@ import prisma from '../db/client.mjs';
 import { startSessionForUser, stopSessionById } from '../services/sessions.mjs';
 import { runGrading } from '../services/grader.mjs';
 import { fetchBindingMetaForChallenge } from '../services/courses-bridge.mjs';
+import { PrismaClient } from '../../../authentication/server/db/generated';
 
 export const restRouter = express.Router();
-
 function requireUser(req, res) {
   const user = req.user;
   if (!user || !user.id) {

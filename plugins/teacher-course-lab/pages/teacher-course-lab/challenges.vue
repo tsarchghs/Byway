@@ -18,9 +18,9 @@ const form = reactive({
 
 async function submit() {
   try {
-    const res = await fetch('/api/teacher-course-lab/challenges', {
+    const res = await fetch('http://localhost:4000/api/teacher-course-lab/challenges', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWh5dmN4cjgwMDAwdHcwa3JyODR5eHk4IiwiaWF0IjoxNzYzMTI1NTc1LCJleHAiOjE3NjM3MzAzNzV9.Q7ZrBeM8oZlFUQLKp5YtJsObOQ9AeChhXV3ZXc6797U", 'Content-Type': 'application/json' },
       body: JSON.stringify(form)
     })
     if (!res.ok) throw new Error(await res.text())

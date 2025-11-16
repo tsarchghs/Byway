@@ -188,7 +188,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/Users/gjergjkadriu/Documents/GitHub/Byway/plugins/students-internal/server/db/generated",
+      "value": "C:\\Users\\PC\\Documents\\GitHub\\byway\\plugins\\students-internal\\server\\db\\generated",
       "fromEnvVar": null
     },
     "config": {
@@ -197,12 +197,12 @@ const config = {
     "binaryTargets": [
       {
         "fromEnvVar": null,
-        "value": "darwin-arm64",
+        "value": "windows",
         "native": true
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "/Users/gjergjkadriu/Documents/GitHub/Byway/plugins/students-internal/server/db/schema.prisma",
+    "sourceFilePath": "C:\\Users\\PC\\Documents\\GitHub\\byway\\plugins\\students-internal\\server\\db\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {

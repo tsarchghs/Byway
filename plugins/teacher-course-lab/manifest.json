@@ -6,22 +6,22 @@
   "routes": [
     {
       "path": "/teacher-course-lab",
-      "page": "teacher-course-lab/index.vue",
+      "file": "./pages/teacher-course-lab/index.vue",
       "label": "Course Labs (Teacher)"
     },
     {
       "path": "/teacher-course-lab/challenges",
-      "page": "teacher-course-lab/challenges.vue",
+      "file": "./pages/teacher-course-lab/challenges.vue",
       "label": "Challenges (Teacher)"
     },
     {
       "path": "/student-course-lab",
-      "page": "student-course-lab/index.vue",
+      "file": "./pages/student-course-lab/index.vue",
       "label": "Course Labs (Student)"
     },
     {
       "path": "/teacher-course-lab/submissions",
-      "page": "teacher-course-lab/submissions.vue",
+      "file": "./pages/teacher-course-lab/submissions.vue",
       "label": "Lab Submissions (Teacher)"
     }
   ],
