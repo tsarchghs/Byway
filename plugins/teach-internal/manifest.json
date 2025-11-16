@@ -37,7 +37,11 @@
       "path": "/modules/[id]/admin",
       "file": "nuxt/pages/modules/[id]/admin.vue"
     },
-    "/institutions/[slug]/classrooms/[id]/gradebook"
+    "/institutions/[slug]/classrooms/[id]/gradebook",
+    {
+      "path": "/teach/labs",
+      "file": "nuxt/pages/labs/index.vue"
+    }
   ],
   "endpoints": {
     "GET /api/courses": true,

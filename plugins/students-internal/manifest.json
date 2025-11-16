@@ -17,11 +17,11 @@
       "path": "/classrooms/[id]/assignments",
       "file": "nuxt/pages/assignments/index.vue"
     },
-  {
+    {
       "path": "/classrooms/",
       "file": "nuxt/pages/classrooms/index.vue"
     },
-  {
+    {
       "path": "/gradebook/[courseId]",
       "file": "nuxt/pages/gradebook/[courseId].vue"
     },
@@ -53,9 +53,13 @@
       "path": "/students/gradebook",
       "file": "nuxt/pages/gradebook.vue"
     },
-      {
+    {
       "path": "/students/gradebook/[id]",
       "file": "nuxt/pages/gradebook/[id].vue"
+    },
+    {
+      "path": "/students/labs",
+      "file": "nuxt/pages/labs/index.vue"
     }
   ]
 }

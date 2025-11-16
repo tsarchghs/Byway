@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  code_server:
+    image: codercom/code-server:4.21.1
+    container_name: tclab-code-server
+    environment:
+      - PASSWORD=${CODE_SERVER_PASSWORD:-changeme}
+    volumes:
+      - ./workspaces:/home/coder/project
+    command: ["--auth", "password", "--bind-addr", "0.0.0.0:8080", "/home/coder/project"]
+    ports:
+      - "8080:8080"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tclab-cs.rule=Host(`${CODE_SERVER_HOST:-codeserver.localhost}`)"
+      - "traefik.http.routers.tclab-cs.entrypoints=web"
+      - "traefik.http.services.tclab-cs.loadbalancer.server.port=8080"
+
+  traefik:
+    image: traefik:v3.1
+    container_name: tclab-traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8081:8080" # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
