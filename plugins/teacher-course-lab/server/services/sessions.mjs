@@ -1,5 +1,6 @@
 import prisma from '../db/client.mjs'
 import { spawnCodeServerForSession, stopCodeServerForSession } from './spawner.mjs'
+import { fetchBindingMetaForChallenge } from './courses-bridge.mjs'
 
 //
 // Helper logger with timestamps
@@ -41,6 +42,20 @@ export async function startSessionForUser({ challengeId, userId }) {
 
   log('📌 Created session', session)
 
+  // Try to fetch lab metadata from lesson if challenge is bound to a lesson
+  let labMeta = null
+  if (challenge.lessonId) {
+    try {
+      const bindings = await fetchBindingMetaForChallenge(challenge)
+      if (bindings?.lesson?.metadata?.lab) {
+        labMeta = bindings.lesson.metadata.lab
+        log('📦 Found lab metadata:', { kind: labMeta.kind })
+      }
+    } catch (e) {
+      log('⚠️ Failed to fetch lab metadata:', e.message)
+    }
+  }
+
   let spawnInfo
   try {
     log('🚀 Spawning Code-Server for session...', { sessionId: session.id })
@@ -48,7 +63,8 @@ export async function startSessionForUser({ challengeId, userId }) {
     spawnInfo = await spawnCodeServerForSession({
       sessionId: session.id,
       userId,
-      challengeId
+      challengeId,
+      labMeta
     })
 
     log('📦 spawnCodeServerForSession() returned:', spawnInfo)

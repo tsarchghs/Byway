@@ -269,3 +269,26 @@ restRouter.get('/teacher/submissions/session/:sessionId', async (req, res) => {
 
   res.json({ session });
 });
+
+// Get lab metadata for a challenge (from bound lesson)
+restRouter.get('/challenges/:id/lab-meta', async (req, res) => {
+  const id = req.params.id;
+  const challenge = await prisma.labChallenge.findUnique({ where: { id } });
+  if (!challenge) {
+    return res.status(404).json({ error: 'Challenge not found' });
+  }
+
+  try {
+    const bindings = await fetchBindingMetaForChallenge(challenge);
+    const labMeta = bindings?.lesson?.metadata?.lab || null;
+    
+    res.json({ 
+      challenge: { id: challenge.id, lessonId: challenge.lessonId },
+      labMeta,
+      lesson: bindings?.lesson || null
+    });
+  } catch (e) {
+    console.warn('[teacher-course-lab] Failed to fetch lab metadata:', e?.message || e);
+    res.status(500).json({ error: 'Failed to fetch lab metadata' });
+  }
+});

@@ -444,10 +444,89 @@
                       show-icon
                       :message="t('Interactive lab')"
                       :description="t('Your lab environment opens in a new tab/window.')"
-                      class="mb-1"
+                      class="mb-2"
                     />
-                    <a-space>
-                      <a-button type="primary" @click="openLab(currentLesson)" data-test-id="open-lab">{{ t('Open lab') }}</a-button>
+                    
+                    <!-- Lab Challenge Info -->
+                    <a-card v-if="labChallenges[currentLesson.id]" size="small" class="mb-2">
+                      <a-descriptions bordered size="small" :column="1">
+                        <a-descriptions-item :label="t('Challenge')">
+                          {{ labChallenges[currentLesson.id].title }}
+                        </a-descriptions-item>
+                        <a-descriptions-item :label="t('Difficulty')">
+                          {{ labChallenges[currentLesson.id].difficulty }}
+                        </a-descriptions-item>
+                        <a-descriptions-item v-if="labChallenges[currentLesson.id].description" :label="t('Description')">
+                          {{ labChallenges[currentLesson.id].description }}
+                        </a-descriptions-item>
+                      </a-descriptions>
+                    </a-card>
+
+                    <!-- Lab Session Status -->
+                    <a-card v-if="labSessions[currentLesson.id]" size="small" class="mb-2">
+                      <a-descriptions bordered size="small" :column="1">
+                        <a-descriptions-item :label="t('Session status')">
+                          <a-tag :color="getSessionStatusColor(labSessions[currentLesson.id].status)">
+                            {{ labSessions[currentLesson.id].status?.toUpperCase() }}
+                          </a-tag>
+                        </a-descriptions-item>
+                        <a-descriptions-item v-if="labSessions[currentLesson.id].codeServerUrl" :label="t('VS Code URL')">
+                          <a :href="labSessions[currentLesson.id].codeServerUrl" target="_blank">
+                            {{ labSessions[currentLesson.id].codeServerUrl }}
+                          </a>
+                        </a-descriptions-item>
+                      </a-descriptions>
+                    </a-card>
+
+                    <!-- Latest Submission -->
+                    <a-card v-if="labSubmissions[currentLesson.id]" size="small" class="mb-2">
+                      <a-descriptions bordered size="small" :column="1">
+                        <a-descriptions-item :label="t('Latest submission')">
+                          <a-tag :color="labSubmissions[currentLesson.id].passed ? 'green' : 'red'">
+                            {{ labSubmissions[currentLesson.id].status?.toUpperCase() }}
+                          </a-tag>
+                        </a-descriptions-item>
+                        <a-descriptions-item v-if="labSubmissions[currentLesson.id].gradePct != null" :label="t('Grade')">
+                          {{ labSubmissions[currentLesson.id].gradePct }}%
+                        </a-descriptions-item>
+                        <a-descriptions-item v-if="labSubmissions[currentLesson.id].feedback" :label="t('Feedback')">
+                          <a-typography-paragraph style="white-space: pre-wrap; margin: 0;">
+                            {{ labSubmissions[currentLesson.id].feedback }}
+                          </a-typography-paragraph>
+                        </a-descriptions-item>
+                      </a-descriptions>
+                    </a-card>
+
+                    <a-space wrap>
+                      <a-button
+                        type="primary"
+                        @click="openLab(currentLesson)"
+                        :loading="labSessionStarting[currentLesson.id]"
+                        :disabled="labSessionStarting[currentLesson.id]"
+                        data-test-id="open-lab"
+                      >
+                        <template #icon v-if="labSessions[currentLesson.id]?.codeServerUrl">
+                          <CodeOutlined />
+                        </template>
+                        {{ labSessions[currentLesson.id]?.codeServerUrl ? t('Open VS Code') : t('Start lab session') }}
+                      </a-button>
+                      <a-button
+                        v-if="labSessions[currentLesson.id]?.codeServerUrl"
+                        @click="openLabUrl(currentLesson)"
+                        :disabled="!labSessions[currentLesson.id]?.codeServerUrl"
+                        data-test-id="open-lab-url"
+                      >
+                        {{ t('Open in new tab') }}
+                      </a-button>
+                      <a-button
+                        type="default"
+                        @click="submitLab(currentLesson)"
+                        :loading="labSubmitting[currentLesson.id]"
+                        :disabled="labSubmitting[currentLesson.id] || !labSessions[currentLesson.id] || (labSessions[currentLesson.id].status !== 'running' && labSessions[currentLesson.id].status !== 'starting')"
+                        data-test-id="submit-lab"
+                      >
+                        {{ t('Submit lab') }}
+                      </a-button>
                       <a-button @click="markComplete(currentLesson, true)" :disabled="isCompleted(currentLesson.id)">
                         {{ t('Mark complete') }}
                       </a-button>
@@ -749,7 +828,8 @@ import {
   BulbOutlined, FieldTimeOutlined, PlayCircleOutlined, LockOutlined,
   CheckOutlined, ArrowRightOutlined, SettingOutlined, FontSizeOutlined,
   BugOutlined, CloudSyncOutlined, SortAscendingOutlined,
-  UploadOutlined, BookOutlined, PrinterOutlined, ClockCircleOutlined
+  UploadOutlined, BookOutlined, PrinterOutlined, ClockCircleOutlined,
+  CodeOutlined
 } from '@ant-design/icons-vue'
 
 const Q_ME = gql`query Me { me { id email displayName roles } }`
@@ -891,6 +971,45 @@ const dict = {
     'Cancel': 'Cancel',
     'Submit': 'Submit',
     'No lessons found': 'No lessons found',
+    'Open lab': 'Open lab',
+    'Start lab session': 'Start lab session',
+    'Open VS Code': 'Open VS Code',
+    'Open in new tab': 'Open in new tab',
+    'Submit lab': 'Submit lab',
+    'Challenge': 'Challenge',
+    'Difficulty': 'Difficulty',
+    'Description': 'Description',
+    'Session status': 'Session status',
+    'VS Code URL': 'VS Code URL',
+    'Latest submission': 'Latest submission',
+    'Grade': 'Grade',
+    'Feedback': 'Feedback',
+    'Please log in to start a lab session': 'Please log in to start a lab session',
+    'Lab challenge not found for this lesson. Please contact your teacher.': 'Lab challenge not found for this lesson. Please contact your teacher.',
+    'Lab session started': 'Lab session started',
+    'Session started. Code server will be available shortly.': 'Session started. Code server will be available shortly.',
+    'Failed to start lab session': 'Failed to start lab session',
+    'No active lab session': 'No active lab session',
+    'Please start a lab session first': 'Please start a lab session first',
+    'Please log in to submit lab work': 'Please log in to submit lab work',
+    'Lab work submitted. Grading in progress...': 'Lab work submitted. Grading in progress...',
+    'Failed to submit lab work': 'Failed to submit lab work',
+    'Grading complete': 'Grading complete',
+    'Failed to submit': 'Failed to submit',
+    'Starting lab session...': 'Starting lab session...',
+    'Opening VS Code in new tab...': 'Opening VS Code in new tab...',
+    'Session started. Code server will be available shortly. Please refresh in a moment.': 'Session started. Code server will be available shortly. Please refresh in a moment.',
+    'Code server is ready!': 'Code server is ready!',
+    'Session encountered an error. Please try again.': 'Session encountered an error. Please try again.',
+    'Submitting lab work...': 'Submitting lab work...',
+    'Lab session must be running to submit. Please start a session first.': 'Lab session must be running to submit. Please start a session first.',
+    'Grading complete! Your lab passed.': 'Grading complete! Your lab passed.',
+    'Grading complete. Some tests failed.': 'Grading complete. Some tests failed.',
+    'Grading is taking longer than expected. Please check back later.': 'Grading is taking longer than expected. Please check back later.',
+    'Please log in to view submission status': 'Please log in to view submission status',
+    'Session created but no session data returned': 'Session created but no session data returned',
+    'No submission data returned': 'No submission data returned',
+    'Lab challenge not found for this lesson. Please contact your teacher to set up this lab.': 'Lab challenge not found for this lesson. Please contact your teacher to set up this lab.',
   }
 }
 function t(k: keyof typeof dict['en'] | string) { return (dict.en as any)[k] || k }
@@ -947,6 +1066,7 @@ const router = useRouter()
 
 const STUDENTS_API = 'http://localhost:4000/api/students-internal/graphql'
 const TEACH_API = 'http://localhost:4000/api/teach-internal/graphql'
+const LAB_API = 'http://localhost:4000/api/teacher-course-lab'
 
 const loadingCourse = ref(false)
 const loadingModule = ref(false)
@@ -994,6 +1114,13 @@ const openDebug = ref(false)
 const submitOpen = ref(false)
 const submitting = ref(false)
 const submitForm = reactive<{ notes: string; url: string }>({ notes: '', url: '' })
+
+// Lab state
+const labChallenges = reactive<Record<string, any>>({})
+const labSessions = reactive<Record<string, any>>({})
+const labSubmissions = reactive<Record<string, any>>({})
+const labSessionStarting = reactive<Record<string, boolean>>({})
+const labSubmitting = reactive<Record<string, boolean>>({})
 
 const selectedModuleId = computed(() => String(route?.params?.module_id || ''))
 const selectedCourseId = computed(() => String(route?.params?.course_id || route?.params?.courseId || ''))
@@ -1214,6 +1341,9 @@ async function loadCourseAndModules() {
     moduleT.value = initialModule
     lessons.value = initialModule?.lessons || []
     currentIndex.value = 0
+
+    // 3️⃣ Load lab data for lab lessons
+    await loadLabDataForModule()
   } catch (err: any) {
     console.warn('[Course] Falling back to mocks:', err?.message || err)
     usingMocks.value = true
@@ -1301,6 +1431,22 @@ onMounted(() => {
     () => {
       if (clientInitialized.value) bootstrap()
     },
+  )
+
+  // Watch for current lesson changes and load lab data if needed
+  watch(
+    () => currentLesson.value?.id,
+    (lessonId) => {
+      if (lessonId && currentLesson.value?.type === 'lab') {
+        // Load lab challenge and session for this lesson
+        fetchLabChallenge(lessonId).then((challenge) => {
+          if (challenge) {
+            fetchLabSession(challenge.id, lessonId)
+          }
+        })
+      }
+    },
+    { immediate: true }
   )
 
   window.addEventListener('online', () => {
@@ -1478,6 +1624,452 @@ function switchModule(newModuleId: string) {
       module_id: newModuleId, // update only this part
     },
   })
+}
+
+/** Lab Functions */
+/**
+ * Get auth headers for API calls
+ */
+function getAuthHeaders() {
+  const token = typeof window !== 'undefined' ? window.localStorage?.getItem('token') : null
+  return token
+    ? {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      }
+    : { 'Content-Type': 'application/json' }
+}
+
+/**
+ * Fetch lab challenge for a lesson
+ */
+async function fetchLabChallenge(lessonId: string) {
+  if (!lessonId || !selectedCourseId.value) return null
+
+  try {
+    // First check if we already have it cached
+    if (labChallenges[lessonId]) {
+      return labChallenges[lessonId]
+    }
+
+    // Find challenge bound to this lesson and course
+    const resp = await fetch(`${LAB_API}/challenges`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    })
+
+    if (resp.ok) {
+      const data = await resp.json()
+      const challenge = data.items?.find(
+        (c: any) => c.lessonId === lessonId && (c.courseId === selectedCourseId.value || !c.courseId)
+      )
+
+      if (challenge) {
+        labChallenges[lessonId] = challenge
+        return challenge
+      }
+    } else if (resp.status === 401) {
+      console.warn('[Lab] Not authenticated to fetch challenges')
+    }
+  } catch (err) {
+    console.warn('[Lab] Failed to fetch challenge:', err)
+  }
+
+  return null
+}
+
+/**
+ * Fetch lab session for current student and challenge
+ */
+async function fetchLabSession(challengeId: string, lessonId: string) {
+  if (!challengeId || !selectedStudentId.value) return
+
+  try {
+    const resp = await fetch(`${LAB_API}/sessions/me`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    })
+
+    if (resp.ok) {
+      const data = await resp.json()
+      const session = data.sessions?.find(
+        (s: any) => s.challengeId === challengeId && s.userId === selectedStudentId.value
+      )
+
+      if (session) {
+        labSessions[lessonId] = session
+
+        // Get latest submission for this session
+        if (session.submissions && session.submissions.length > 0) {
+          const latest = session.submissions[0] // Already sorted by createdAt desc
+          labSubmissions[lessonId] = latest
+        }
+
+        return session
+      }
+    }
+  } catch (err) {
+    console.warn('[Lab] Failed to fetch session:', err)
+  }
+
+  return null
+}
+
+/**
+ * Start or resume lab session
+ */
+async function openLab(lesson: Lesson) {
+  if (!lesson?.id) return
+  if (!selectedStudentId.value) {
+    return message.warning(t('Please log in to start a lab session'))
+  }
+
+  labSessionStarting[lesson.id] = true
+
+  try {
+    // First, try to fetch challenge
+    let challenge = labChallenges[lesson.id]
+    if (!challenge) {
+      challenge = await fetchLabChallenge(lesson.id)
+    }
+
+    if (!challenge) {
+      // Try to get challenge info from lesson metadata via lab-meta endpoint
+      // This endpoint should return challenge if it exists or create one
+      try {
+        const metaResp = await fetch(`${LAB_API}/challenges/by-lesson/${lesson.id}`, {
+          method: 'GET',
+          headers: getAuthHeaders(),
+          credentials: 'include',
+        }).catch(() => null)
+
+        if (metaResp?.ok) {
+          const metaData = await metaResp.json()
+          if (metaData.challenge) {
+            challenge = metaData.challenge
+            labChallenges[lesson.id] = challenge
+          }
+        }
+      } catch (e) {
+        console.warn('[Lab] Failed to fetch challenge metadata:', e)
+      }
+
+      if (!challenge) {
+        return message.error(t('Lab challenge not found for this lesson. Please contact your teacher to set up this lab.'))
+      }
+    }
+
+    // Check if session already exists
+    let session = await fetchLabSession(challenge.id, lesson.id)
+
+    if (!session || session.status === 'stopped' || session.status === 'error') {
+      // Start new session
+      message.loading(t('Starting lab session...'), 0)
+      
+      const resp = await fetch(`${LAB_API}/session/start`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+        body: JSON.stringify({
+          challengeId: challenge.id,
+        }),
+      })
+
+      message.destroy()
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: t('Failed to start session') }))
+        throw new Error(err.error || `HTTP ${resp.status}`)
+      }
+
+      const data = await resp.json()
+      session = data.session
+
+      if (!session) {
+        throw new Error(t('Session created but no session data returned'))
+      }
+
+      labSessions[lesson.id] = session
+      message.success(t('Lab session started'))
+
+      // Poll for code server URL if not immediately available
+      if (!session.codeServerUrl && (session.status === 'starting' || session.status === 'running')) {
+        // Poll in background
+        pollForCodeServerUrl(session.id, challenge.id, lesson.id).catch(() => {})
+      } else {
+        // Refresh to get latest session data
+        await fetchLabSession(challenge.id, lesson.id)
+      }
+    } else {
+      // Existing session found, just refresh to get latest data
+      await fetchLabSession(challenge.id, lesson.id)
+    }
+
+    // Open code server if available
+    if (session?.codeServerUrl) {
+      window.open(session.codeServerUrl, '_blank')
+      message.success(t('Opening VS Code in new tab...'))
+    } else {
+      message.info(t('Session started. Code server will be available shortly. Please refresh in a moment.'))
+    }
+  } catch (err: any) {
+    console.error('[Lab] Failed to start session:', err)
+    message.error(err?.message || t('Failed to start lab session'))
+  } finally {
+    labSessionStarting[lesson.id] = false
+  }
+}
+
+/**
+ * Poll for code server URL
+ */
+async function pollForCodeServerUrl(sessionId: string, challengeId: string, lessonId: string, maxAttempts = 10) {
+  let attempts = 0
+  const poll = async () => {
+    attempts++
+    
+    try {
+      const session = await fetchLabSession(challengeId, lessonId)
+      
+      if (session?.codeServerUrl) {
+        labSessions[lessonId] = session
+        message.success(t('Code server is ready!'))
+        return true
+      }
+      
+      if (attempts < maxAttempts && (session?.status === 'starting' || session?.status === 'running')) {
+        setTimeout(poll, 2000) // Poll every 2 seconds
+      } else if (session?.status === 'error') {
+        message.error(t('Session encountered an error. Please try again.'))
+        return false
+      }
+    } catch (err) {
+      console.warn('[Lab] Poll error:', err)
+      if (attempts < maxAttempts) {
+        setTimeout(poll, 2000)
+      }
+    }
+    
+    return false
+  }
+  
+  await poll()
+}
+
+/**
+ * Open lab URL in new tab
+ */
+function openLabUrl(lesson: Lesson) {
+  if (!lesson?.id) return
+  const session = labSessions[lesson.id]
+  if (session?.codeServerUrl) {
+    window.open(session.codeServerUrl, '_blank')
+  } else {
+    message.warning(t('No active lab session'))
+  }
+}
+
+/**
+ * Submit lab work
+ */
+async function submitLab(lesson: Lesson) {
+  if (!lesson?.id) return
+  if (!selectedStudentId.value) {
+    return message.warning(t('Please log in to submit lab work'))
+  }
+
+  // Refresh session first to get latest
+  let session = labSessions[lesson.id]
+  if (!session || !session.id) {
+    // Try to fetch challenge and session
+    const challenge = await fetchLabChallenge(lesson.id)
+    if (challenge) {
+      session = await fetchLabSession(challenge.id, lesson.id)
+    }
+  }
+
+  if (!session || !session.id) {
+    return message.warning(t('Please start a lab session first'))
+  }
+
+  // Check if session is in a valid state for submission
+  if (session.status !== 'running' && session.status !== 'starting') {
+    return message.warning(t('Lab session must be running to submit. Please start a session first.'))
+  }
+
+  labSubmitting[lesson.id] = true
+
+  try {
+    message.loading(t('Submitting lab work...'), 0)
+    
+    const resp = await fetch(`${LAB_API}/submit`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+      body: JSON.stringify({
+        sessionId: session.id,
+      }),
+    })
+
+    message.destroy()
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ error: t('Failed to submit') }))
+      throw new Error(err.error || `HTTP ${resp.status}`)
+    }
+
+    const data = await resp.json()
+    const submission = data.submission
+
+    if (!submission) {
+      throw new Error(t('No submission data returned'))
+    }
+
+    labSubmissions[lesson.id] = submission
+    message.success(t('Lab work submitted. Grading in progress...'))
+
+    // Poll for results
+    await pollForSubmissionResults(session.id, lesson.id)
+  } catch (err: any) {
+    console.error('[Lab] Failed to submit:', err)
+    message.error(err?.message || t('Failed to submit lab work'))
+  } finally {
+    labSubmitting[lesson.id] = false
+  }
+}
+
+/**
+ * Poll for submission grading results
+ */
+async function pollForSubmissionResults(sessionId: string, lessonId: string, maxAttempts = 30) {
+  let attempts = 0
+  
+  const poll = async () => {
+    attempts++
+    
+    try {
+      const updated = await refreshLabSubmission(sessionId, lessonId)
+      
+      if (!updated) {
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 2000) // Poll every 2 seconds
+        } else {
+          message.warning(t('Grading is taking longer than expected. Please check back later.'))
+        }
+        return
+      }
+
+      const submission = labSubmissions[lessonId]
+      
+      if (submission?.status === 'pending' || submission?.status === 'running') {
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 2000)
+        } else {
+          message.warning(t('Grading is taking longer than expected. Please check back later.'))
+        }
+      } else if (submission?.status === 'passed' || submission?.status === 'failed') {
+        const resultMessage = submission.passed
+          ? t('Grading complete! Your lab passed.')
+          : t('Grading complete. Some tests failed.')
+        
+        if (submission.passed) {
+          message.success(resultMessage)
+        } else {
+          message.warning(resultMessage)
+        }
+      }
+    } catch (err) {
+      console.warn('[Lab] Poll error:', err)
+      if (attempts < maxAttempts) {
+        setTimeout(poll, 2000)
+      }
+    }
+  }
+  
+  // Start polling after initial delay
+  setTimeout(poll, 2000)
+}
+
+/**
+ * Refresh submission status
+ */
+async function refreshLabSubmission(sessionId: string, lessonId: string): Promise<boolean> {
+  try {
+    const resp = await fetch(`${LAB_API}/sessions/me`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    })
+
+    if (resp.ok) {
+      const data = await resp.json()
+      const session = data.sessions?.find((s: any) => s.id === sessionId)
+
+      if (session) {
+        // Update session info
+        labSessions[lessonId] = session
+
+        // Update latest submission
+        if (session.submissions && session.submissions.length > 0) {
+          const latest = session.submissions[0]
+          const prevStatus = labSubmissions[lessonId]?.status
+          labSubmissions[lessonId] = latest
+
+          // Return true if status changed or is complete
+          return latest.status !== prevStatus || 
+                 latest.status === 'passed' || 
+                 latest.status === 'failed' ||
+                 latest.status === 'error'
+        }
+      }
+    } else if (resp.status === 401) {
+      console.warn('[Lab] Not authenticated to refresh submission')
+      message.warning(t('Please log in to view submission status'))
+    }
+  } catch (err) {
+    console.warn('[Lab] Failed to refresh submission:', err)
+  }
+  
+  return false
+}
+
+/**
+ * Get session status color
+ */
+function getSessionStatusColor(status: string) {
+  switch (status) {
+    case 'running':
+      return 'green'
+    case 'starting':
+      return 'blue'
+    case 'stopped':
+      return 'default'
+    case 'error':
+      return 'red'
+    default:
+      return 'default'
+  }
+}
+
+/**
+ * Load lab data for all lab lessons in current module
+ */
+async function loadLabDataForModule() {
+  if (!selectedCourseId.value || !selectedStudentId.value) return
+  if (!moduleT.value || !lessons.value.length) return
+
+  const labLessons = lessons.value.filter((l) => l.type === 'lab')
+
+  for (const lesson of labLessons) {
+    // Fetch challenge
+    const challenge = await fetchLabChallenge(lesson.id)
+    if (challenge) {
+      // Fetch session
+      await fetchLabSession(challenge.id, lesson.id)
+    }
+  }
 }
 </script>
 

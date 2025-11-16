@@ -76,7 +76,15 @@
                   <div class="product-meta">{{ c.hours }}h · {{ c.lectures }} lectures · {{ c.level }}</div>
                   <div class="card-footer">
                     <a-typography-text strong class="product-price">{{ euro(c.price) }}</a-typography-text>
-                    <a-button type="link" size="small" @click.stop="addToCart(c)">Add to cart</a-button>
+                    <a-button 
+                      type="link" 
+                      size="small" 
+                      @click.stop="addToCart(c)"
+                      :loading="cartLoading"
+                      :disabled="isInCart(c.id)"
+                    >
+                      {{ isInCart(c.id) ? 'In Cart' : 'Add to cart' }}
+                    </a-button>
                   </div>
                 </div>
                 <!-- Plugin mount: inject ribbons/badges -->
@@ -123,6 +131,7 @@
 <script setup lang="tsx">
 import FiltersPanel from '../components/FiltersPanel.vue'
 import { h, ref, reactive, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import Header from '../../../../packages/shared-ui/src/components/Header.vue'
 import { message } from 'ant-design-vue'
 import {
@@ -131,6 +140,7 @@ import {
   UnorderedListOutlined,
   ShoppingCartOutlined
 } from '@ant-design/icons-vue'
+import { useCart } from '../../../../packages/shared-ui/src/composables/useCart'
 
 type Level = 'Beginner' | 'Intermediate' | 'Advanced'
 type Course = {
@@ -208,16 +218,37 @@ const page = ref(1)
 const pageSize = 12
 const paged = computed(() => filtered.value.slice((page.value - 1) * pageSize, page.value * pageSize))
 
+/** ---------- Cart Integration ---------- */
+const router = useRouter()
+const { addToCart: addToCartComposable, isInCart: isInCartComposable, loading: cartLoading } = useCart()
+
 /** ---------- Actions ---------- */
 function euro(v: number) {
   return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(v)
 }
-function addToCart(c: Course) {
-  message.success(`Added "${c.title}" to cart`)
+
+async function addToCart(c: Course) {
+  try {
+    await addToCartComposable(c.id, 1)
+    message.success(`Added "${c.title}" to cart`)
+  } catch (e: any) {
+    if (e?.message?.includes('authenticated')) {
+      message.warning('Please log in to add courses to your cart')
+      router.push('/login')
+    } else if (e?.message?.includes('Already enrolled')) {
+      message.info(`You're already enrolled in "${c.title}"`)
+    } else {
+      message.error(e?.message || 'Failed to add course to cart')
+    }
+  }
 }
+
+function isInCart(courseId: string): boolean {
+  return isInCartComposable(courseId)
+}
+
 function goCourse(id: string) {
-  // replace with router.push/navigateTo in your app
-  message.info(`Open course ${id}`)
+  router.push(`/courses/${id}`)
 }
 
 /** ---------- List renderer ---------- */
@@ -244,9 +275,15 @@ function renderListItem(item: Course) {
         ]),
         h('div', { class: 'list-price' }, euro(item.price)),
         h('div', { class: 'list-actions' }, [
-          h('button', { class: 'add-link', onClick: () => addToCart(item) }, [
-            h(ShoppingCartOutlined)
-          , ' Add to cart'])
+          h('button', { 
+            class: ['add-link', isInCart(item.id) && 'in-cart'], 
+            onClick: () => addToCart(item),
+            disabled: cartLoading.value || isInCart(item.id)
+          }, [
+            h(ShoppingCartOutlined),
+            ' ',
+            isInCart(item.id) ? 'In Cart' : 'Add to cart'
+          ])
         ])
       ])
     ]
@@ -278,6 +315,8 @@ function renderListItem(item: Course) {
 .list-author, .list-row { color: rgba(0,0,0,.65); font-size:13px; margin-top:2px; }
 .list-price { color:#1677ff; font-weight:600; margin-top:6px; }
 .add-link { background:none; border:none; color:#1677ff; cursor:pointer; padding:0; }
+.add-link:hover:not(:disabled) { opacity:0.8; }
+.add-link:disabled, .add-link.in-cart { color:#52c41a; cursor:default; }
 .pagination { display:flex; justify-content:center; margin-top:16px; }
 
 /* Desktop filter card width */

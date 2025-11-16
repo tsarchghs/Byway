@@ -93,10 +93,11 @@
                     type="primary"
                     block
                     :icon="h(ShoppingCartOutlined)"
-                    @click="addToCart"
-                    :loading="adding"
+                    @click="addToCartFn"
+                    :loading="adding || cartLoading"
+                    :disabled="isInCartCourse"
                   >
-                    {{ isInCart ? 'In Cart' : 'Add To Cart' }}
+                    {{ isInCartCourse ? 'In Cart' : 'Add To Cart' }}
                   </a-button>
 
                   <a-button
@@ -233,14 +234,19 @@
 
     <!-- Float CTAs -->
     <a-float-button-group shape="square" :style="{ right: '24px' }">
-      <a-float-button :icon="h(ShoppingCartOutlined)" tooltip="Add to cart" @click="addToCart" />
+      <a-float-button 
+        :icon="h(ShoppingCartOutlined)" 
+        tooltip="Add to cart" 
+        @click="addToCartFn"
+        :disabled="isInCartCourse"
+      />
       <a-float-button :icon="h(ThunderboltOutlined)" tooltip="Buy now" @click="buyNow" />
     </a-float-button-group>
   </div>
 </template>
 
 <script setup lang="ts">
-import { h, ref, reactive, computed, onMounted } from 'vue'
+import { h, ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuery, gql } from '@apollo/client/core'
 import Header from '../../../../packages/shared-ui/src/components/Header.vue'
@@ -251,14 +257,257 @@ import {
   HeartOutlined,
   ShareAltOutlined
 } from '@ant-design/icons-vue'
-import { useCart } from '@shared/composables/useCart'
+import { useCart } from '../../../../packages/shared-ui/src/composables/useCart'
+import { useAuth } from '../../../../packages/shared-ui/src/composables/useAuth'
 
-// ===== GraphQL ME Query =====
+const route = useRoute()
+const router = useRouter()
+const { user } = useAuth()
+const { addToCart, isInCart, loading: cartLoading, fetchCart } = useCart()
+
+// ===== GraphQL Queries =====
 const ME_QUERY = gql`query Me { me { id email roles displayName } }`
-const { data: meData } = useQuery(ME_QUERY)
-const me = computed(() => meData?.me || null)
+const COURSE_QUERY = gql`
+  query Course($id: String!) {
+    course(id: $id) {
+      id
+      title
+      description
+      category
+      difficulty
+      price
+      discount
+      coverUrl
+      teacherId
+      modules {
+        id
+        title
+        lessons {
+          id
+          title
+          duration
+        }
+      }
+    }
+  }
+`
 
-// rest of your original script content unchanged
+const { data: meData, loading: meLoading } = useQuery(ME_QUERY)
+const { data: courseData, loading: courseLoading, refetch: refetchCourse } = useQuery(
+  COURSE_QUERY,
+  { variables: { id: route.params.id as string } }
+)
+
+const me = computed(() => meData?.me || null)
+const course = computed(() => courseData?.course || null)
+const pending = computed(() => courseLoading.value || meLoading.value)
+
+// ===== Cart State =====
+const adding = ref(false)
+const isInCartCourse = computed(() => course.value ? isInCart(course.value.id) : false)
+
+// ===== Checkout State =====
+const checkingOut = ref(false)
+
+// ===== Wishlist State (placeholder) =====
+const inWishlist = ref(false)
+
+// ===== Coupon State =====
+const coupon = ref('')
+const couponApplied = ref(false)
+const validatingCoupon = ref(false)
+const discountPct = ref(0)
+
+// ===== UI State =====
+const tabKey = ref('details')
+const thumb = ref('/course-placeholder.png')
+
+// ===== Course Computed =====
+const currentPrice = computed(() => {
+  if (!course.value) return 0
+  const basePrice = course.value.price || 0
+  const discount = discountPct.value > 0 ? (basePrice * discountPct.value) / 100 : 0
+  return basePrice - discount
+})
+
+const oldPrice = computed(() => course.value?.price || 0)
+const showOldPrice = computed(() => discountPct.value > 0)
+const discountLabel = computed(() => `-${discountPct.value}%`)
+
+const instructor = reactive({
+  name: 'Instructor Name',
+  title: 'Course Instructor',
+  avatar: '/instructor.png',
+  bio: ''
+})
+
+const totalLectures = computed(() => {
+  if (!course.value?.modules) return 0
+  return course.value.modules.reduce((sum: number, mod: any) => sum + (mod.lessons?.length || 0), 0)
+})
+
+const totalDuration = computed(() => {
+  if (!course.value?.modules) return 0
+  return course.value.modules.reduce((sum: number, mod: any) => {
+    const lessonSum = mod.lessons?.reduce((s: number, l: any) => s + (l.duration || 0), 0) || 0
+    return sum + lessonSum
+  }, 0)
+})
+
+const totalDurationLabel = computed(() => {
+  const hours = Math.floor(totalDuration.value / 60)
+  const mins = totalDuration.value % 60
+  if (hours > 0) return `${hours}h ${mins}m`
+  return `${mins}m`
+})
+
+const syllabus = computed(() => {
+  if (!course.value?.modules) return []
+  return course.value.modules.map((mod: any) => ({
+    id: mod.id,
+    title: mod.title,
+    lessons: mod.lessons?.length || 0,
+    items: mod.lessons || [],
+    durationLabel: mod.lessons?.reduce((sum: number, l: any) => sum + (l.duration || 0), 0) || 0
+  }))
+})
+
+// ===== Helper Functions =====
+function money(v: number) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(v)
+}
+
+// ===== Cart Actions =====
+async function handleAddToCart() {
+  if (!course.value) {
+    message.error('Course not loaded')
+    return
+  }
+
+  if (!user.value?.id) {
+    message.warning('Please log in to add courses to your cart')
+    router.push('/login')
+    return
+  }
+
+  adding.value = true
+  try {
+    await addToCart(course.value.id, 1)
+    message.success(`Added "${course.value.title}" to cart`)
+    await fetchCart()
+  } catch (e: any) {
+    if (e?.message?.includes('authenticated')) {
+      message.warning('Please log in to add courses to your cart')
+      router.push('/login')
+    } else if (e?.message?.includes('Already enrolled')) {
+      message.info(`You're already enrolled in "${course.value.title}"`)
+    } else {
+      message.error(e?.message || 'Failed to add course to cart')
+    }
+  } finally {
+    adding.value = false
+  }
+}
+
+const addToCartFn = handleAddToCart
+
+// ===== Checkout Actions =====
+async function buyNow() {
+  if (!course.value) {
+    message.error('Course not loaded')
+    return
+  }
+
+  if (!user.value?.id) {
+    message.warning('Please log in to purchase courses')
+    router.push('/login')
+    return
+  }
+
+  checkingOut.value = true
+  try {
+    // Add to cart first if not already there
+    if (!isInCartCourse.value) {
+      await addToCart(course.value.id, 1)
+    }
+
+    // Redirect to checkout
+    router.push('/checkout')
+  } catch (e: any) {
+    message.error(e?.message || 'Failed to proceed to checkout')
+  } finally {
+    checkingOut.value = false
+  }
+}
+
+// ===== Wishlist Actions (placeholder) =====
+function toggleWishlist() {
+  inWishlist.value = !inWishlist.value
+  message.info(inWishlist.value ? 'Added to wishlist' : 'Removed from wishlist')
+}
+
+// ===== Coupon Actions =====
+async function applyCoupon() {
+  if (!course.value || !coupon.value.trim()) {
+    message.warning('Please enter a coupon code')
+    return
+  }
+
+  validatingCoupon.value = true
+  try {
+    // TODO: Implement coupon validation via GraphQL
+    // For now, mock validation
+    message.success('Coupon applied!')
+    couponApplied.value = true
+    discountPct.value = 10 // Mock 10% discount
+  } catch (e: any) {
+    message.error(e?.message || 'Invalid coupon code')
+  } finally {
+    validatingCoupon.value = false
+  }
+}
+
+// ===== Share Actions =====
+function share(platform: 'link' | 'x' | 'linkedin') {
+  const url = typeof window !== 'undefined' ? window.location.href : ''
+  const title = course.value?.title || 'Course'
+
+  if (platform === 'link') {
+    navigator.clipboard?.writeText(url)
+    message.success('Link copied to clipboard!')
+    return
+  }
+
+  const shareUrls = {
+    x: `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`,
+    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`
+  }
+
+  if (shareUrls[platform]) {
+    window.open(shareUrls[platform], '_blank', 'width=600,height=400')
+  }
+}
+
+// ===== Lifecycle =====
+onMounted(async () => {
+  if (user.value?.id) {
+    await fetchCart()
+  }
+})
+
+// Watch for route changes
+watch(() => route.params.id, (newId) => {
+  if (newId) {
+    refetchCourse()
+  }
+}, { immediate: true })
+
+// Watch cart state to update isInCart
+watch(() => course.value?.id, async (courseId) => {
+  if (courseId && user.value?.id) {
+    await fetchCart()
+  }
+}, { immediate: true })
 </script>
 
 <style scoped>

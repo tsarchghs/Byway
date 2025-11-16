@@ -1876,7 +1876,9 @@ watch(
   },
 );
 const codeServerStopping = ref(false);
+const codeServerStarting = ref(false);
 const API_REST = "http://localhost:4000/api/teach-internal"; // adjust if needed
+const LAB_API = "http://localhost:4000/api/teacher-course-lab"; // teacher-course-lab plugin API
 
 /**
  * Robust code-server drawer launcher.
@@ -1889,8 +1891,42 @@ function extractTeacherIdFromPath(path: string): string | null {
 
 async function stopCodeServer() {
   if (!currentLesson.value?.lab?.codeServer?.containerId) return;
+  
   codeServerStopping.value = true;
   try {
+    // Try to stop via teacher-course-lab API first
+    const labChallenge = await getLabChallenge();
+    if (labChallenge) {
+      // Find active session for this challenge
+      try {
+        const resp = await fetch(`${LAB_API}/sessions/me`, {
+          method: "GET",
+          headers: getAuthHeaders(),
+          credentials: "include",
+        });
+        
+        if (resp.ok) {
+          const data = await resp.json();
+          const activeSession = data.sessions?.find(
+            (s: any) => s.challengeId === labChallenge.id && s.status === "running"
+          );
+          
+          if (activeSession) {
+            // Stop via teacher-course-lab API
+            await fetch(`${LAB_API}/session/stop`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+              credentials: "include",
+              body: JSON.stringify({ id: activeSession.id }),
+            }).catch(() => {});
+          }
+        }
+      } catch (e) {
+        console.warn("[LabSession] Failed to stop via API:", e);
+      }
+    }
+
+    // Fallback: direct container stop (old method)
     const cId = currentLesson.value.lab!.codeServer!.containerId;
     await fetch(`${API_REST}/code-server/stop`, {
       method: "POST",
@@ -1909,19 +1945,76 @@ function openLabUrl() {
   const url = currentLesson.value?.lab?.codeServer?.url;
   if (url) window.open(url, "_blank");
 }
-/** 🔧 Trigger teacher code-server */
+/** 🔧 Trigger teacher code-server / lab session */
 async function handleOpenTeacherCode() {
-  // try to get teacherId from route or user context
+  if (!currentLesson.value?.id) {
+    return message.warning("Please save the lesson first");
+  }
+
+  // Ensure lab challenge exists
+  await ensureLabChallenge();
+
+  // Try to get teacherId from route or user context
   const teacherId =
     route.params.teacherId ||
     route.query.teacherId ||
-    extractTeacherIdFromPath(route.path);
+    extractTeacherIdFromPath(route.path) ||
+    me.value?.id;
 
   if (!teacherId) {
-    return message.warning("Missing teacherId in route");
+    return message.warning("Missing teacherId");
   }
 
-  await openTeacherCodeServer(String(teacherId));
+  // Start lab session via teacher-course-lab API
+  codeServerStarting.value = true;
+  try {
+    const labChallenge = await getOrCreateLabChallenge();
+    if (!labChallenge) {
+      return message.error("Failed to create lab challenge");
+    }
+
+    // Start lab session
+    const resp = await fetch(`${LAB_API}/session/start`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeaders(),
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        challengeId: labChallenge.id,
+      }),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ error: "Failed to start session" }));
+      throw new Error(err.error || `HTTP ${resp.status}`);
+    }
+
+    const data = await resp.json();
+    const session = data.session;
+
+    if (session?.codeServerUrl) {
+      // Update lesson metadata with code server info
+      if (!currentLesson.value.lab) ensureLabMeta();
+      currentLesson.value.lab!.codeServer = {
+        url: session.codeServerUrl,
+        containerId: session.containerId || undefined,
+      };
+      touch(false);
+
+      // Open VS Code in new tab
+      window.open(session.codeServerUrl, "_blank");
+      message.success("Lab session started");
+    } else {
+      message.error("Session started but no code server URL");
+    }
+  } catch (err: any) {
+    console.error("[LabSession] Failed:", err);
+    message.error(err?.message || "Could not start lab session");
+  } finally {
+    codeServerStarting.value = false;
+  }
 }
 
 /** Helper for SSR-safe extraction */
@@ -2291,7 +2384,13 @@ async function apiUpdateLesson(l: Lesson) {
 async function syncDirty() {
   try {
     if (course.id) await apiUpdateCourse();
-    if (currentLesson.value?.id) await apiUpdateLesson(currentLesson.value);
+    if (currentLesson.value?.id) {
+      await apiUpdateLesson(currentLesson.value);
+      // If lab lesson, ensure LabChallenge exists and is synced
+      if (currentLesson.value.type === "lab") {
+        await ensureLabChallenge();
+      }
+    }
   } catch {}
 }
 function touch(syncApi = true) {
@@ -2672,9 +2771,43 @@ onMounted(async () => {
     ""
   ).toString();
 
-  if (pid) await fetchAllContent(pid);
+  if (pid) {
+    await fetchAllContent(pid);
+    // Load lab challenges for all lab lessons
+    await loadLabChallenges();
+  }
   reflectSideInputs();
 });
+
+/**
+ * Load lab challenges for all lab lessons in the course
+ */
+async function loadLabChallenges() {
+  if (!course.id || !course.modules.length) return;
+
+  try {
+    const resp = await fetch(`${LAB_API}/challenges`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+      credentials: "include",
+    });
+
+    if (resp.ok) {
+      const data = await resp.json();
+      const challenges = data.items || [];
+
+      // Cache challenges by lessonId
+      for (const challenge of challenges) {
+        if (challenge.lessonId && challenge.courseId === course.id) {
+          const cacheKey = `${course.id}:${challenge.lessonId}`;
+          labChallengeCache.value[cacheKey] = challenge;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("[LabChallenge] Failed to load challenges:", err);
+  }
+}
 
 /** Computed for prereqs */
 const prereqOptions = computed(() =>
@@ -2684,13 +2817,13 @@ const prereqOptions = computed(() =>
     )
     .map((x) => ({ label: x.label, value: x.id })),
 );
-/** 🔧 Teacher code-server launcher */
+/** 🔧 Teacher code-server launcher (legacy method - kept for backwards compatibility) */
 async function openTeacherCodeServer(teacherId: string) {
   try {
     const resp = await fetch(
       `${API_REST}/code-server/${encodeURIComponent(String(teacherId))}/${encodeURIComponent(String(currentLesson.value.id))}`,
       {
-headers: { Authorization: `Bearer ${getCookieToken()}` },
+        headers: { Authorization: `Bearer ${getCookieToken()}` },
         credentials: "include",
       },
     );
@@ -2704,6 +2837,129 @@ headers: { Authorization: `Bearer ${getCookieToken()}` },
   } catch (err: any) {
     console.error("[CodeServer] Failed:", err);
     message.error("Could not open code-server");
+  }
+}
+
+/** Lab Challenge Management */
+const labChallengeCache = ref<Record<string, any>>({});
+
+/**
+ * Get or create a LabChallenge for the current lesson
+ */
+async function getOrCreateLabChallenge() {
+  if (!currentLesson.value?.id || !course.id) return null;
+
+  const lessonId = currentLesson.value.id;
+  const cacheKey = `${course.id}:${lessonId}`;
+
+  // Check cache first
+  if (labChallengeCache.value[cacheKey]) {
+    return labChallengeCache.value[cacheKey];
+  }
+
+  try {
+    // Check if challenge already exists (bound to this lesson)
+    const listResp = await fetch(`${LAB_API}/challenges`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+      credentials: "include",
+    });
+
+    if (listResp.ok) {
+      const listData = await listResp.json();
+      const existing = listData.items?.find(
+        (c: any) => c.lessonId === lessonId && c.courseId === course.id
+      );
+
+      if (existing) {
+        labChallengeCache.value[cacheKey] = existing;
+        return existing;
+      }
+    }
+
+    // Create new challenge
+    const createResp = await fetch(`${LAB_API}/challenges`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeaders(),
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        title: currentLesson.value.title || "Lab Challenge",
+        slug: `lab-${lessonId}-${Date.now()}`,
+        description: currentLesson.value.content || "",
+        difficulty: course.difficulty || "Beginner",
+        courseId: course.id,
+        moduleId: currentModule.value?.id || null,
+        lessonId: lessonId,
+        visibility: "private",
+      }),
+    });
+
+    if (!createResp.ok) {
+      const err = await createResp.json().catch(() => ({ error: "Failed to create challenge" }));
+      throw new Error(err.error || `HTTP ${createResp.status}`);
+    }
+
+    const createData = await createResp.json();
+    const challenge = createData.item;
+
+    labChallengeCache.value[cacheKey] = challenge;
+    return challenge;
+  } catch (err: any) {
+    console.error("[LabChallenge] Failed to get/create:", err);
+    return null;
+  }
+}
+
+/**
+ * Get existing LabChallenge (doesn't create)
+ */
+async function getLabChallenge() {
+  if (!currentLesson.value?.id || !course.id) return null;
+
+  const lessonId = currentLesson.value.id;
+  const cacheKey = `${course.id}:${lessonId}`;
+
+  if (labChallengeCache.value[cacheKey]) {
+    return labChallengeCache.value[cacheKey];
+  }
+
+  try {
+    const resp = await fetch(`${LAB_API}/challenges`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+      credentials: "include",
+    });
+
+    if (resp.ok) {
+      const data = await resp.json();
+      const existing = data.items?.find(
+        (c: any) => c.lessonId === lessonId && c.courseId === course.id
+      );
+
+      if (existing) {
+        labChallengeCache.value[cacheKey] = existing;
+        return existing;
+      }
+    }
+  } catch (err) {
+    console.warn("[LabChallenge] Failed to fetch:", err);
+  }
+
+  return null;
+}
+
+/**
+ * Ensure LabChallenge exists and is synced with lesson
+ */
+async function ensureLabChallenge() {
+  if (!currentLesson.value?.id || currentLesson.value.type !== "lab") return;
+
+  const challenge = await getOrCreateLabChallenge();
+  if (!challenge) {
+    console.warn("[LabChallenge] Failed to ensure challenge");
   }
 }
 

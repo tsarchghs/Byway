@@ -169,7 +169,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\Users\\PC\\Documents\\GitHub\\byway\\plugins\\teacher-course-lab\\server\\db\\generated\\client",
+      "value": "/Users/gjergjkadriu/Documents/GitHub/Byway/plugins/teacher-course-lab/server/db/generated/client",
       "fromEnvVar": null
     },
     "config": {
@@ -178,12 +178,12 @@ const config = {
     "binaryTargets": [
       {
         "fromEnvVar": null,
-        "value": "windows",
+        "value": "darwin-arm64",
         "native": true
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Users\\PC\\Documents\\GitHub\\byway\\plugins\\teacher-course-lab\\server\\db\\schema.prisma",
+    "sourceFilePath": "/Users/gjergjkadriu/Documents/GitHub/Byway/plugins/teacher-course-lab/server/db/schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
@@ -214,8 +214,8 @@ const fs = require('fs')
 config.dirname = __dirname
 if (!fs.existsSync(path.join(__dirname, 'schema.prisma'))) {
   const alternativePaths = [
-    "generated/client",
-    "client",
+    "plugins/teacher-course-lab/server/db/generated/client",
+    "teacher-course-lab/server/db/generated/client",
   ]
   
   const alternativePath = alternativePaths.find((altPath) => {
@@ -244,8 +244,8 @@ exports.PrismaClient = PrismaClient
 Object.assign(exports, Prisma)
 
 // file annotations for bundling tools to include these files
-path.join(__dirname, "query_engine-windows.dll.node");
-path.join(process.cwd(), "generated/client/query_engine-windows.dll.node")
+path.join(__dirname, "libquery_engine-darwin-arm64.dylib.node");
+path.join(process.cwd(), "plugins/teacher-course-lab/server/db/generated/client/libquery_engine-darwin-arm64.dylib.node")
 // file annotations for bundling tools to include these files
 path.join(__dirname, "schema.prisma");
-path.join(process.cwd(), "generated/client/schema.prisma")
+path.join(process.cwd(), "plugins/teacher-course-lab/server/db/generated/client/schema.prisma")
