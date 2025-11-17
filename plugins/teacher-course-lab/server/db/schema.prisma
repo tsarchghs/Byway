@@ -37,6 +37,7 @@ model LabSession {
   status          String   @default("created") // created|starting|running|stopped|error
   codeServerUrl   String?
   codeServerToken String?
+  appUrl          String?     // 
   containerId     String?
   lastHeartbeat   DateTime?
   createdAt       DateTime @default(now())

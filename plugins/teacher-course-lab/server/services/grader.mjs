@@ -79,7 +79,10 @@ export async function runGrading(submissionId) {
 
     // Resolve base URL for the lab
     const baseUrl = resolveLabBaseUrl(labMeta, {
-      traefikHost: session.codeServerUrl ? new URL(session.codeServerUrl).hostname : null
+      appUrl: session.appUrl || null,
+      traefikHost: session.appUrl ? new URL(session.appUrl).hostname : null,
+      traefikHostApp: session.appUrl ? new URL(session.appUrl).hostname : null,
+      appPort: session.appUrl ? Number(new URL(session.appUrl).port || labMeta.devPort || 3000) : undefined,
     });
 
     log('🧪 Running tests...', { baseUrl, kind: labMeta.kind });

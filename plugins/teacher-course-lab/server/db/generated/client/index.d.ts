@@ -2419,6 +2419,7 @@ export namespace Prisma {
     status: string | null
     codeServerUrl: string | null
     codeServerToken: string | null
+    appUrl: string | null
     containerId: string | null
     lastHeartbeat: Date | null
     createdAt: Date | null
@@ -2432,6 +2433,7 @@ export namespace Prisma {
     status: string | null
     codeServerUrl: string | null
     codeServerToken: string | null
+    appUrl: string | null
     containerId: string | null
     lastHeartbeat: Date | null
     createdAt: Date | null
@@ -2445,6 +2447,7 @@ export namespace Prisma {
     status: number
     codeServerUrl: number
     codeServerToken: number
+    appUrl: number
     containerId: number
     lastHeartbeat: number
     createdAt: number
@@ -2460,6 +2463,7 @@ export namespace Prisma {
     status?: true
     codeServerUrl?: true
     codeServerToken?: true
+    appUrl?: true
     containerId?: true
     lastHeartbeat?: true
     createdAt?: true
@@ -2473,6 +2477,7 @@ export namespace Prisma {
     status?: true
     codeServerUrl?: true
     codeServerToken?: true
+    appUrl?: true
     containerId?: true
     lastHeartbeat?: true
     createdAt?: true
@@ -2486,6 +2491,7 @@ export namespace Prisma {
     status?: true
     codeServerUrl?: true
     codeServerToken?: true
+    appUrl?: true
     containerId?: true
     lastHeartbeat?: true
     createdAt?: true
@@ -2572,6 +2578,7 @@ export namespace Prisma {
     status: string
     codeServerUrl: string | null
     codeServerToken: string | null
+    appUrl: string | null
     containerId: string | null
     lastHeartbeat: Date | null
     createdAt: Date
@@ -2602,6 +2609,7 @@ export namespace Prisma {
     status?: boolean
     codeServerUrl?: boolean
     codeServerToken?: boolean
+    appUrl?: boolean
     containerId?: boolean
     lastHeartbeat?: boolean
     createdAt?: boolean
@@ -2619,6 +2627,7 @@ export namespace Prisma {
     status?: boolean
     codeServerUrl?: boolean
     codeServerToken?: boolean
+    appUrl?: boolean
     containerId?: boolean
     lastHeartbeat?: boolean
     createdAt?: boolean
@@ -2633,6 +2642,7 @@ export namespace Prisma {
     status?: boolean
     codeServerUrl?: boolean
     codeServerToken?: boolean
+    appUrl?: boolean
     containerId?: boolean
     lastHeartbeat?: boolean
     createdAt?: boolean
@@ -2647,13 +2657,14 @@ export namespace Prisma {
     status?: boolean
     codeServerUrl?: boolean
     codeServerToken?: boolean
+    appUrl?: boolean
     containerId?: boolean
     lastHeartbeat?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type LabSessionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "challengeId" | "status" | "codeServerUrl" | "codeServerToken" | "containerId" | "lastHeartbeat" | "createdAt" | "updatedAt", ExtArgs["result"]["labSession"]>
+  export type LabSessionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "challengeId" | "status" | "codeServerUrl" | "codeServerToken" | "appUrl" | "containerId" | "lastHeartbeat" | "createdAt" | "updatedAt", ExtArgs["result"]["labSession"]>
   export type LabSessionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     challenge?: boolean | LabChallengeDefaultArgs<ExtArgs>
     submissions?: boolean | LabSession$submissionsArgs<ExtArgs>
@@ -2681,6 +2692,7 @@ export namespace Prisma {
       status: string
       codeServerUrl: string | null
       codeServerToken: string | null
+      appUrl: string | null
       containerId: string | null
       lastHeartbeat: Date | null
       createdAt: Date
@@ -3117,6 +3129,7 @@ export namespace Prisma {
     readonly status: FieldRef<"LabSession", 'String'>
     readonly codeServerUrl: FieldRef<"LabSession", 'String'>
     readonly codeServerToken: FieldRef<"LabSession", 'String'>
+    readonly appUrl: FieldRef<"LabSession", 'String'>
     readonly containerId: FieldRef<"LabSession", 'String'>
     readonly lastHeartbeat: FieldRef<"LabSession", 'DateTime'>
     readonly createdAt: FieldRef<"LabSession", 'DateTime'>
@@ -5818,6 +5831,7 @@ export namespace Prisma {
     status: 'status',
     codeServerUrl: 'codeServerUrl',
     codeServerToken: 'codeServerToken',
+    appUrl: 'appUrl',
     containerId: 'containerId',
     lastHeartbeat: 'lastHeartbeat',
     createdAt: 'createdAt',
@@ -6027,6 +6041,7 @@ export namespace Prisma {
     status?: StringFilter<"LabSession"> | string
     codeServerUrl?: StringNullableFilter<"LabSession"> | string | null
     codeServerToken?: StringNullableFilter<"LabSession"> | string | null
+    appUrl?: StringNullableFilter<"LabSession"> | string | null
     containerId?: StringNullableFilter<"LabSession"> | string | null
     lastHeartbeat?: DateTimeNullableFilter<"LabSession"> | Date | string | null
     createdAt?: DateTimeFilter<"LabSession"> | Date | string
@@ -6043,6 +6058,7 @@ export namespace Prisma {
     status?: SortOrder
     codeServerUrl?: SortOrderInput | SortOrder
     codeServerToken?: SortOrderInput | SortOrder
+    appUrl?: SortOrderInput | SortOrder
     containerId?: SortOrderInput | SortOrder
     lastHeartbeat?: SortOrderInput | SortOrder
     createdAt?: SortOrder
@@ -6062,6 +6078,7 @@ export namespace Prisma {
     status?: StringFilter<"LabSession"> | string
     codeServerUrl?: StringNullableFilter<"LabSession"> | string | null
     codeServerToken?: StringNullableFilter<"LabSession"> | string | null
+    appUrl?: StringNullableFilter<"LabSession"> | string | null
     containerId?: StringNullableFilter<"LabSession"> | string | null
     lastHeartbeat?: DateTimeNullableFilter<"LabSession"> | Date | string | null
     createdAt?: DateTimeFilter<"LabSession"> | Date | string
@@ -6078,6 +6095,7 @@ export namespace Prisma {
     status?: SortOrder
     codeServerUrl?: SortOrderInput | SortOrder
     codeServerToken?: SortOrderInput | SortOrder
+    appUrl?: SortOrderInput | SortOrder
     containerId?: SortOrderInput | SortOrder
     lastHeartbeat?: SortOrderInput | SortOrder
     createdAt?: SortOrder
@@ -6097,6 +6115,7 @@ export namespace Prisma {
     status?: StringWithAggregatesFilter<"LabSession"> | string
     codeServerUrl?: StringNullableWithAggregatesFilter<"LabSession"> | string | null
     codeServerToken?: StringNullableWithAggregatesFilter<"LabSession"> | string | null
+    appUrl?: StringNullableWithAggregatesFilter<"LabSession"> | string | null
     containerId?: StringNullableWithAggregatesFilter<"LabSession"> | string | null
     lastHeartbeat?: DateTimeNullableWithAggregatesFilter<"LabSession"> | Date | string | null
     createdAt?: DateTimeWithAggregatesFilter<"LabSession"> | Date | string
@@ -6371,6 +6390,7 @@ export namespace Prisma {
     status?: string
     codeServerUrl?: string | null
     codeServerToken?: string | null
+    appUrl?: string | null
     containerId?: string | null
     lastHeartbeat?: Date | string | null
     createdAt?: Date | string
@@ -6387,6 +6407,7 @@ export namespace Prisma {
     status?: string
     codeServerUrl?: string | null
     codeServerToken?: string | null
+    appUrl?: string | null
     containerId?: string | null
     lastHeartbeat?: Date | string | null
     createdAt?: Date | string
@@ -6401,6 +6422,7 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     codeServerUrl?: NullableStringFieldUpdateOperationsInput | string | null
     codeServerToken?: NullableStringFieldUpdateOperationsInput | string | null
+    appUrl?: NullableStringFieldUpdateOperationsInput | string | null
     containerId?: NullableStringFieldUpdateOperationsInput | string | null
     lastHeartbeat?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -6417,6 +6439,7 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     codeServerUrl?: NullableStringFieldUpdateOperationsInput | string | null
     codeServerToken?: NullableStringFieldUpdateOperationsInput | string | null
+    appUrl?: NullableStringFieldUpdateOperationsInput | string | null
     containerId?: NullableStringFieldUpdateOperationsInput | string | null
     lastHeartbeat?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -6432,6 +6455,7 @@ export namespace Prisma {
     status?: string
     codeServerUrl?: string | null
     codeServerToken?: string | null
+    appUrl?: string | null
     containerId?: string | null
     lastHeartbeat?: Date | string | null
     createdAt?: Date | string
@@ -6444,6 +6468,7 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     codeServerUrl?: NullableStringFieldUpdateOperationsInput | string | null
     codeServerToken?: NullableStringFieldUpdateOperationsInput | string | null
+    appUrl?: NullableStringFieldUpdateOperationsInput | string | null
     containerId?: NullableStringFieldUpdateOperationsInput | string | null
     lastHeartbeat?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -6457,6 +6482,7 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     codeServerUrl?: NullableStringFieldUpdateOperationsInput | string | null
     codeServerToken?: NullableStringFieldUpdateOperationsInput | string | null
+    appUrl?: NullableStringFieldUpdateOperationsInput | string | null
     containerId?: NullableStringFieldUpdateOperationsInput | string | null
     lastHeartbeat?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -6800,6 +6826,7 @@ export namespace Prisma {
     status?: SortOrder
     codeServerUrl?: SortOrder
     codeServerToken?: SortOrder
+    appUrl?: SortOrder
     containerId?: SortOrder
     lastHeartbeat?: SortOrder
     createdAt?: SortOrder
@@ -6813,6 +6840,7 @@ export namespace Prisma {
     status?: SortOrder
     codeServerUrl?: SortOrder
     codeServerToken?: SortOrder
+    appUrl?: SortOrder
     containerId?: SortOrder
     lastHeartbeat?: SortOrder
     createdAt?: SortOrder
@@ -6826,6 +6854,7 @@ export namespace Prisma {
     status?: SortOrder
     codeServerUrl?: SortOrder
     codeServerToken?: SortOrder
+    appUrl?: SortOrder
     containerId?: SortOrder
     lastHeartbeat?: SortOrder
     createdAt?: SortOrder
@@ -7335,6 +7364,7 @@ export namespace Prisma {
     status?: string
     codeServerUrl?: string | null
     codeServerToken?: string | null
+    appUrl?: string | null
     containerId?: string | null
     lastHeartbeat?: Date | string | null
     createdAt?: Date | string
@@ -7349,6 +7379,7 @@ export namespace Prisma {
     status?: string
     codeServerUrl?: string | null
     codeServerToken?: string | null
+    appUrl?: string | null
     containerId?: string | null
     lastHeartbeat?: Date | string | null
     createdAt?: Date | string
@@ -7392,6 +7423,7 @@ export namespace Prisma {
     status?: StringFilter<"LabSession"> | string
     codeServerUrl?: StringNullableFilter<"LabSession"> | string | null
     codeServerToken?: StringNullableFilter<"LabSession"> | string | null
+    appUrl?: StringNullableFilter<"LabSession"> | string | null
     containerId?: StringNullableFilter<"LabSession"> | string | null
     lastHeartbeat?: DateTimeNullableFilter<"LabSession"> | Date | string | null
     createdAt?: DateTimeFilter<"LabSession"> | Date | string
@@ -7604,6 +7636,7 @@ export namespace Prisma {
     status?: string
     codeServerUrl?: string | null
     codeServerToken?: string | null
+    appUrl?: string | null
     containerId?: string | null
     lastHeartbeat?: Date | string | null
     createdAt?: Date | string
@@ -7619,6 +7652,7 @@ export namespace Prisma {
     status?: string
     codeServerUrl?: string | null
     codeServerToken?: string | null
+    appUrl?: string | null
     containerId?: string | null
     lastHeartbeat?: Date | string | null
     createdAt?: Date | string
@@ -7648,6 +7682,7 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     codeServerUrl?: NullableStringFieldUpdateOperationsInput | string | null
     codeServerToken?: NullableStringFieldUpdateOperationsInput | string | null
+    appUrl?: NullableStringFieldUpdateOperationsInput | string | null
     containerId?: NullableStringFieldUpdateOperationsInput | string | null
     lastHeartbeat?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -7663,6 +7698,7 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     codeServerUrl?: NullableStringFieldUpdateOperationsInput | string | null
     codeServerToken?: NullableStringFieldUpdateOperationsInput | string | null
+    appUrl?: NullableStringFieldUpdateOperationsInput | string | null
     containerId?: NullableStringFieldUpdateOperationsInput | string | null
     lastHeartbeat?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -7676,6 +7712,7 @@ export namespace Prisma {
     status?: string
     codeServerUrl?: string | null
     codeServerToken?: string | null
+    appUrl?: string | null
     containerId?: string | null
     lastHeartbeat?: Date | string | null
     createdAt?: Date | string
@@ -7691,6 +7728,7 @@ export namespace Prisma {
     status?: string
     codeServerUrl?: string | null
     codeServerToken?: string | null
+    appUrl?: string | null
     containerId?: string | null
     lastHeartbeat?: Date | string | null
     createdAt?: Date | string
@@ -7720,6 +7758,7 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     codeServerUrl?: NullableStringFieldUpdateOperationsInput | string | null
     codeServerToken?: NullableStringFieldUpdateOperationsInput | string | null
+    appUrl?: NullableStringFieldUpdateOperationsInput | string | null
     containerId?: NullableStringFieldUpdateOperationsInput | string | null
     lastHeartbeat?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -7735,6 +7774,7 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     codeServerUrl?: NullableStringFieldUpdateOperationsInput | string | null
     codeServerToken?: NullableStringFieldUpdateOperationsInput | string | null
+    appUrl?: NullableStringFieldUpdateOperationsInput | string | null
     containerId?: NullableStringFieldUpdateOperationsInput | string | null
     lastHeartbeat?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -7748,6 +7788,7 @@ export namespace Prisma {
     status?: string
     codeServerUrl?: string | null
     codeServerToken?: string | null
+    appUrl?: string | null
     containerId?: string | null
     lastHeartbeat?: Date | string | null
     createdAt?: Date | string
@@ -7760,6 +7801,7 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     codeServerUrl?: NullableStringFieldUpdateOperationsInput | string | null
     codeServerToken?: NullableStringFieldUpdateOperationsInput | string | null
+    appUrl?: NullableStringFieldUpdateOperationsInput | string | null
     containerId?: NullableStringFieldUpdateOperationsInput | string | null
     lastHeartbeat?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -7774,6 +7816,7 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     codeServerUrl?: NullableStringFieldUpdateOperationsInput | string | null
     codeServerToken?: NullableStringFieldUpdateOperationsInput | string | null
+    appUrl?: NullableStringFieldUpdateOperationsInput | string | null
     containerId?: NullableStringFieldUpdateOperationsInput | string | null
     lastHeartbeat?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -7788,6 +7831,7 @@ export namespace Prisma {
     status?: StringFieldUpdateOperationsInput | string
     codeServerUrl?: NullableStringFieldUpdateOperationsInput | string | null
     codeServerToken?: NullableStringFieldUpdateOperationsInput | string | null
+    appUrl?: NullableStringFieldUpdateOperationsInput | string | null
     containerId?: NullableStringFieldUpdateOperationsInput | string | null
     lastHeartbeat?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string

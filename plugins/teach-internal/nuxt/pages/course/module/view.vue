@@ -1781,7 +1781,12 @@ type ApiTestMock = {
 
 function ensureLabMeta() {
   if (!currentLesson.value) return;
-  if (!currentLesson.value.lab) currentLesson.value.lab = labDefaults();
+  currentLesson.value.lab =
+    normalizeLabMeta(
+      currentLesson.value.lab,
+      currentLesson.value.lab?.kind || "BACKEND_NODE",
+      true,
+    ) || labDefaults();
 }
 type UiTestMock = {
   id: string;
@@ -1850,6 +1855,17 @@ const ytEmbed = (url?: string) => {
     return id ? `https://www.youtube.com/embed/${id}?rel=0` : "";
   }
   return "";
+};
+const parseMetadata = (md: any) => {
+  if (!md) return {};
+  if (typeof md === "string") {
+    try {
+      return JSON.parse(md);
+    } catch (_) {
+      return {};
+    }
+  }
+  return typeof md === "object" ? md : {};
 };
 
 /** Types */
@@ -2206,19 +2222,82 @@ const httpMethods = ["GET", "POST", "PUT", "DELETE", "PATCH"].map((x) => ({
 const currentLesson = computed<Lesson | undefined>(
   () => currentModule.value?.lessons?.[currentLessonIndex.value],
 );
+function normalizeLabMeta(
+  lab?: Partial<LabMeta> | null,
+  fallbackKind: LabKind = "BACKEND_NODE",
+  keepEmpty = false,
+): LabMeta | undefined {
+  if (!lab && !keepEmpty) return undefined;
+  const kind = (lab?.kind as LabKind) || fallbackKind || "BACKEND_NODE";
+  const normKv = (rows?: KV[]) =>
+    (rows || []).map((r) => ({
+      key: r?.key || "",
+      value: r?.value || "",
+    }));
+
+  const apiTests = (lab?.apiTests || []).map((t, idx) => ({
+    id: t.id || uid(),
+    name: t.name || `Test ${idx + 1}`,
+    method: t.method || "GET",
+    path: t.path || "/api/health",
+    expectedStatus: Number(t.expectedStatus || 0) || 200,
+    points: Number(t.points || 0) || 0,
+    bodyJson: t.bodyJson ?? "",
+    expectJsonStr: t.expectJsonStr ?? "",
+    expectTextLine: t.expectTextLine ?? "",
+    pathParams: normKv(t.pathParams),
+    query: normKv(t.query),
+    headers: normKv(t.headers),
+    args: t.args || [],
+    auth: t.auth || { type: "none" },
+    expectMode: t.expectMode || "json-subset",
+  }));
+
+  const uiTests = (lab?.uiTests || []).map((t, idx) => ({
+    id: t.id || uid(),
+    name: t.name || `UI ${idx + 1}`,
+    path: t.path || "/",
+    points: Number(t.points || 0) || 0,
+    expectTextLine: t.expectTextLine ?? "",
+    expectText: t.expectText || [],
+  }));
+
+  return {
+    kind,
+    dockerImage: lab?.dockerImage || "node:22-alpine",
+    buildCmd: lab?.buildCmd || "npm install",
+    startCmd:
+      lab?.startCmd || (kind === "FRONTEND_NUXT" ? "npm run dev" : "npm start"),
+    devPort: Number(lab?.devPort || 0) || 3000,
+    traefikHost: lab?.traefikHost || "",
+    codeServer: lab?.codeServer ? { ...lab.codeServer } : {},
+    apiTests,
+    uiTests,
+    lastRun: lab?.lastRun,
+  };
+}
 
 function labDefaults(): LabMeta {
-  return {
-    kind: "BACKEND_NODE",
-    dockerImage: "node:22-alpine",
-    buildCmd: "pnpm i",
-    startCmd: "pnpm dev",
-    devPort: 3000,
-    traefikHost: "",
-    codeServer: {},
-    apiTests: [],
-    uiTests: [],
-  };
+  return (
+    normalizeLabMeta(
+      {
+        kind: "BACKEND_NODE",
+        dockerImage: "node:22-alpine",
+        buildCmd: "npm install",
+        startCmd: "npm start",
+        devPort: 3000,
+        traefikHost: "",
+        codeServer: {},
+        apiTests: [],
+        uiTests: [],
+      },
+      "BACKEND_NODE",
+      true,
+    ) || {
+      kind: "BACKEND_NODE",
+      dockerImage: "node:22-alpine",
+    }
+  );
 }
 
 const currentModuleIndex = ref(0);
@@ -2648,9 +2727,15 @@ function normalizeCourse(src: any): CourseT {
       courseId: m.courseId,
       title: m.title || "",
       lessons: (m.lessons || []).map((l: any) => {
-        const md = l.metadata || {};
+        const md = parseMetadata(l.metadata);
+        const labMeta =
+          l.type === "lab"
+            ? normalizeLabMeta(md.lab, "BACKEND_NODE", true)
+            : md.lab
+              ? normalizeLabMeta(md.lab)
+              : undefined;
         return {
-          lab: md.lab || undefined,
+          lab: labMeta,
           id: l.id,
           moduleId: l.moduleId,
           title: l.title || "",
@@ -2715,6 +2800,10 @@ const autoSave = ref(true);
 let syncTimer: number | undefined;
 
 function buildLessonMetadata(l: Lesson) {
+  const lab =
+    l.type === "lab"
+      ? normalizeLabMeta(l.lab, l.lab?.kind || "BACKEND_NODE", true)
+      : undefined;
   return {
     tags: l.tags || [],
     prerequisites: l.prerequisites || [],
@@ -2724,7 +2813,7 @@ function buildLessonMetadata(l: Lesson) {
     attachments: l.attachments || [],
     quiz: l.quiz || { questions: [] },
     // ADD: persist lab meta
-    lab: l.lab || undefined,
+    lab,
   };
 }
 
@@ -2882,7 +2971,13 @@ async function apiCreateLesson(mi: number) {
       payload,
     );
     const c = data.createLesson;
-    const md = c.metadata || {};
+    const md = parseMetadata(c.metadata);
+    const labMeta =
+      c.type === "lab"
+        ? normalizeLabMeta(md.lab, "BACKEND_NODE", true)
+        : md.lab
+          ? normalizeLabMeta(md.lab)
+          : undefined;
     m.lessons.push({
       id: c.id,
       moduleId: c.moduleId,
@@ -2892,6 +2987,7 @@ async function apiCreateLesson(mi: number) {
       content: c.content,
       videoUrl: c.videoUrl || "",
       rubric: c.rubric || "",
+      lab: labMeta,
       tags: md.tags || [],
       prerequisites: md.prerequisites || [],
       unlockAt: md.unlockAt || undefined,

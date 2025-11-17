@@ -1,214 +1,332 @@
-import { exec as _exec, spawn } from 'node:child_process'
-import { promisify } from 'node:util'
-import fs from 'node:fs'
-import path from 'node:path'
-import { initializeLabProject, buildLabProject } from './project-initializer.mjs'
+import { exec as _exec, spawn } from 'node:child_process';
+import { promisify } from 'node:util';
+import fs from 'node:fs';
+import path from 'node:path';
+import { initializeLabProject, buildLabProject } from './project-initializer.mjs';
 
-const exec = promisify(_exec)
+const exec = promisify(_exec);
 
-/**
- * Normalize a Windows host path for Docker Desktop
- * C:\Users\Me → /host_mnt/c/Users/Me
- */
-function normalizeDockerPath(p) {
-  if (process.platform !== 'win32') return p
-
-  const drive = p[0].toLowerCase()
-  const rest = p.substring(2).replace(/\\/g, '/')
-  return `/host_mnt/${drive}${rest}`
+function log(...args) {
+  console.log(`[TCLab:Spawner][${new Date().toISOString()}]`, ...args);
 }
 
 /**
- * Spawn docker using arguments array (cross-platform safe)
+ * Normalize Windows path to Docker Desktop mount path
+ */
+function normalizeDockerPath(p) {
+  if (process.platform !== 'win32') return p;
+  const drive = p[0].toLowerCase();
+  const rest = p.substring(2).replace(/\\/g, '/');
+  return `/host_mnt/${drive}${rest}`;
+}
+
+/**
+ * Shell-safe docker wrapper
  */
 function execDocker(args) {
   return new Promise((resolve, reject) => {
+    log('🐳 execDocker:', args.join(' '));
+
     const proc = spawn('docker', args, {
       stdio: ['ignore', 'pipe', 'pipe'],
       shell: false,
-    })
+    });
 
-    let stdout = ''
-    let stderr = ''
+    let stdout = '';
+    let stderr = '';
 
-    proc.stdout.on('data', d => (stdout += d.toString()))
-    proc.stderr.on('data', d => (stderr += d.toString()))
+    proc.stdout.on('data', d => (stdout += d.toString()));
+    proc.stderr.on('data', d => (stderr += d.toString()));
 
     proc.on('close', code => {
-      if (code === 0) resolve({ stdout: stdout.trim(), stderr: stderr.trim() })
-      else reject(new Error(stderr || stdout || 'Unknown Docker error'))
-    })
+      if (code === 0) resolve({ stdout: stdout.trim(), stderr: stderr.trim() });
+      else reject(new Error(stderr || stdout || `Docker exited with code ${code}`));
+    });
 
-    proc.on('error', reject)
-  })
+    proc.on('error', reject);
+  });
 }
 
-function log(...args) {
-  console.log(`[TCLab:Spawner][${new Date().toISOString()}]`, ...args)
-}
-
-// Defaults
-const BASE_URL = process.env.CODE_SERVER_BASE_URL || 'http://codeserver.localhost'
 const DEFAULT_TOKEN =
   process.env.CODE_SERVER_DEFAULT_TOKEN ||
   process.env.CODE_SERVER_PASSWORD ||
-  'changeme'
+  'changeme';
 
-const TRAEFIK_NETWORK = process.env.TCLAB_TRAEFIK_NETWORK || 'tclab-traefik-network'
-const TRAEFIK_DOMAIN = process.env.TCLAB_TRAEFIK_DOMAIN || 'localhost'
-const TRAEFIK_ENTRYPOINT = process.env.TCLAB_TRAEFIK_ENTRYPOINT || 'web'
+const DEFAULT_CERT_PATH = path.resolve(process.cwd(), 'plugins/teacher-course-lab/certs/local-cert.pem');
+const DEFAULT_KEY_PATH = path.resolve(process.cwd(), 'plugins/teacher-course-lab/certs/local-key.pem');
+const tlsCertExists = fs.existsSync(DEFAULT_CERT_PATH) && fs.existsSync(DEFAULT_KEY_PATH);
+const TRAEFIK_NETWORK = process.env.TCLAB_TRAEFIK_NETWORK || 'tclab-traefik-network';
+const TRAEFIK_DOMAIN = '127.0.0.1.nip.io';
+const TRAEFIK_ENTRYPOINT = process.env.TCLAB_TRAEFIK_ENTRYPOINT || 'web';
+const HOST_PORT_BASE = Number(process.env.TCLAB_CS_PORT_BASE || 30000);
+const HOST_PORT_SPREAD = Number(process.env.TCLAB_CS_PORT_SPREAD || 10000);
+const APP_HOST_PORT_BASE = Number(process.env.TCLAB_APP_PORT_BASE || 31000);
+const APP_HOST_PORT_SPREAD = Number(process.env.TCLAB_APP_PORT_SPREAD || 10000);
+const TLS_CERT = process.env.TCLAB_CS_TLS_CERT || (tlsCertExists ? DEFAULT_CERT_PATH : undefined); // host path to cert
+const TLS_KEY = process.env.TCLAB_CS_TLS_KEY || (tlsCertExists ? DEFAULT_KEY_PATH : undefined); // host path to key
+const DEFAULT_PROTO = TLS_CERT && TLS_KEY ? 'https' : 'http';
+const CODE_SERVER_PROTOCOL = (process.env.TCLAB_CS_PROTOCOL || DEFAULT_PROTO).toLowerCase();
 
 /**
  * Ensure Traefik network exists
  */
 async function ensureTraefikNetwork() {
   try {
-    await execDocker(['network', 'inspect', TRAEFIK_NETWORK])
-    log(`✅ Traefik network '${TRAEFIK_NETWORK}' exists`)
-    return
+    await execDocker(['network', 'inspect', TRAEFIK_NETWORK]);
+    log(`✅ Traefik network '${TRAEFIK_NETWORK}' exists.`);
   } catch (_) {
-    log(`📡 Traefik network missing — creating '${TRAEFIK_NETWORK}'...`)
-  }
-
-  try {
-    await execDocker(['network', 'create', TRAEFIK_NETWORK])
-    log(`✅ Created Traefik network '${TRAEFIK_NETWORK}'`)
-  } catch (err) {
-    log('⚠ Failed to create network (continue anyway):', err.message)
+    log(`📡 Creating Traefik network '${TRAEFIK_NETWORK}'...`);
+    try {
+      await execDocker(['network', 'create', TRAEFIK_NETWORK]);
+      log(`✅ Created Traefik network '${TRAEFIK_NETWORK}'`);
+    } catch (err) {
+      log('⚠ Failed creating Traefik network:', err.message);
+    }
   }
 }
 
-/**
- * Main spawner
- * @param {object} options - Session options
- * @param {string} options.sessionId - Session ID
- * @param {string} options.userId - User ID
- * @param {string} options.challengeId - Challenge ID
- * @param {object} options.labMeta - Optional lab metadata from lesson.metadata.lab
- */
 export async function spawnCodeServerForSession({ sessionId, userId, challengeId, labMeta }) {
-  log('spawnCodeServerForSession()', { sessionId, userId, challengeId, hasLabMeta: !!labMeta })
+log("🔥 RAW INPUT to spawnCodeServerForSession:", {
+  sessionId,
+  userId,
+  challengeId,
+  labMeta,
+});
+if (sessionId == null) {
+  throw new Error("spawnCodeServerForSession() called with sessionId = " + String(sessionId));
+}
+  log('spawnCodeServerForSession()', { sessionId, userId, challengeId });
 
-  const mode = (process.env.TCLAB_SPAWNER_MODE || 'docker-per-session').toLowerCase()
-  log('Spawner mode =', mode)
-
+  const mode = (process.env.TCLAB_SPAWNER_MODE || 'docker-per-session').toLowerCase();
   if (mode === 'shared') {
     return {
-      url: BASE_URL,
+      url: 'http://codeserver.localhost',
       token: DEFAULT_TOKEN,
       containerId: null,
       mode: 'shared',
-    }
+    };
   }
 
-  await ensureTraefikNetwork()
+  await ensureTraefikNetwork();
 
-  const image = process.env.TCLAB_CODE_SERVER_IMAGE || 'codercom/code-server:4.21.1'
-  const password = DEFAULT_TOKEN
+  const image = process.env.TCLAB_CODE_SERVER_IMAGE || 'codercom/code-server:4.89.0';
+  const password = DEFAULT_TOKEN;
 
-  // EXACT: keep your format
-  const sessionShortId = sessionId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 12)
-  const containerName = `tclab-session-${sessionShortId}`
+  // ---------------------------
+  // SESSION IDENTIFIERS
+  // ---------------------------
+  if (!sessionId) {
+    throw new Error('sessionId is required');
+  }
+
+  const sessionShortId = String(sessionId)
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .slice(0, 12);
+
+  const baseName = `tclab-session-${sessionShortId}`;
+  const codeContainerName = `${baseName}-cs`;
+  const appContainerName = `${baseName}-app`;
 
   const baseWorkdir =
     process.env.TCLAB_WORKSPACES_ROOT ||
-    path.resolve(process.cwd(), 'plugins/teacher-course-lab/docker/workspaces')
+    path.resolve(process.cwd(), 'plugins/teacher-course-lab/docker/workspaces');
 
-  const workspaceDir = path.resolve(baseWorkdir, userId, sessionId)
+  const workspaceDir = path.resolve(baseWorkdir, userId, sessionId);
+  fs.mkdirSync(workspaceDir, { recursive: true });
 
-  fs.mkdirSync(workspaceDir, { recursive: true })
-  log('📁 Workspace directory ensured:', workspaceDir)
-
-  // If lab metadata is provided, initialize the project
-  if (labMeta && labMeta.kind) {
+  // ---------------------------
+  // INITIALIZE PROJECT
+  // ---------------------------
+  if (labMeta?.kind) {
     try {
-      log('🔧 Initializing lab project...', { kind: labMeta.kind })
-      await initializeLabProject(workspaceDir, labMeta)
-      log('✅ Project initialized successfully')
+      log('🔧 Initializing lab project…');
+      await initializeLabProject(workspaceDir, labMeta);
     } catch (err) {
-      log('⚠️ Project initialization failed (continuing anyway):', err.message)
+      log('⚠ Project init failed:', err.message);
     }
 
     if (labMeta?.buildCmd) {
       try {
-        log('🛠  Running lab build command...', { buildCmd: labMeta.buildCmd })
-        await buildLabProject(workspaceDir, labMeta.buildCmd)
+        await buildLabProject(workspaceDir, labMeta.buildCmd);
       } catch (err) {
-        log('⚠️ Lab build command failed (continuing anyway):', err.message)
+        log('⚠ Build failed:', err.message);
       }
     }
   }
 
-  // Normalize Windows volume path
-  let volumeHostPath = process.platform === 'win32'
-    ? normalizeDockerPath(workspaceDir)
-    : workspaceDir
+  const volumeHostPath =
+    process.platform === 'win32'
+      ? normalizeDockerPath(workspaceDir)
+      : workspaceDir;
 
-  log('Volume mount =', volumeHostPath)
+  // ---------------------------
+  // TRAEFIK ROUTING + PORTS
+  // ---------------------------
+  const devPort = labMeta?.devPort || 3000;
+  const codeServerHost = `${codeContainerName}.${TRAEFIK_DOMAIN}`;
+  const appHost = `${appContainerName}.${TRAEFIK_DOMAIN}`;
+  const hostPort =
+    HOST_PORT_BASE + Math.floor(Math.random() * Math.max(1, HOST_PORT_SPREAD));
+  const appHostPort =
+    APP_HOST_PORT_BASE + Math.floor(Math.random() * Math.max(1, APP_HOST_PORT_SPREAD));
+  const orbLocalHost = `${codeContainerName}.orb.local`;
+  const appOrbLocalHost = `${appContainerName}.orb.local`;
+  const codeProto = TLS_CERT && TLS_KEY ? CODE_SERVER_PROTOCOL : 'http';
 
-  // Traefik routing
-const traefikHost = `${containerName}.${TRAEFIK_DOMAIN}`
-const traefikUrl = `http://${traefikHost}`  
-const routerName = containerName // router = tclab-session-xxxx
-const labels = [
-  'traefik.enable=true',
-  `traefik.http.routers.${containerName}.rule=Host(\`${traefikHost}\`)`,
-  `traefik.http.routers.${containerName}.entrypoints=${TRAEFIK_ENTRYPOINT}`,
-  `traefik.http.services.${containerName}.loadbalancer.server.port=8080`,
-  `traefik.docker.network=${TRAEFIK_NETWORK}`,
-]
+  const appLabels = [
+    'traefik.enable=true',
 
-  const dockerArgs = [
+    `traefik.http.routers.${appContainerName}.rule=Host("${appHost}")`,
+    `traefik.http.routers.${appContainerName}.entrypoints=${TRAEFIK_ENTRYPOINT}`,
+    `traefik.http.services.${appContainerName}.loadbalancer.server.port=${devPort}`,
+
+    `traefik.docker.network=${TRAEFIK_NETWORK}`,
+  ];
+
+  // ---------------------------
+  // RUN DOCKER
+  // ---------------------------
+  // Optional TLS mount for code-server (if cert/key provided)
+  let certVolume = null;
+  let certInContainer = null;
+  let keyInContainer = null;
+  if (TLS_CERT && TLS_KEY) {
+    const certDir = path.dirname(TLS_CERT);
+    const keyDir = path.dirname(TLS_KEY);
+    const mountDir = certDir === keyDir ? certDir : certDir;
+    certVolume = `${mountDir}:/tclab-certs:ro`;
+    certInContainer = `/tclab-certs/${path.basename(TLS_CERT)}`;
+    keyInContainer = `/tclab-certs/${path.basename(TLS_KEY)}`;
+  }
+  const appDockerArgs = [
     'run',
     '-d',
-    '--name', containerName,
+    '--name', appContainerName,
     '--network', TRAEFIK_NETWORK,
-  ]
+    '-p', `${appHostPort}:${devPort}`,
 
-  labels.forEach(label => dockerArgs.push('--label', label))
+    '-e', `PORT=${devPort}`,
+    '-e', 'HOST=0.0.0.0',
 
-  dockerArgs.push(
-    '-e', `PASSWORD=${password}`,
     '-v', `${volumeHostPath}:/home/coder/project`,
+  ];
+
+  appLabels.forEach(l => appDockerArgs.push('--label', l));
+
+  const appStartCmd = labMeta?.startCmd || 'npm start';
+  appDockerArgs.push(
+    labMeta?.dockerImage || 'node:22-alpine',
+    'sh',
+    '-c',
+    `cd /home/coder/project && ${appStartCmd}`
+  );
+
+  const codeDockerArgs = [
+    'run',
+    '-d',
+    '--name', codeContainerName,
+    '--network', TRAEFIK_NETWORK,
+    '-p', `${hostPort}:8080`,
+
+    '-e', `PASSWORD=${password}`,
+    '-e', 'CS_DISABLE_UPDATE_CHECK=true',
+    '-e', 'CS_DISABLE_TELEMETRY=true',
+
+    '-v', `${volumeHostPath}:/home/coder/project`,
+  ];
+  if (certVolume) {
+    codeDockerArgs.push('-v', certVolume);
+  }
+
+  // Only code-server needs its own (optional) Traefik labels if you want
+  const codeLabels = [
+    'traefik.enable=true',
+    `traefik.http.routers.${codeContainerName}.rule=Host("${codeServerHost}")`,
+    `traefik.http.routers.${codeContainerName}.entrypoints=${TRAEFIK_ENTRYPOINT}`,
+    `traefik.http.services.${codeContainerName}.loadbalancer.server.port=8080`,
+    `traefik.docker.network=${TRAEFIK_NETWORK}`,
+  ];
+  codeLabels.forEach(l => codeDockerArgs.push('--label', l));
+
+  codeDockerArgs.push(
     image,
     '--auth', 'password',
+    '--disable-update-check',
+    '--disable-telemetry',
     '--bind-addr', '0.0.0.0:8080',
-    '/home/coder/project',
-  )
+    ...(certInContainer && keyInContainer
+      ? ['--cert', certInContainer, '--cert-key', keyInContainer]
+      : []),
+    '/home/coder/project'
+  );
 
-  log('🐳 docker run:', dockerArgs.join(' '))
+  log('🐳 Running app container…');
+  const { stdout: appStdout } = await execDocker(appDockerArgs);
+  const appContainerId = appStdout.trim();
+  log('🟢 App container started:', appContainerId);
 
-  try {
-    const { stdout } = await execDocker(dockerArgs)
-    const containerId = stdout.trim()
+  log('🐳 Running code-server container…');
+  const { stdout } = await execDocker(codeDockerArgs);
+  const containerId = stdout.trim();
+  log('🟢 Code-server container started:', containerId);
 
-    log('🟢 Container started:', { containerId, traefikHost })
-
-    return {
-      url: traefikUrl,
-      token: password,
-      containerId,
-      mode: 'docker-per-session',
-      traefikHost,
-    }
-  } catch (err) {
-    log('❌ Failed to start docker container', err.message)
-    throw err
-  }
+  return {
+    // Direct host-mapped access (works on OrbStack/Docker Desktop)
+    codeServerUrl: `${codeProto}://localhost:${hostPort}`,
+    orbLocalUrl: `${codeProto}://${orbLocalHost}:${hostPort}`,
+    // Traefik-style hosts (kept for future/production)
+    appUrl: `http://localhost:${appHostPort}`,
+    appOrbLocalUrl: `http://${appOrbLocalHost}:${appHostPort}`,
+    traefikHost: appHost,
+    traefikHostCodeServer: codeServerHost,
+    traefikHostApp: appHost,
+    token: password,
+    containerId,
+    appContainerId,
+    mode: 'docker-per-session',
+    port: hostPort,
+    appPort: appHostPort,
+  };
 }
 
-export async function stopCodeServerForSession(containerId) {
-  const mode = (process.env.TCLAB_SPAWNER_MODE || 'shared').toLowerCase()
+export async function stopCodeServerForSession(input) {
+  const containerId = typeof input === 'string' ? input : input?.containerId;
+  const sessionId = typeof input === 'object' ? input?.sessionId : null;
+  const mode = (process.env.TCLAB_SPAWNER_MODE || 'docker-per-session').toLowerCase();
+  if (mode !== 'docker-per-session') return;
 
-  if (!containerId) return
-  if (mode !== 'docker-per-session') return
+  let baseName = null;
+  if (sessionId) {
+    const sessionShortId = String(sessionId).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+    baseName = `tclab-session-${sessionShortId}`;
+  }
+  const codeContainerName = baseName ? `${baseName}-cs` : null;
+  const appContainerName = baseName ? `${baseName}-app` : null;
 
-  log('🐳 Stopping container:', containerId)
+  if (containerId) {
+    log('🛑 Stopping code-server container:', containerId);
+    try {
+      await execDocker(['rm', '-f', containerId]);
+      log('🗑 Removed code-server container:', containerId);
+    } catch (err) {
+      log('⚠ Failed to remove code-server container:', err.message);
+    }
+  } else if (codeContainerName) {
+    try {
+      await execDocker(['rm', '-f', codeContainerName]);
+      log('🗑 Removed code-server container by name:', codeContainerName);
+    } catch (err) {
+      log('⚠ Failed to remove code-server container by name:', err.message);
+    }
+  }
 
-  try {
-    await execDocker(['rm', '-f', containerId])
-    log('🗑 Removed container:', containerId)
-  } catch (err) {
-    log('❌ Failed removing container:', err.message)
+  if (appContainerName) {
+    log('🛑 Stopping app container:', appContainerName);
+    try {
+      await execDocker(['rm', '-f', appContainerName]);
+      log('🗑 Removed app container:', appContainerName);
+    } catch (err) {
+      log('⚠ Failed to remove app container:', err.message);
+    }
   }
 }

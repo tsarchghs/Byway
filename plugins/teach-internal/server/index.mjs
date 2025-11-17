@@ -124,7 +124,7 @@ router.get('/code-server/:teacherId/:lessonId', async (req, res) => {
     try {
       const created = await prisma.course.create({ data: req.body || {} });
       res.status(201).json({ success: true, data: created });
-    } catch (e) { res.status(400).json({ success: false, error: e.message }); }
+    } catch (e) { console.log(e); res.status(400).json({ success: false, error: e.message }); }
   });
   router.put('/courses/:id', async (req, res) => {
     try {

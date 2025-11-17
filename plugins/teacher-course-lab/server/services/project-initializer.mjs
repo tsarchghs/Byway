@@ -2,7 +2,23 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { exec as _exec } from 'node:child_process';
 import { promisify } from 'node:util';
+import { spawn } from 'node:child_process';
 
+export async function runCommand(cmd, cwd) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(cmd, {
+      cwd,
+      shell: true,
+      env: process.env,
+      stdio: 'inherit'
+    });
+
+    child.on('exit', (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`Command failed with exit ${code}`));
+    });
+  });
+}
 const exec = promisify(_exec);
 
 function log(...args) {
@@ -50,15 +66,22 @@ export async function initializeLabProject(workspaceDir, labMeta) {
 async function initializeExpressProject(workspaceDir, { buildCmd, startCmd, devPort }) {
   log('Initializing Express project...');
 
+  const resolveScript = (cmd, fallback) => {
+    if (!cmd) return fallback;
+    const lower = cmd.trim().toLowerCase();
+    // avoid recursive "npm start" -> "npm start"
+    if (lower === 'npm start') return fallback;
+    return cmd;
+  };
+
   // Create package.json
   const packageJson = {
     name: 'lab-backend',
     version: '1.0.0',
     type: 'module',
     scripts: {
-      start: startCmd || 'node server.js',
-      dev: startCmd || 'node server.js',
-      install: buildCmd || 'npm install'
+      start: resolveScript(startCmd, 'node server.js'),
+      dev: resolveScript(startCmd, 'node server.js')
     },
     dependencies: {
       express: '^5.1.0',
@@ -83,7 +106,8 @@ app.use(express.json());
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, status: 'healthy' });
+  // Align with lab test expectations
+  res.json({ ok: true, status: 'healthy', message: 'Hello' });
 });
 
 // TODO: Add your API routes here
@@ -127,7 +151,7 @@ The server will run on http://localhost:${devPort}
  */
 async function initializeNuxtProject(workspaceDir, { buildCmd, startCmd, devPort }) {
   log('Initializing Nuxt project...');
-
+await runCommand("npm install nuxt@latest", workspaceDir);
   // Create package.json
   const packageJson = {
     name: 'lab-frontend',
@@ -136,8 +160,7 @@ async function initializeNuxtProject(workspaceDir, { buildCmd, startCmd, devPort
     scripts: {
       dev: startCmd || 'nuxt dev',
       build: 'nuxt build',
-      start: 'nuxt start',
-      install: buildCmd || 'npm install'
+      start: 'nuxt start'
     },
     dependencies: {
       nuxt: '^4.2.0'
@@ -235,16 +258,10 @@ export async function buildLabProject(workspaceDir, buildCmd) {
   log('Building project...', { buildCmd });
 
   try {
-    const { stdout, stderr } = await exec(buildCmd, {
-      cwd: workspaceDir,
-      env: { ...process.env, NODE_ENV: 'production' }
-    });
-    if (stdout) log('Build stdout:', stdout);
-    if (stderr) log('Build stderr:', stderr);
+    await runCommand(buildCmd, workspaceDir)
     log('✅ Build completed');
   } catch (err) {
     log('⚠️ Build failed (continuing anyway):', err.message);
     // Don't throw - let the project continue even if build fails
   }
 }
-

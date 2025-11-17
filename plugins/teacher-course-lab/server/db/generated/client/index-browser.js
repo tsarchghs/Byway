@@ -142,6 +142,7 @@ exports.Prisma.LabSessionScalarFieldEnum = {
   status: 'status',
   codeServerUrl: 'codeServerUrl',
   codeServerToken: 'codeServerToken',
+  appUrl: 'appUrl',
   containerId: 'containerId',
   lastHeartbeat: 'lastHeartbeat',
   createdAt: 'createdAt',

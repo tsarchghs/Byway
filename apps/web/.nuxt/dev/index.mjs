@@ -1350,7 +1350,7 @@ if (!window.__NUXT_DEVTOOLS_TIME_METRIC__) {
 window.__NUXT_DEVTOOLS_TIME_METRIC__.appInit = Date.now()
 `;
 
-const _Kpn3rQhXB47tlidPczMWVq_FXUXNPaFlrl48g1l1wA = (function(nitro) {
+const _eyXbmr191EE3YVlpno9niLhCwVsmVAnbxcKOavJU8Y = (function(nitro) {
   nitro.hooks.hook("render:html", (htmlContext) => {
     htmlContext.head.push(`<script>${script}<\/script>`);
   });
@@ -1379,7 +1379,7 @@ const devReducers = {
   URL: (data) => data instanceof URL ? data.toString() : void 0
 };
 const asyncContext = getContext("nuxt-dev", { asyncContext: true, AsyncLocalStorage });
-const _3vIeoZovBnIYdHBxejnc6y4DwIfOJlFXQhMP0Eryas = (nitroApp) => {
+const _n6ua0McSYAYSVEWTV2bWRmNgHRzmWZyJExlufeCa7YI = (nitroApp) => {
   const handler = nitroApp.h3App.handler;
   nitroApp.h3App.handler = (event) => {
     return asyncContext.callAsync({ logs: [], event }, () => handler(event));
@@ -1449,8 +1449,8 @@ function onConsoleLog(callback) {
 }
 
 const plugins = [
-  _Kpn3rQhXB47tlidPczMWVq_FXUXNPaFlrl48g1l1wA,
-_3vIeoZovBnIYdHBxejnc6y4DwIfOJlFXQhMP0Eryas
+  _eyXbmr191EE3YVlpno9niLhCwVsmVAnbxcKOavJU8Y,
+_n6ua0McSYAYSVEWTV2bWRmNgHRzmWZyJExlufeCa7YI
 ];
 
 const assets = {};
@@ -1863,13 +1863,13 @@ async function getIslandContext(event) {
   return ctx;
 }
 
-const _lazy_K7jWTY = () => Promise.resolve().then(function () { return renderer$1; });
+const _lazy_ZjmqVv = () => Promise.resolve().then(function () { return renderer$1; });
 
 const handlers = [
   { route: '', handler: _INh2v5, lazy: false, middleware: true, method: undefined },
-  { route: '/__nuxt_error', handler: _lazy_K7jWTY, lazy: true, middleware: false, method: undefined },
+  { route: '/__nuxt_error', handler: _lazy_ZjmqVv, lazy: true, middleware: false, method: undefined },
   { route: '/__nuxt_island/**', handler: _SxA8c9, lazy: false, middleware: false, method: undefined },
-  { route: '/**', handler: _lazy_K7jWTY, lazy: true, middleware: false, method: undefined }
+  { route: '/**', handler: _lazy_ZjmqVv, lazy: true, middleware: false, method: undefined }
 ];
 
 function createNitroApp() {

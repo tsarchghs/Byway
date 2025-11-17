@@ -86,15 +86,20 @@ export async function startSessionForUser({ challengeId, userId }) {
     where: { id: session.id },
     data: {
       status: 'running',
-      codeServerUrl: spawnInfo.url,
+      codeServerUrl: spawnInfo.codeServerUrl,
+      appUrl: spawnInfo.appUrl || spawnInfo.appOrbLocalUrl || spawnInfo.orbLocalUrl || null,
       codeServerToken: spawnInfo.token,
       containerId: spawnInfo.containerId
     }
   })
 
-  log('✅ Session updated successfully:', updated)
+  const withOrb = spawnInfo.orbLocalUrl
+    ? { ...updated, orbLocalUrl: spawnInfo.orbLocalUrl }
+    : updated
 
-  return updated
+  log('✅ Session updated successfully:', withOrb)
+
+  return withOrb
 }
 
 //
@@ -113,16 +118,16 @@ export async function stopSessionById(id) {
 
   log('📝 Marking session as stopped')
 
-  await prisma.labSession.update({
-    where: { id },
-    data: { status: 'stopped' }
-  })
+    await prisma.labSession.update({
+      where: { id },
+      data: { status: 'stopped' }
+    })
 
-  if (existing.containerId) {
-    log('🛑 Stopping Code-Server container...', { containerId: existing.containerId })
+  if (existing.containerId || existing.id) {
+    log('🛑 Stopping Code-Server/App containers...', { containerId: existing.containerId, sessionId: id })
 
     try {
-      await stopCodeServerForSession(existing.containerId)
+      await stopCodeServerForSession({ containerId: existing.containerId, sessionId: id })
       log('🟢 Container stop successful')
     } catch (e) {
       log('❌ Failed to stop container', e)

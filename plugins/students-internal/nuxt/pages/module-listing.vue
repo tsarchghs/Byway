@@ -1035,6 +1035,7 @@ type Lesson = {
   preview?: boolean
   quiz?: { questions: QuizQuestion[] }
   metadata?: Record<string, any>
+  lab?: Record<string, any>
 }
 type ModuleT = { id: string; courseId?: string; title: string; lessons: Lesson[] }
 type CourseT = {
@@ -1043,6 +1044,50 @@ type CourseT = {
   category: string
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced' | string
   coverUrl?: string
+}
+
+const parseMetadata = (md: any) => {
+  if (!md) return {}
+  if (typeof md === 'string') {
+    try {
+      return JSON.parse(md)
+    } catch (_e) {
+      return {}
+    }
+  }
+  return typeof md === 'object' ? md : {}
+}
+
+function normalizeLabMeta(lab?: Record<string, any> | null) {
+  if (!lab) return undefined
+  const kind = lab.kind || 'BACKEND_NODE'
+  return {
+    kind,
+    dockerImage: lab.dockerImage || 'node:22-alpine',
+    buildCmd: lab.buildCmd || 'npm install',
+    startCmd: lab.startCmd || (kind === 'FRONTEND_NUXT' ? 'npm run dev' : 'npm start'),
+    devPort: Number(lab.devPort || 0) || 3000,
+    traefikHost: lab.traefikHost || '',
+    apiTests: lab.apiTests || [],
+    uiTests: lab.uiTests || [],
+  }
+}
+
+function normalizeLesson(row: Lesson): Lesson {
+  const md = parseMetadata((row as any).metadata)
+  const lab = md.lab ? normalizeLabMeta(md.lab) : undefined
+  return {
+    ...row,
+    metadata: md,
+    lab,
+    resources: md.resources || row.resources || [],
+    attachments: md.attachments || row.attachments || [],
+    tags: md.tags || row.tags || [],
+    prerequisites: md.prerequisites || row.prerequisites || [],
+    unlockAt: md.unlockAt ?? row.unlockAt,
+    preview: md.preview ?? row.preview ?? false,
+    quiz: md.quiz || row.quiz,
+  }
 }
 type ModuleLite = { id: string; title: string; lessonCount?: number; minutes?: number }
 type ProgressRow = { lessonId: string; completed: boolean; updatedAt?: string; score?: number }
@@ -1323,9 +1368,13 @@ async function loadCourseAndModules() {
       { courseId: selectedCourseId.value },
       TEACH_API,
     )
-
+    const normalizedModules =
+      (modulesByCourse || []).map(m => ({
+        ...m,
+        lessons: (m.lessons || []).map((lesson) => normalizeLesson(lesson)),
+      })) || []
     // map into your lite structure for sidebar
-    modules.value = (modulesByCourse || []).map(m => ({
+    modules.value = normalizedModules.map(m => ({
       id: m.id,
       title: m.title,
       lessonCount: m.lessons?.length ?? 0,
@@ -1334,8 +1383,8 @@ async function loadCourseAndModules() {
 
     // pick current module
     const initialModule =
-      modulesByCourse.find(m => m.id === selectedModuleId.value) ||
-      modulesByCourse[0] ||
+      normalizedModules.find(m => m.id === selectedModuleId.value) ||
+      normalizedModules[0] ||
       null
 
     moduleT.value = initialModule

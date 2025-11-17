@@ -190,7 +190,7 @@ const rules: Record<string, Rule[]> = {
 /** GraphQL */
 const API_URL = 'http://localhost:4000/api/teach-internal/graphql'
 function getAuthHeaders() {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  const headers: Record<string, string> = { 'Content-Type': 'application/json', "Authorization": "Bearer " + localStorage.getItem("token") }
   return headers
 }
 async function fetchGraphQL<T = any>(query: string, variables?: Record<string, any>): Promise<T> {

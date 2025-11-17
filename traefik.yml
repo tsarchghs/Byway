@@ -1,0 +1,23 @@
+entryPoints:
+  web:
+    address: ":80"
+
+providers:
+  docker:
+    exposedByDefault: false
+    network: "tclab-traefik-network"
+    watch: true
+    swarmMode: false
+
+api:
+  insecure: true
+
+accessLog: {}
+log:
+  level: INFO
+
+serversTransport:
+  insecureSkipVerify: true
+
+metrics:
+  prometheus: {}
