@@ -2,7 +2,7 @@ import express from 'express';
 import prisma from '../db/client.mjs';
 import { startSessionForUser, stopSessionById } from '../services/sessions.mjs';
 import { runGrading } from '../services/grader.mjs';
-import { fetchBindingMetaForChallenge } from '../services/courses-bridge.mjs';
+import { fetchBindingMetaForChallenge, fetchLessonContextById } from '../services/courses-bridge.mjs';
 import { PrismaClient } from '../../../authentication/server/db/generated';
 
 export const restRouter = express.Router();
@@ -52,6 +52,101 @@ restRouter.post('/challenges', express.json(), async (req, res) => {
     }
   });
   res.json({ item });
+});
+
+function slugify(value = '') {
+  return value
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .substring(0, 60);
+}
+
+async function autoCreateChallengeForLesson(lessonId, context) {
+  const lesson = context?.lesson;
+  if (!lesson) return null;
+
+  const course = context?.course;
+  const labMeta = lesson.metadata?.lab;
+  if (!labMeta) return null;
+
+  const title = lesson.title || `Lesson ${lessonId}`;
+  const baseSlug = slugify(title) || `lesson-${lessonId}`;
+  let slug = `${baseSlug}-${lessonId.slice(-4)}`;
+
+  const data = {
+    title,
+    slug,
+    description: lesson.content || '',
+    difficulty: course?.difficulty || 'Beginner',
+    starterRepoUrl: null,
+    testsRepoUrl: null,
+    runtime: labMeta.kind || null,
+    createdByUserId: course?.teacherId || 'system',
+    visibility: 'private',
+    courseId: course?.id || null,
+    moduleId: lesson.moduleId || context?.module?.id || null,
+    lessonId,
+  };
+
+  for (let i = 0; i < 3; i += 1) {
+    try {
+      if (i > 0) {
+        data.slug = `${slug}-${Date.now().toString(36)}`;
+      }
+      return await prisma.labChallenge.create({ data });
+    } catch (err) {
+      if (err?.code === 'P2002') {
+        slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
+        continue;
+      }
+      throw err;
+    }
+  }
+  return null;
+}
+
+// Resolve challenge metadata by lesson (autocreation if lesson has lab metadata)
+restRouter.get('/challenges/by-lesson/:lessonId', async (req, res) => {
+  const { lessonId } = req.params;
+  if (!lessonId) {
+    return res.status(400).json({ error: 'lessonId required' });
+  }
+
+  let challenge = await prisma.labChallenge.findFirst({
+    where: { lessonId },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  let context = null;
+  try {
+    context = await fetchLessonContextById(lessonId);
+  } catch (err) {
+    console.warn('[teacher-course-lab] Failed to fetch lesson context:', err?.message || err);
+  }
+
+  if (!challenge && context?.lesson?.metadata?.lab) {
+    try {
+      challenge = await autoCreateChallengeForLesson(lessonId, context);
+    } catch (err) {
+      console.warn('[teacher-course-lab] Auto-create challenge failed:', err?.message || err);
+      // Attempt to see if another process already created it
+      challenge = await prisma.labChallenge.findFirst({
+        where: { lessonId },
+        orderBy: { createdAt: 'desc' },
+      });
+    }
+  }
+
+  res.json({
+    challenge,
+    labMeta: context?.lesson?.metadata?.lab || null,
+    lesson: context?.lesson || null,
+    module: context?.module || null,
+    course: context?.course || null,
+  });
 });
 
 // Start session (REST)

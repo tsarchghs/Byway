@@ -1652,6 +1652,23 @@ async function fetchLabChallenge(lessonId: string) {
       return labChallenges[lessonId]
     }
 
+    // Hit lesson-specific endpoint first (auto-creates if possible)
+    const lessonResp = await fetch(`${LAB_API}/challenges/by-lesson/${lessonId}`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    }).catch(() => null)
+
+    if (lessonResp?.ok) {
+      const lessonData = await lessonResp.json()
+      if (lessonData.challenge) {
+        labChallenges[lessonId] = lessonData.challenge
+        return lessonData.challenge
+      }
+    } else if (lessonResp && lessonResp.status === 401) {
+      console.warn('[Lab] Not authenticated to fetch lesson challenge')
+    }
+
     // Find challenge bound to this lesson and course
     const resp = await fetch(`${LAB_API}/challenges`, {
       method: 'GET',

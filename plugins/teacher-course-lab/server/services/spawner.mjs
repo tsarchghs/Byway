@@ -2,7 +2,7 @@ import { exec as _exec, spawn } from 'node:child_process'
 import { promisify } from 'node:util'
 import fs from 'node:fs'
 import path from 'node:path'
-import { initializeLabProject } from './project-initializer.mjs'
+import { initializeLabProject, buildLabProject } from './project-initializer.mjs'
 
 const exec = promisify(_exec)
 
@@ -127,6 +127,15 @@ export async function spawnCodeServerForSession({ sessionId, userId, challengeId
       log('✅ Project initialized successfully')
     } catch (err) {
       log('⚠️ Project initialization failed (continuing anyway):', err.message)
+    }
+
+    if (labMeta?.buildCmd) {
+      try {
+        log('🛠  Running lab build command...', { buildCmd: labMeta.buildCmd })
+        await buildLabProject(workspaceDir, labMeta.buildCmd)
+      } catch (err) {
+        log('⚠️ Lab build command failed (continuing anyway):', err.message)
+      }
     }
   }
 

@@ -1,6 +1,6 @@
 /// <reference types="@bloggrs/web" />
-/// <reference types="@nuxt/devtools" />
 /// <reference types="@bloggrs/shared-ui" />
+/// <reference types="@nuxt/devtools" />
 /// <reference types="@nuxt/telemetry" />
 /// <reference path="types/builder-env.d.ts" />
 /// <reference path="types/plugins.d.ts" />

@@ -1,0 +1,15 @@
+{
+  "name": "lab-frontend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm dev",
+    "build": "nuxt build",
+    "start": "nuxt start",
+    "install": "pnpm i"
+  },
+  "dependencies": {
+    "nuxt": "^4.2.0"
+  },
+  "devDependencies": {}
+}

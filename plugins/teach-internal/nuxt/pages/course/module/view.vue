@@ -553,7 +553,7 @@
                                     class="mt-2"
                                     title="API tests"
                                   >
-                                    <a-space class="mb-1">
+                                    <a-space class="mb-1" wrap>
                                       <a-button
                                         size="small"
                                         type="primary"
@@ -561,16 +561,318 @@
                                         ><PlusOutlined /> Add API test</a-button
                                       >
                                     </a-space>
-                                    <a-collapse accordion>
+                                    <a-collapse
+                                      v-if="currentLesson.lab?.apiTests?.length"
+                                      accordion
+                                    >
                                       <a-collapse-panel
                                         v-for="(t, i) in currentLesson.lab!
                                           .apiTests || []"
                                         :key="t.id"
                                         :header="t.name || `API Test ${i + 1}`"
                                       >
-                                        <!-- ... existing API test configuration ... -->
+                                        <template #extra>
+                                          <a-button
+                                            size="small"
+                                            danger
+                                            @click.stop="removeApiLabTest(i)"
+                                            >Remove</a-button
+                                          >
+                                        </template>
+                                        <template v-if="prepareApiTest(t)">
+                                          <a-form layout="vertical">
+                                            <a-row :gutter="12">
+                                              <a-col :md="12" :xs="24">
+                                                <a-form-item label="Name">
+                                                  <a-input
+                                                    v-model:value="t.name"
+                                                    placeholder="Health check"
+                                                    @change="touch"
+                                                  />
+                                                </a-form-item>
+                                              </a-col>
+                                              <a-col :md="6" :xs="12">
+                                                <a-form-item label="Points">
+                                                  <a-input-number
+                                                    v-model:value="t.points"
+                                                    style="width: 100%"
+                                                    :min="0"
+                                                    @change="touch"
+                                                  />
+                                                </a-form-item>
+                                              </a-col>
+                                              <a-col :md="6" :xs="12">
+                                                <a-form-item label="Expected status">
+                                                  <a-input-number
+                                                    v-model:value="t.expectedStatus"
+                                                    style="width: 100%"
+                                                    :min="100"
+                                                    :max="599"
+                                                    @change="touch"
+                                                  />
+                                                </a-form-item>
+                                              </a-col>
+                                            </a-row>
+
+                                            <a-row :gutter="12">
+                                              <a-col :md="6" :xs="12">
+                                                <a-form-item label="Method">
+                                                  <a-select
+                                                    :options="httpMethods"
+                                                    v-model:value="t.method"
+                                                    @change="touch"
+                                                  />
+                                                </a-form-item>
+                                              </a-col>
+                                              <a-col :md="18" :xs="24">
+                                                <a-form-item label="Path">
+                                                  <a-input
+                                                    v-model:value="t.path"
+                                                    placeholder="/api/health"
+                                                    @change="touch"
+                                                  />
+                                                </a-form-item>
+                                              </a-col>
+                                            </a-row>
+
+                                            <a-form-item label="Request body (JSON)">
+                                              <a-textarea
+                                                v-model:value="t.bodyJson"
+                                                :rows="4"
+                                                placeholder='{"message":"hello"}'
+                                                @change="touch"
+                                              />
+                                            </a-form-item>
+
+                                            <a-divider orientation="left">
+                                              Path params
+                                            </a-divider>
+                                            <div class="kv-stack">
+                                              <div
+                                                class="kv-row"
+                                                v-for="(row, idx) in t.pathParams"
+                                                :key="`pp-${t.id}-${idx}`"
+                                              >
+                                                <a-input
+                                                  v-model:value="row.key"
+                                                  placeholder="id"
+                                                  @change="touch"
+                                                />
+                                                <a-input
+                                                  v-model:value="row.value"
+                                                  placeholder="123"
+                                                  @change="touch"
+                                                />
+                                                <a-button
+                                                  size="small"
+                                                  type="text"
+                                                  danger
+                                                  @click="removeRow(t.pathParams!, idx)"
+                                                  >Remove</a-button
+                                                >
+                                              </div>
+                                              <a-button
+                                                type="dashed"
+                                                size="small"
+                                                @click="addRow(t.pathParams!)"
+                                              >
+                                                Add param
+                                              </a-button>
+                                            </div>
+
+                                            <a-divider orientation="left">
+                                              Query params
+                                            </a-divider>
+                                            <div class="kv-stack">
+                                              <div
+                                                class="kv-row"
+                                                v-for="(row, idx) in t.query"
+                                                :key="`qp-${t.id}-${idx}`"
+                                              >
+                                                <a-input
+                                                  v-model:value="row.key"
+                                                  placeholder="q"
+                                                  @change="touch"
+                                                />
+                                                <a-input
+                                                  v-model:value="row.value"
+                                                  placeholder="vue"
+                                                  @change="touch"
+                                                />
+                                                <a-button
+                                                  size="small"
+                                                  type="text"
+                                                  danger
+                                                  @click="removeRow(t.query!, idx)"
+                                                  >Remove</a-button
+                                                >
+                                              </div>
+                                              <a-button
+                                                type="dashed"
+                                                size="small"
+                                                @click="addRow(t.query!)"
+                                              >
+                                                Add query param
+                                              </a-button>
+                                            </div>
+
+                                            <a-divider orientation="left">
+                                              Headers
+                                            </a-divider>
+                                            <div class="kv-stack">
+                                              <div
+                                                class="kv-row"
+                                                v-for="(row, idx) in t.headers"
+                                                :key="`hd-${t.id}-${idx}`"
+                                              >
+                                                <a-input
+                                                  v-model:value="row.key"
+                                                  placeholder="x-api-key"
+                                                  @change="touch"
+                                                />
+                                                <a-input
+                                                  v-model:value="row.value"
+                                                  placeholder="secret"
+                                                  @change="touch"
+                                                />
+                                                <a-button
+                                                  size="small"
+                                                  type="text"
+                                                  danger
+                                                  @click="removeRow(t.headers!, idx)"
+                                                  >Remove</a-button
+                                                >
+                                              </div>
+                                              <a-button
+                                                type="dashed"
+                                                size="small"
+                                                @click="addRow(t.headers!)"
+                                              >
+                                                Add header
+                                              </a-button>
+                                            </div>
+
+                                            <a-row :gutter="12">
+                                              <a-col :md="8" :xs="24">
+                                                <a-form-item label="Auth">
+                                                  <a-select
+                                                    v-model:value="t.auth!.type"
+                                                    :options="[
+                                                      { label: 'None', value: 'none' },
+                                                      { label: 'Bearer', value: 'bearer' },
+                                                    ]"
+                                                    @change="touch"
+                                                  />
+                                                </a-form-item>
+                                              </a-col>
+                                              <a-col
+                                                :md="16"
+                                                :xs="24"
+                                                v-if="t.auth?.type === 'bearer'"
+                                              >
+                                                <a-form-item label="Bearer token">
+                                                  <a-input
+                                                    v-model:value="t.auth!.token"
+                                                    placeholder="eyJhbGci..."
+                                                    @change="touch"
+                                                  />
+                                                </a-form-item>
+                                              </a-col>
+                                            </a-row>
+
+                                            <a-divider orientation="left">
+                                              Expectations
+                                            </a-divider>
+                                            <a-row :gutter="12">
+                                              <a-col :md="8" :xs="24">
+                                                <a-form-item label="Mode">
+                                                  <a-select
+                                                    :options="expectModeOptions"
+                                                    v-model:value="t.expectMode"
+                                                    @change="touch"
+                                                  />
+                                                </a-form-item>
+                                              </a-col>
+                                              <a-col :md="16" :xs="24">
+                                                <a-form-item
+                                                  label="Contains text (comma separated)"
+                                                >
+                                                  <a-input
+                                                    v-model:value="t.expectTextLine"
+                                                    placeholder="welcome,success"
+                                                    @change="touch"
+                                                  />
+                                                </a-form-item>
+                                              </a-col>
+                                            </a-row>
+                                            <a-form-item label="Expected JSON (subset or exact)">
+                                              <a-textarea
+                                                v-model:value="t.expectJsonStr"
+                                                :rows="4"
+                                                placeholder='{"ok":true}'
+                                                @change="touch"
+                                              />
+                                            </a-form-item>
+
+                                            <a-divider orientation="left">
+                                              Args (docs)
+                                            </a-divider>
+                                            <div class="arg-stack">
+                                              <div
+                                                class="arg-row"
+                                                v-for="(arg, idx) in t.args"
+                                                :key="`arg-${t.id}-${idx}`"
+                                              >
+                                                <a-input
+                                                  v-model:value="arg.name"
+                                                  placeholder="userId"
+                                                  @change="touch"
+                                                />
+                                                <a-select
+                                                  :options="[
+                                                    { label: 'string', value: 'string' },
+                                                    { label: 'number', value: 'number' },
+                                                    { label: 'boolean', value: 'boolean' },
+                                                    { label: 'json', value: 'json' },
+                                                  ]"
+                                                  v-model:value="arg.type"
+                                                  @change="touch"
+                                                />
+                                                <a-checkbox
+                                                  v-model:checked="arg.required"
+                                                  @change="touch"
+                                                  >Required</a-checkbox
+                                                >
+                                                <a-input
+                                                  v-model:value="arg.example"
+                                                  placeholder="42"
+                                                  @change="touch"
+                                                />
+                                                <a-button
+                                                  size="small"
+                                                  type="text"
+                                                  danger
+                                                  @click="removeArgRow(t, idx)"
+                                                  >Remove</a-button
+                                                >
+                                              </div>
+                                              <a-button
+                                                type="dashed"
+                                                size="small"
+                                                @click="addArgRow(t)"
+                                              >
+                                                Add arg
+                                              </a-button>
+                                            </div>
+                                          </a-form>
+                                        </template>
                                       </a-collapse-panel>
                                     </a-collapse>
+                                    <a-empty
+                                      v-else
+                                      description="No API tests yet"
+                                      class="mt-2"
+                                    />
                                   </a-card>
 
                                   <!-- API Test Runner Card -->
@@ -588,7 +890,80 @@
                                     class="mt-2"
                                     title="UI tests"
                                   >
-                                    <!-- ... existing UI tests ... -->
+                                    <a-space class="mb-1" wrap>
+                                      <a-button
+                                        size="small"
+                                        type="primary"
+                                        @click="addUiLabTest"
+                                        ><PlusOutlined /> Add UI test</a-button
+                                      >
+                                    </a-space>
+                                    <a-collapse
+                                      v-if="currentLesson.lab?.uiTests?.length"
+                                      accordion
+                                    >
+                                      <a-collapse-panel
+                                        v-for="(t, i) in currentLesson.lab!
+                                          .uiTests || []"
+                                        :key="t.id"
+                                        :header="t.name || `UI Test ${i + 1}`"
+                                      >
+                                        <template #extra>
+                                          <a-button
+                                            size="small"
+                                            danger
+                                            @click.stop="removeUiLabTest(i)"
+                                            >Remove</a-button
+                                          >
+                                        </template>
+                                        <a-form layout="vertical">
+                                          <a-row :gutter="12">
+                                            <a-col :md="12" :xs="24">
+                                              <a-form-item label="Name">
+                                                <a-input
+                                                  v-model:value="t.name"
+                                                  @change="touch"
+                                                  placeholder="Homepage renders"
+                                                />
+                                              </a-form-item>
+                                            </a-col>
+                                            <a-col :md="6" :xs="12">
+                                              <a-form-item label="Points">
+                                                <a-input-number
+                                                  v-model:value="t.points"
+                                                  :min="0"
+                                                  style="width: 100%"
+                                                  @change="touch"
+                                                />
+                                              </a-form-item>
+                                            </a-col>
+                                            <a-col :md="6" :xs="12">
+                                              <a-form-item label="Path">
+                                                <a-input
+                                                  v-model:value="t.path"
+                                                  placeholder="/"
+                                                  @change="touch"
+                                                />
+                                              </a-form-item>
+                                            </a-col>
+                                          </a-row>
+                                          <a-form-item
+                                            label="Expected text (comma separated)"
+                                          >
+                                            <a-input
+                                              v-model:value="t.expectTextLine"
+                                              placeholder="Welcome,Sign up"
+                                              @change="touch"
+                                            />
+                                          </a-form-item>
+                                        </a-form>
+                                      </a-collapse-panel>
+                                    </a-collapse>
+                                    <a-empty
+                                      v-else
+                                      description="No UI tests yet"
+                                      class="mt-2"
+                                    />
                                   </a-card>
                                 </a-col>
 
@@ -1874,6 +2249,7 @@ watch(
   (t) => {
     if (t === "lab") ensureLabMeta();
   },
+  { immediate: true }
 );
 const codeServerStopping = ref(false);
 const codeServerStarting = ref(false);
@@ -2031,6 +2407,12 @@ function addApiLabTest() {
     bodyJson: "",
     expectJsonStr: "",
     expectTextLine: "",
+    pathParams: [],
+    query: [],
+    headers: [],
+    args: [],
+    auth: { type: "none" },
+    expectMode: "json-subset",
   });
   touch();
 }
@@ -2052,6 +2434,11 @@ function addUiLabTest() {
 function removeUiLabTest(i: number) {
   currentLesson.value?.lab?.uiTests?.splice(i, 1);
   touch();
+}
+
+function prepareApiTest(t: ApiTestMock) {
+  ensureArraysFor(t);
+  return true;
 }
 // const API_URL = process.env.BYWAY_GRAPHQL_URL || "http://localhost:4000/api"; // fallback
 
@@ -2858,6 +3245,21 @@ async function getOrCreateLabChallenge() {
   }
 
   try {
+    // Prefer new lesson-specific endpoint (auto-creates if needed)
+    const lessonResp = await fetch(`${LAB_API}/challenges/by-lesson/${lessonId}`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+      credentials: "include",
+    }).catch(() => null);
+
+    if (lessonResp?.ok) {
+      const lessonData = await lessonResp.json();
+      if (lessonData.challenge) {
+        labChallengeCache.value[cacheKey] = lessonData.challenge;
+        return lessonData.challenge;
+      }
+    }
+
     // Check if challenge already exists (bound to this lesson)
     const listResp = await fetch(`${LAB_API}/challenges`, {
       method: "GET",
@@ -2927,6 +3329,20 @@ async function getLabChallenge() {
   }
 
   try {
+    const lessonResp = await fetch(`${LAB_API}/challenges/by-lesson/${lessonId}`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+      credentials: "include",
+    }).catch(() => null);
+
+    if (lessonResp?.ok) {
+      const lessonData = await lessonResp.json();
+      if (lessonData.challenge) {
+        labChallengeCache.value[cacheKey] = lessonData.challenge;
+        return lessonData.challenge;
+      }
+    }
+
     const resp = await fetch(`${LAB_API}/challenges`, {
       method: "GET",
       headers: getAuthHeaders(),
@@ -3357,6 +3773,29 @@ onMounted(async () => {
 }
 .opt-input {
   flex: 1;
+}
+.kv-stack,
+.arg-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.kv-row,
+.arg-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.kv-row > .ant-input,
+.kv-row > .ant-input-number,
+.arg-row > .ant-input,
+.arg-row > .ant-select {
+  flex: 1;
+  min-width: 140px;
+}
+.arg-row > .ant-checkbox {
+  align-self: center;
 }
 .code-frame {
   width: 100%;

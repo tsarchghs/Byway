@@ -26,6 +26,18 @@ async function safeFetchJson(path) {
 }
 
 /**
+ * Normalize REST responses from teach-internal (which wrap payload in { success, data })
+ */
+async function safeTeachData(path) {
+  const json = await safeFetchJson(path);
+  if (!json) return null;
+  if (typeof json === 'object' && json !== null && 'data' in json) {
+    return json.data;
+  }
+  return json;
+}
+
+/**
  * Fetch lesson data via GraphQL
  */
 async function fetchLessonViaGraphQL(lessonId) {
@@ -93,10 +105,10 @@ export async function fetchBindingMetaForChallenge(challenge) {
   const result = {};
 
   if (challenge.courseId) {
-    result.course = await safeFetchJson(`/courses/${challenge.courseId}`);
+    result.course = await safeTeachData(`/courses/${challenge.courseId}`);
   }
   if (challenge.moduleId) {
-    result.module = await safeFetchJson(`/modules/${challenge.moduleId}`);
+    result.module = await safeTeachData(`/modules/${challenge.moduleId}`);
   }
   if (challenge.lessonId) {
     // Try GraphQL first (better for metadata), then REST fallback
@@ -105,9 +117,51 @@ export async function fetchBindingMetaForChallenge(challenge) {
       result.lesson = lesson;
     } else {
       // Fallback to REST
-      result.lesson = await safeFetchJson(`/lessons/${challenge.lessonId}`);
+      result.lesson = await safeTeachData(`/lessons/${challenge.lessonId}`);
+    }
+  }
+
+  if (result.lesson && typeof result.lesson.metadata === 'string') {
+    try {
+      result.lesson.metadata = JSON.parse(result.lesson.metadata);
+    } catch (_) {
+      // ignore parse failure
     }
   }
 
   return result;
+}
+
+/**
+ * Fetch lesson/module/course context for a given lesson ID.
+ * Used when we only know the lesson identifier (e.g. student requests).
+ */
+export async function fetchLessonContextById(lessonId) {
+  if (!lessonId) return null;
+
+  let lesson = await fetchLessonViaGraphQL(lessonId);
+  if (!lesson) {
+    lesson = await safeTeachData(`/lessons/${lessonId}`);
+  }
+  if (lesson && typeof lesson.metadata === 'string') {
+    try {
+      lesson.metadata = JSON.parse(lesson.metadata);
+    } catch (_) {
+      // ignore parse error
+    }
+  }
+  if (!lesson) return null;
+
+  let module = null;
+  if (lesson.moduleId) {
+    module = await safeTeachData(`/modules/${lesson.moduleId}`);
+  }
+
+  let course = null;
+  const courseId = module?.courseId || lesson.courseId;
+  if (courseId) {
+    course = await safeTeachData(`/courses/${courseId}`);
+  }
+
+  return { lesson, module, course };
 }
