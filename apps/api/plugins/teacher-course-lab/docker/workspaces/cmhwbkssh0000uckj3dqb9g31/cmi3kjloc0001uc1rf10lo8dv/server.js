@@ -6,7 +6,12 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-sasd
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  // Align with lab test expectations
+  res.json({ ok: true, status: 'healthy', message: 'Hello' });
+});
 
 // TODO: Add your API routes here
 

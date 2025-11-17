@@ -52,9 +52,13 @@ const DEFAULT_TOKEN =
   process.env.CODE_SERVER_PASSWORD ||
   'changeme';
 
-const DEFAULT_CERT_PATH = path.resolve(process.cwd(), 'plugins/teacher-course-lab/certs/local-cert.pem');
-const DEFAULT_KEY_PATH = path.resolve(process.cwd(), 'plugins/teacher-course-lab/certs/local-key.pem');
-const tlsCertExists = fs.existsSync(DEFAULT_CERT_PATH) && fs.existsSync(DEFAULT_KEY_PATH);
+const resolvePath = p => {
+  if (!p) return undefined;
+  return path.isAbsolute(p) ? p : path.resolve(process.cwd(), p);
+};
+const DEFAULT_CERT_PATH = resolvePath('plugins/teacher-course-lab/certs/local-cert.pem');
+const DEFAULT_KEY_PATH = resolvePath('plugins/teacher-course-lab/certs/local-key.pem');
+const tlsCertExists = DEFAULT_CERT_PATH && DEFAULT_KEY_PATH && fs.existsSync(DEFAULT_CERT_PATH) && fs.existsSync(DEFAULT_KEY_PATH);
 const TRAEFIK_NETWORK = process.env.TCLAB_TRAEFIK_NETWORK || 'tclab-traefik-network';
 const TRAEFIK_DOMAIN = '127.0.0.1.nip.io';
 const TRAEFIK_ENTRYPOINT = process.env.TCLAB_TRAEFIK_ENTRYPOINT || 'web';
@@ -62,8 +66,8 @@ const HOST_PORT_BASE = Number(process.env.TCLAB_CS_PORT_BASE || 30000);
 const HOST_PORT_SPREAD = Number(process.env.TCLAB_CS_PORT_SPREAD || 10000);
 const APP_HOST_PORT_BASE = Number(process.env.TCLAB_APP_PORT_BASE || 31000);
 const APP_HOST_PORT_SPREAD = Number(process.env.TCLAB_APP_PORT_SPREAD || 10000);
-const TLS_CERT = process.env.TCLAB_CS_TLS_CERT || (tlsCertExists ? DEFAULT_CERT_PATH : undefined); // host path to cert
-const TLS_KEY = process.env.TCLAB_CS_TLS_KEY || (tlsCertExists ? DEFAULT_KEY_PATH : undefined); // host path to key
+const TLS_CERT = resolvePath(process.env.TCLAB_CS_TLS_CERT) || (tlsCertExists ? DEFAULT_CERT_PATH : undefined); // host path to cert
+const TLS_KEY = resolvePath(process.env.TCLAB_CS_TLS_KEY) || (tlsCertExists ? DEFAULT_KEY_PATH : undefined); // host path to key
 const DEFAULT_PROTO = TLS_CERT && TLS_KEY ? 'https' : 'http';
 const CODE_SERVER_PROTOCOL = (process.env.TCLAB_CS_PROTOCOL || DEFAULT_PROTO).toLowerCase();
 
@@ -92,10 +96,11 @@ log("🔥 RAW INPUT to spawnCodeServerForSession:", {
   challengeId,
   labMeta,
 });
-if (sessionId == null) {
-  throw new Error("spawnCodeServerForSession() called with sessionId = " + String(sessionId));
-}
+  if (sessionId == null) {
+    throw new Error("spawnCodeServerForSession() called with sessionId = " + String(sessionId));
+  }
   log('spawnCodeServerForSession()', { sessionId, userId, challengeId });
+  log('TLS lookup paths:', { TLS_CERT, TLS_KEY, CODE_SERVER_PROTOCOL });
 
   const mode = (process.env.TCLAB_SPAWNER_MODE || 'docker-per-session').toLowerCase();
   if (mode === 'shared') {
@@ -186,6 +191,19 @@ if (sessionId == null) {
   // ---------------------------
   // RUN DOCKER
   // ---------------------------
+  // Clean up any stale containers with the same names before starting fresh
+  const maybeRemove = async name => {
+    if (!name) return;
+    try {
+      await execDocker(['rm', '-f', name]);
+      log('🧹 Removed stale container:', name);
+    } catch (_) {
+      /* ignore */ 
+    }
+  };
+  await maybeRemove(codeContainerName);
+  await maybeRemove(appContainerName);
+
   // Optional TLS mount for code-server (if cert/key provided)
   let certVolume = null;
   let certInContainer = null;
@@ -224,6 +242,7 @@ if (sessionId == null) {
   const codeDockerArgs = [
     'run',
     '-d',
+    '--user', '0:0', // run code-server as root to avoid host mount permission issues
     '--name', codeContainerName,
     '--network', TRAEFIK_NETWORK,
     '-p', `${hostPort}:8080`,
