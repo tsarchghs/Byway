@@ -81,11 +81,14 @@ async function initializeExpressProject(workspaceDir, { buildCmd, startCmd, devP
     type: 'module',
     scripts: {
       start: resolveScript(startCmd, 'node server.js'),
-      dev: resolveScript(startCmd, 'node server.js')
+      dev: resolveScript(startCmd, 'nodemon --watch . server.js')
     },
     dependencies: {
       express: '^5.1.0',
       cors: '^2.8.5'
+    },
+    devDependencies: {
+      nodemon: '^3.1.7'
     }
   };
 

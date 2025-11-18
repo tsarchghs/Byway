@@ -70,7 +70,9 @@ export const resolvers = {
       }
       const session = await startSessionForUser({
         challengeId: input.challengeId,
-        userId: effectiveUserId
+        userId: effectiveUserId,
+        forceRestart: Boolean(input.forceRestart),
+        preferredSessionId: input.sessionId || null
       });
       return session;
     },

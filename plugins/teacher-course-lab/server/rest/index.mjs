@@ -154,7 +154,7 @@ restRouter.post('/session/start', express.json(), async (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
 
-  const { challengeId } = req.body ?? {};
+  const { challengeId, sessionId, forceRestart } = req.body ?? {};
   if (!challengeId) {
     return res.status(400).json({ error: 'challengeId required' });
   }
@@ -162,11 +162,49 @@ restRouter.post('/session/start', express.json(), async (req, res) => {
   try {
     const session = await startSessionForUser({
       challengeId,
-      userId: user.id
+      userId: user.id,
+      forceRestart: Boolean(forceRestart),
+      preferredSessionId: sessionId || null
     });
     res.json({ session });
   } catch (e) {
     res.status(500).json({ error: e?.message || 'Failed to start session' });
+  }
+});
+
+// Refresh an existing session's containers (keeps workspace)
+restRouter.post('/session/refresh', express.json(), async (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+
+  const { id, challengeId } = req.body ?? {};
+  if (!id && !challengeId) {
+    return res.status(400).json({ error: 'session id or challengeId required' });
+  }
+
+  const existing = id
+    ? await prisma.labSession.findUnique({ where: { id } })
+    : null;
+
+  if (existing && existing.userId !== user.id) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  const targetChallengeId = challengeId || existing?.challengeId;
+  if (!targetChallengeId) {
+    return res.status(400).json({ error: 'challengeId required' });
+  }
+
+  try {
+    const session = await startSessionForUser({
+      challengeId: targetChallengeId,
+      userId: user.id,
+      forceRestart: true,
+      preferredSessionId: existing?.id || null
+    });
+    res.json({ session });
+  } catch (e) {
+    res.status(500).json({ error: e?.message || 'Failed to refresh session' });
   }
 });
 

@@ -10,6 +10,17 @@ function log(...args) {
   console.log(`[TCLab:Spawner][${new Date().toISOString()}]`, ...args);
 }
 
+function workspaceHasExistingFiles(dir) {
+  try {
+    const entries = fs.readdirSync(dir).filter(
+      name => !['.DS_Store', '.turbo', '.next', '.nuxt'].includes(name)
+    );
+    return entries.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Normalize Windows path to Docker Desktop mount path
  */
@@ -66,6 +77,16 @@ const HOST_PORT_BASE = Number(process.env.TCLAB_CS_PORT_BASE || 30000);
 const HOST_PORT_SPREAD = Number(process.env.TCLAB_CS_PORT_SPREAD || 10000);
 const APP_HOST_PORT_BASE = Number(process.env.TCLAB_APP_PORT_BASE || 31000);
 const APP_HOST_PORT_SPREAD = Number(process.env.TCLAB_APP_PORT_SPREAD || 10000);
+const MUTAGEN_ENABLED = String(process.env.TCLAB_ENABLE_MUTAGEN_SYNC || '').toLowerCase() === 'true';
+const MUTAGEN_BIN = process.env.TCLAB_MUTAGEN_BIN || 'mutagen';
+const MUTAGEN_IGNORES =
+  (process.env.TCLAB_MUTAGEN_IGNORE || 'node_modules,.git,.pnpm-store,.npm,.cache').split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+const MUTAGEN_DATA_DIR = resolvePath(
+  process.env.TCLAB_MUTAGEN_DATA_DIR ||
+  path.join('plugins', 'teacher-course-lab', 'docker', '.mutagen-data')
+);
 const TLS_CERT = resolvePath(process.env.TCLAB_CS_TLS_CERT) || (tlsCertExists ? DEFAULT_CERT_PATH : undefined); // host path to cert
 const TLS_KEY = resolvePath(process.env.TCLAB_CS_TLS_KEY) || (tlsCertExists ? DEFAULT_KEY_PATH : undefined); // host path to key
 const DEFAULT_PROTO = TLS_CERT && TLS_KEY ? 'https' : 'http';
@@ -86,6 +107,78 @@ async function ensureTraefikNetwork() {
     } catch (err) {
       log('⚠ Failed creating Traefik network:', err.message);
     }
+  }
+}
+
+/**
+ * Best-effort Mutagen helpers for fast two-way sync when requested.
+ * These never throw (to avoid breaking session startup) and log for visibility.
+ */
+async function runMutagen(args) {
+  const cmd = [MUTAGEN_BIN, ...args];
+  log('🔁 mutagen:', cmd.join(' '));
+  return exec(cmd.join(' '), {
+    env: {
+      ...process.env,
+      MUTAGEN_DATA_DIRECTORY: MUTAGEN_DATA_DIR,
+    },
+  }); // exec is fine here; args are controlled
+}
+
+async function ensureMutagenAvailable() {
+  try {
+    log('🔁 Mutagen data dir:', MUTAGEN_DATA_DIR);
+    fs.mkdirSync(MUTAGEN_DATA_DIR, { recursive: true });
+    await runMutagen(['version']);
+    return true;
+  } catch (err) {
+    log('⚠ Mutagen not available, skipping sync:', err?.message || err);
+    return false;
+  }
+}
+
+async function ensureMutagenDaemon() {
+  try {
+    await runMutagen(['daemon', 'start']);
+    return true;
+  } catch (err) {
+    log('⚠ Mutagen daemon failed to start:', err?.message || err);
+    return false;
+  }
+}
+
+async function startMutagenSync({ name, alpha, beta }) {
+  if (!MUTAGEN_ENABLED) return;
+  if (!(await ensureMutagenAvailable())) return;
+  if (!(await ensureMutagenDaemon())) return;
+
+  const ignoreArgs = MUTAGEN_IGNORES.flatMap(p => ['--ignore', p]);
+  try {
+    // Clean up any stale session with the same name (best-effort).
+    await runMutagen(['sync', 'terminate', name]).catch(() => {});
+    await runMutagen([
+      'sync', 'create',
+      '--name', name,
+      '--sync-mode', 'two-way-resolved',
+      '--watch-mode', 'portable',
+      ...ignoreArgs,
+      alpha,
+      beta,
+    ]);
+    log('✅ Mutagen sync started:', name);
+  } catch (err) {
+    log('⚠ Failed to start Mutagen sync:', err?.message || err);
+  }
+}
+
+async function stopMutagenSync(name) {
+  if (!MUTAGEN_ENABLED) return;
+  if (!(await ensureMutagenAvailable())) return;
+  try {
+    await runMutagen(['sync', 'terminate', name]);
+    log('🧹 Mutagen sync terminated:', name);
+  } catch (err) {
+    log('⚠ Failed to terminate Mutagen sync:', err?.message || err);
   }
 }
 
@@ -138,19 +231,26 @@ log("🔥 RAW INPUT to spawnCodeServerForSession:", {
 
   const workspaceDir = path.resolve(baseWorkdir, userId, sessionId);
   fs.mkdirSync(workspaceDir, { recursive: true });
+  const hasExistingFiles = workspaceHasExistingFiles(workspaceDir);
+  log('📁 Workspace', workspaceDir, hasExistingFiles ? 'already has files' : 'is empty');
 
   // ---------------------------
   // INITIALIZE PROJECT
   // ---------------------------
   if (labMeta?.kind) {
+    const shouldInit = !hasExistingFiles;
     try {
-      log('🔧 Initializing lab project…');
-      await initializeLabProject(workspaceDir, labMeta);
+      if (shouldInit) {
+        log('🔧 Initializing lab project…');
+        await initializeLabProject(workspaceDir, labMeta);
+      } else {
+        log('⚙️  Skipping project scaffold; workspace already contains files');
+      }
     } catch (err) {
       log('⚠ Project init failed:', err.message);
     }
 
-    if (labMeta?.buildCmd) {
+    if (labMeta?.buildCmd && shouldInit) {
       try {
         await buildLabProject(workspaceDir, labMeta.buildCmd);
       } catch (err) {
@@ -231,7 +331,8 @@ log("🔥 RAW INPUT to spawnCodeServerForSession:", {
 
   appLabels.forEach(l => appDockerArgs.push('--label', l));
 
-  const appStartCmd = labMeta?.startCmd || 'npm start';
+  // Prefer dev script (nodemon) to pick up file changes automatically
+  const appStartCmd = labMeta?.startCmd || 'npm run dev';
   appDockerArgs.push(
     labMeta?.dockerImage || 'node:22-alpine',
     'sh',
@@ -289,6 +390,11 @@ log("🔥 RAW INPUT to spawnCodeServerForSession:", {
   const containerId = stdout.trim();
   log('🟢 Code-server container started:', containerId);
 
+  const mutagenSyncName = `tclab-sync-${sessionShortId}`;
+  const mutagenAlpha = workspaceDir;
+  const mutagenBeta = `docker://${codeContainerName}/home/coder/project`;
+  await startMutagenSync({ name: mutagenSyncName, alpha: mutagenAlpha, beta: mutagenBeta });
+
   return {
     // Direct host-mapped access (works on OrbStack/Docker Desktop)
     codeServerUrl: `${codeProto}://localhost:${hostPort}`,
@@ -319,6 +425,9 @@ export async function stopCodeServerForSession(input) {
     const sessionShortId = String(sessionId).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
     baseName = `tclab-session-${sessionShortId}`;
   }
+  const mutagenSyncName = sessionId
+    ? `tclab-sync-${String(sessionId).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12)}`
+    : null;
   const codeContainerName = baseName ? `${baseName}-cs` : null;
   const appContainerName = baseName ? `${baseName}-app` : null;
 
@@ -347,5 +456,9 @@ export async function stopCodeServerForSession(input) {
     } catch (err) {
       log('⚠ Failed to remove app container:', err.message);
     }
+  }
+
+  if (mutagenSyncName) {
+    await stopMutagenSync(mutagenSyncName);
   }
 }

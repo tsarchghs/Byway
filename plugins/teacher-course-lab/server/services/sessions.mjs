@@ -12,8 +12,13 @@ function log(...args) {
 //
 // START SESSION
 //
-export async function startSessionForUser({ challengeId, userId }) {
-  log('startSessionForUser() called', { challengeId, userId })
+export async function startSessionForUser({
+  challengeId,
+  userId,
+  forceRestart = false,
+  preferredSessionId = null
+}) {
+  log('startSessionForUser() called', { challengeId, userId, forceRestart, preferredSessionId })
 
   if (!challengeId || !userId) {
     log('❌ Missing challengeId or userId')
@@ -30,17 +35,54 @@ export async function startSessionForUser({ challengeId, userId }) {
     throw new Error(`Challenge '${challengeId}' not found`)
   }
 
-  log('🧱 Creating lab session record...', { userId, challengeId })
+  let session = null
+  if (preferredSessionId) {
+    session = await prisma.labSession.findFirst({
+      where: {
+        id: preferredSessionId,
+        userId,
+        challengeId
+      }
+    })
+  }
 
-  const session = await prisma.labSession.create({
-    data: {
-      userId,
-      challengeId,
-      status: 'starting'
-    }
-  })
+  if (!session) {
+    session = await prisma.labSession.findFirst({
+      where: { userId, challengeId },
+      orderBy: { createdAt: 'desc' }
+    })
+  }
 
-  log('📌 Created session', session)
+  const reusing = !!session
+
+  if (session && !forceRestart && session.status === 'running' && session.codeServerUrl) {
+    log('♻️ Reusing existing running session')
+    return session
+  }
+
+  if (!session) {
+    log('🧱 Creating lab session record...', { userId, challengeId })
+    session = await prisma.labSession.create({
+      data: {
+        userId,
+        challengeId,
+        status: 'starting'
+      }
+    })
+    log('📌 Created session', session)
+  } else {
+    log('🔁 Reusing existing session record', { sessionId: session.id, status: session.status })
+    session = await prisma.labSession.update({
+      where: { id: session.id },
+      data: {
+        status: 'starting',
+        codeServerUrl: null,
+        appUrl: null,
+        codeServerToken: null,
+        containerId: null
+      }
+    })
+  }
 
   // Try to fetch lab metadata from lesson if challenge is bound to a lesson
   let labMeta = null
@@ -92,6 +134,10 @@ export async function startSessionForUser({ challengeId, userId }) {
       containerId: spawnInfo.containerId
     }
   })
+
+  if (reusing) {
+    log('🔄 Session resumed with existing workspace', { sessionId: session.id })
+  }
 
   const withOrb = spawnInfo.orbLocalUrl
     ? { ...updated, orbLocalUrl: spawnInfo.orbLocalUrl }

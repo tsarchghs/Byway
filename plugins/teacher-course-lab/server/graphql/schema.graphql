@@ -61,7 +61,9 @@ input NewChallengeInput {
 
 input StartSessionInput {
   challengeId: ID!
-  userId: String!
+  userId: String
+  sessionId: ID
+  forceRestart: Boolean
 }
 
 input SubmitSessionInput {

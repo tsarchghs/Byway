@@ -527,6 +527,25 @@
                       >
                         {{ t('Submit lab') }}
                       </a-button>
+                      <a-button
+                        v-if="labSessions[currentLesson.id]?.id"
+                        @click="refreshLabContainer(currentLesson)"
+                        :loading="labRefreshing[currentLesson.id]"
+                        :disabled="labRefreshing[currentLesson.id]"
+                        data-test-id="refresh-lab"
+                      >
+                        <template #icon><CloudSyncOutlined /></template>
+                        {{ t('Update container with saved code') }}
+                      </a-button>
+                      <a-button
+                        v-if="labSessions[currentLesson.id]?.id"
+                        @click="restartLab(currentLesson)"
+                        :loading="labRestarting[currentLesson.id]"
+                        :disabled="labRestarting[currentLesson.id]"
+                      >
+                        <template #icon><ReloadOutlined /></template>
+                        {{ t('Restart lab') }}
+                      </a-button>
                       <a-button @click="markComplete(currentLesson, true)" :disabled="isCompleted(currentLesson.id)">
                         {{ t('Mark complete') }}
                       </a-button>
@@ -829,7 +848,7 @@ import {
   CheckOutlined, ArrowRightOutlined, SettingOutlined, FontSizeOutlined,
   BugOutlined, CloudSyncOutlined, SortAscendingOutlined,
   UploadOutlined, BookOutlined, PrinterOutlined, ClockCircleOutlined,
-  CodeOutlined
+  CodeOutlined, ReloadOutlined
 } from '@ant-design/icons-vue'
 
 const Q_ME = gql`query Me { me { id email displayName roles } }`
@@ -883,7 +902,15 @@ const dict = {
     'Keyboard shortcuts': 'Keyboard shortcuts',
     'Debug & mocks': 'Debug & mocks',
     'Import / Export': 'Import / Export',
+    'Reload': 'Reload',
     'Resume': 'Resume',
+    'Restart lab': 'Restart lab',
+    'Update container with saved code': 'Update container with saved code',
+    'Updating container with your saved code...': 'Updating container with your saved code...',
+    'Container refreshed with your latest workspace': 'Container refreshed with your latest workspace',
+    'Failed to update container': 'Failed to update container',
+    'Lab session restarted': 'Lab session restarted',
+    'Failed to restart lab session': 'Failed to restart lab session',
     'lessons': 'lessons',
     'Search lessons': 'Search lessons',
     'All': 'All',
@@ -976,6 +1003,7 @@ const dict = {
     'Open VS Code': 'Open VS Code',
     'Open in new tab': 'Open in new tab',
     'Submit lab': 'Submit lab',
+    'Restart lab': 'Restart lab',
     'Challenge': 'Challenge',
     'Difficulty': 'Difficulty',
     'Description': 'Description',
@@ -994,6 +1022,8 @@ const dict = {
     'Please log in to submit lab work': 'Please log in to submit lab work',
     'Lab work submitted. Grading in progress...': 'Lab work submitted. Grading in progress...',
     'Failed to submit lab work': 'Failed to submit lab work',
+    'Lab session restarted': 'Lab session restarted',
+    'Failed to restart lab session': 'Failed to restart lab session',
     'Grading complete': 'Grading complete',
     'Failed to submit': 'Failed to submit',
     'Starting lab session...': 'Starting lab session...',
@@ -1166,6 +1196,8 @@ const labSessions = reactive<Record<string, any>>({})
 const labSubmissions = reactive<Record<string, any>>({})
 const labSessionStarting = reactive<Record<string, boolean>>({})
 const labSubmitting = reactive<Record<string, boolean>>({})
+const labRestarting = reactive<Record<string, boolean>>({})
+const labRefreshing = reactive<Record<string, boolean>>({})
 
 const selectedModuleId = computed(() => String(route?.params?.module_id || ''))
 const selectedCourseId = computed(() => String(route?.params?.course_id || route?.params?.courseId || ''))
@@ -1934,6 +1966,79 @@ function openLabUrl(lesson: Lesson) {
     window.open(session.codeServerUrl, '_blank')
   } else {
     message.warning(t('No active lab session'))
+  }
+}
+
+/**
+ * Restart lab session (stop then start)
+ */
+async function restartLab(lesson: Lesson) {
+  if (!lesson?.id) return
+  const session = labSessions[lesson.id]
+  if (!session?.id) {
+    return openLab(lesson)
+  }
+
+  labRestarting[lesson.id] = true
+
+  try {
+    // Best-effort stop current session
+    await fetch(`${LAB_API}/session/stop`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+      body: JSON.stringify({ id: session.id }),
+    }).catch(() => null)
+
+    // Start new session
+    await openLab(lesson)
+    message.success(t('Lab session restarted'))
+  } catch (err) {
+    console.error('[Lab] Failed to restart session:', err)
+    message.error(t('Failed to restart lab session'))
+  } finally {
+    labRestarting[lesson.id] = false
+  }
+}
+
+async function refreshLabContainer(lesson: Lesson) {
+  if (!lesson?.id) return
+
+  const session = labSessions[lesson.id]
+  if (!session?.id) {
+    return message.warning(t('Please start a lab session first'))
+  }
+
+  labRefreshing[lesson.id] = true
+  try {
+    message.loading(t('Updating container with your saved code...'), 0)
+
+    const resp = await fetch(`${LAB_API}/session/refresh`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+      body: JSON.stringify({
+        id: session.id,
+        challengeId: session.challengeId,
+      }),
+    })
+
+    message.destroy()
+
+    const data = await resp.json().catch(() => ({}))
+    if (!resp.ok) {
+      throw new Error(data?.error || t('Failed to update container'))
+    }
+
+    if (data.session) {
+      labSessions[lesson.id] = data.session
+      message.success(t('Container refreshed with your latest workspace'))
+    }
+  } catch (err: any) {
+    console.error('[Lab] Failed to refresh container:', err)
+    message.error(err?.message || t('Failed to update container'))
+  } finally {
+    labRefreshing[lesson.id] = false
   }
 }
 
