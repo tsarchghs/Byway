@@ -1,0 +1,1 @@
+This plugin doesnt maintain its own persistence. It acts as a facade over the institutions and teach-internal services via HTTP so no Prisma schema is defined here. Add one later if you need to cache or extend the model locally.

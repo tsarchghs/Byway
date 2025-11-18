@@ -122,6 +122,11 @@ exports.Prisma.InstitutionScalarFieldEnum = {
   name: 'name',
   slug: 'slug',
   description: 'description',
+  type: 'type',
+  location: 'location',
+  email: 'email',
+  phone: 'phone',
+  active: 'active',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -129,10 +134,56 @@ exports.Prisma.InstitutionScalarFieldEnum = {
 exports.Prisma.ClassroomScalarFieldEnum = {
   id: 'id',
   institutionId: 'institutionId',
+  departmentId: 'departmentId',
+  teacherId: 'teacherId',
   title: 'title',
   code: 'code',
+  capacity: 'capacity',
+  status: 'status',
+  startsAt: 'startsAt',
+  endsAt: 'endsAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.DepartmentScalarFieldEnum = {
+  id: 'id',
+  institutionId: 'institutionId',
+  name: 'name',
+  slug: 'slug',
+  contact: 'contact',
+  head: 'head',
+  active: 'active',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.InstitutionMemberScalarFieldEnum = {
+  id: 'id',
+  institutionId: 'institutionId',
+  userId: 'userId',
+  role: 'role',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ClassroomEnrollmentScalarFieldEnum = {
+  id: 'id',
+  classroomId: 'classroomId',
+  studentId: 'studentId',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.InstitutionInviteScalarFieldEnum = {
+  id: 'id',
+  institutionId: 'institutionId',
+  code: 'code',
+  role: 'role',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.SortOrder = {
@@ -148,7 +199,11 @@ exports.Prisma.NullsOrder = {
 
 exports.Prisma.ModelName = {
   Institution: 'Institution',
-  Classroom: 'Classroom'
+  Classroom: 'Classroom',
+  Department: 'Department',
+  InstitutionMember: 'InstitutionMember',
+  ClassroomEnrollment: 'ClassroomEnrollment',
+  InstitutionInvite: 'InstitutionInvite'
 };
 
 /**

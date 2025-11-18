@@ -1,0 +1,9 @@
+{
+  "name": "institution-portal",
+  "routes": [
+    {
+      "path": "/institution-portal",
+      "file": "nuxt/pages/index.vue"
+    }
+  ]
+}

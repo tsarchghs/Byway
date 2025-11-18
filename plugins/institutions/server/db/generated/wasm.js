@@ -94,6 +94,11 @@ exports.Prisma.InstitutionScalarFieldEnum = {
   name: 'name',
   slug: 'slug',
   description: 'description',
+  type: 'type',
+  location: 'location',
+  email: 'email',
+  phone: 'phone',
+  active: 'active',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -101,10 +106,56 @@ exports.Prisma.InstitutionScalarFieldEnum = {
 exports.Prisma.ClassroomScalarFieldEnum = {
   id: 'id',
   institutionId: 'institutionId',
+  departmentId: 'departmentId',
+  teacherId: 'teacherId',
   title: 'title',
   code: 'code',
+  capacity: 'capacity',
+  status: 'status',
+  startsAt: 'startsAt',
+  endsAt: 'endsAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.DepartmentScalarFieldEnum = {
+  id: 'id',
+  institutionId: 'institutionId',
+  name: 'name',
+  slug: 'slug',
+  contact: 'contact',
+  head: 'head',
+  active: 'active',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.InstitutionMemberScalarFieldEnum = {
+  id: 'id',
+  institutionId: 'institutionId',
+  userId: 'userId',
+  role: 'role',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ClassroomEnrollmentScalarFieldEnum = {
+  id: 'id',
+  classroomId: 'classroomId',
+  studentId: 'studentId',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.InstitutionInviteScalarFieldEnum = {
+  id: 'id',
+  institutionId: 'institutionId',
+  code: 'code',
+  role: 'role',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.SortOrder = {
@@ -120,7 +171,11 @@ exports.Prisma.NullsOrder = {
 
 exports.Prisma.ModelName = {
   Institution: 'Institution',
-  Classroom: 'Classroom'
+  Classroom: 'Classroom',
+  Department: 'Department',
+  InstitutionMember: 'InstitutionMember',
+  ClassroomEnrollment: 'ClassroomEnrollment',
+  InstitutionInvite: 'InstitutionInvite'
 };
 /**
  * Create the Client
@@ -168,13 +223,13 @@ const config = {
       }
     }
   },
-  "inlineSchema": "generator client {\n  engineType = \"node-api\"\n  provider   = \"prisma-client-js\"\n  output     = \"./generated\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = \"file:./institutions.db\"\n}\n\n//\n// --- Added by Byway GQL8 Patch (institutions) ---\nmodel Institution {\n  id          String   @id @default(cuid())\n  name        String\n  slug        String   @unique\n  description String?\n  createdAt   DateTime @default(now())\n  updatedAt   DateTime @updatedAt\n\n  classrooms Classroom[]\n}\n\nmodel Classroom {\n  id            String   @id @default(cuid())\n  institutionId String\n  title         String\n  code          String   @unique\n  createdAt     DateTime @default(now())\n  updatedAt     DateTime @updatedAt\n\n  institution Institution @relation(fields: [institutionId], references: [id])\n}\n",
-  "inlineSchemaHash": "a8c02750e50cb6f5df3665d8e76db9c8145840699b1ef9ae6c21dd59180e1e89",
+  "inlineSchema": "generator client {\n  engineType = \"node-api\"\n  provider   = \"prisma-client-js\"\n  output     = \"./generated\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = \"file:./institutions.db\"\n}\n\n//\n// --- Added by Byway GQL8 Patch (institutions) ---\nmodel Institution {\n  id          String   @id @default(cuid())\n  name        String\n  slug        String   @unique\n  description String?\n  type        String?\n  location    String?\n  email       String?\n  phone       String?\n  active      Boolean  @default(true)\n  createdAt   DateTime @default(now())\n  updatedAt   DateTime @updatedAt\n\n  classrooms  Classroom[]\n  departments Department[]\n  members     InstitutionMember[]\n  invites     InstitutionInvite[]\n}\n\nmodel Classroom {\n  id            String    @id @default(cuid())\n  institutionId String\n  departmentId  String?\n  teacherId     String?\n  title         String\n  code          String    @unique\n  capacity      Int?\n  status        String? // e.g. ACTIVE, INACTIVE, ARCHIVED\n  startsAt      DateTime?\n  endsAt        DateTime?\n  createdAt     DateTime  @default(now())\n  updatedAt     DateTime  @updatedAt\n\n  institution Institution           @relation(fields: [institutionId], references: [id])\n  department  Department?           @relation(fields: [departmentId], references: [id])\n  enrollments ClassroomEnrollment[]\n}\n\nmodel Department {\n  id            String   @id @default(cuid())\n  institutionId String\n  name          String\n  slug          String\n  contact       String?\n  head          String?\n  active        Boolean  @default(true)\n  createdAt     DateTime @default(now())\n  updatedAt     DateTime @updatedAt\n\n  institution Institution @relation(fields: [institutionId], references: [id])\n  classrooms  Classroom[]\n\n  @@unique([institutionId, slug])\n}\n\nmodel InstitutionMember {\n  id            String   @id @default(cuid())\n  institutionId String\n  userId        String\n  role          String // admin | teacher | student\n  status        String   @default(\"ACTIVE\")\n  createdAt     DateTime @default(now())\n  updatedAt     DateTime @updatedAt\n\n  institution Institution @relation(fields: [institutionId], references: [id])\n\n  @@unique([institutionId, userId])\n}\n\nmodel ClassroomEnrollment {\n  id          String   @id @default(cuid())\n  classroomId String\n  studentId   String\n  status      String   @default(\"ENROLLED\") // ENROLLED | INVITED | DROPPED\n  createdAt   DateTime @default(now())\n  updatedAt   DateTime @updatedAt\n\n  classroom Classroom @relation(fields: [classroomId], references: [id])\n\n  @@unique([classroomId, studentId])\n}\n\nmodel InstitutionInvite {\n  id            String    @id @default(cuid())\n  institutionId String\n  code          String    @unique\n  role          String    @default(\"student\")\n  expiresAt     DateTime?\n  createdAt     DateTime  @default(now())\n\n  institution Institution @relation(fields: [institutionId], references: [id])\n}\n",
+  "inlineSchemaHash": "43a43698e06b5d66a899d3194d55266adb3f7bd61106619b4a263266424759fc",
   "copyEngine": true
 }
 config.dirname = '/'
 
-config.runtimeDataModel = JSON.parse("{\"models\":{\"Institution\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"slug\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"classrooms\",\"kind\":\"object\",\"type\":\"Classroom\",\"relationName\":\"ClassroomToInstitution\"}],\"dbName\":null},\"Classroom\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"institutionId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"title\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"code\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"institution\",\"kind\":\"object\",\"type\":\"Institution\",\"relationName\":\"ClassroomToInstitution\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
+config.runtimeDataModel = JSON.parse("{\"models\":{\"Institution\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"slug\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"type\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"location\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"email\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"phone\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"active\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"classrooms\",\"kind\":\"object\",\"type\":\"Classroom\",\"relationName\":\"ClassroomToInstitution\"},{\"name\":\"departments\",\"kind\":\"object\",\"type\":\"Department\",\"relationName\":\"DepartmentToInstitution\"},{\"name\":\"members\",\"kind\":\"object\",\"type\":\"InstitutionMember\",\"relationName\":\"InstitutionToInstitutionMember\"},{\"name\":\"invites\",\"kind\":\"object\",\"type\":\"InstitutionInvite\",\"relationName\":\"InstitutionToInstitutionInvite\"}],\"dbName\":null},\"Classroom\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"institutionId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"departmentId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"teacherId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"title\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"code\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"capacity\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"status\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"startsAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"endsAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"institution\",\"kind\":\"object\",\"type\":\"Institution\",\"relationName\":\"ClassroomToInstitution\"},{\"name\":\"department\",\"kind\":\"object\",\"type\":\"Department\",\"relationName\":\"ClassroomToDepartment\"},{\"name\":\"enrollments\",\"kind\":\"object\",\"type\":\"ClassroomEnrollment\",\"relationName\":\"ClassroomToClassroomEnrollment\"}],\"dbName\":null},\"Department\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"institutionId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"slug\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"contact\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"head\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"active\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"institution\",\"kind\":\"object\",\"type\":\"Institution\",\"relationName\":\"DepartmentToInstitution\"},{\"name\":\"classrooms\",\"kind\":\"object\",\"type\":\"Classroom\",\"relationName\":\"ClassroomToDepartment\"}],\"dbName\":null},\"InstitutionMember\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"institutionId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"userId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"role\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"status\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"institution\",\"kind\":\"object\",\"type\":\"Institution\",\"relationName\":\"InstitutionToInstitutionMember\"}],\"dbName\":null},\"ClassroomEnrollment\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"classroomId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"studentId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"status\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"classroom\",\"kind\":\"object\",\"type\":\"Classroom\",\"relationName\":\"ClassroomToClassroomEnrollment\"}],\"dbName\":null},\"InstitutionInvite\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"institutionId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"code\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"role\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"expiresAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"institution\",\"kind\":\"object\",\"type\":\"Institution\",\"relationName\":\"InstitutionToInstitutionInvite\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
 defineDmmfProperty(exports.Prisma, config.runtimeDataModel)
 config.engineWasm = {
   getRuntime: async () => require('./query_engine_bg.js'),

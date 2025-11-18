@@ -1,171 +1,117 @@
 <template>
-  <a-layout class="min-h-screen">
-    <a-layout-header class="bg-white sticky top-0 z-10 px-6 flex items-center justify-between shadow-sm">
-      <h1 class="text-2xl font-bold">Institutions</h1>
-      <a-space>
-        <a-button type="primary" @click="showCreateModal = true">
-          <template #icon><plus-outlined /></template>
+  <div class="inst-shell">
+    <!-- Top bar -->
+    <div class="top-bar">
+      <div class="top-left">
+        <div class="title">Institutions</div>
+        <div class="subtitle">Manage institutions, departments, and classrooms</div>
+      </div>
+      <div class="top-actions">
+        <a-button @click="refresh" :loading="loading" ghost>
+          <template #icon><ReloadOutlined /></template>
+          Refresh
+        </a-button>
+        <a-button type="primary" @click="openCreate">
+          <template #icon><PlusOutlined /></template>
           Add Institution
         </a-button>
-        <a-button @click="toggleDarkMode">
-          <template #icon><bg-colors-outlined /></template>
-        </a-button>
-      </a-space>
-    </a-layout-header>
+      </div>
+    </div>
 
-    <a-layout-content class="p-6">
-      <!-- Statistics Cards -->
-      <a-row :gutter="16" class="mb-6">
-        <a-col :xs="24" :sm="12" :md="6">
-          <a-statistic
-            title="Total Institutions"
-            :value="institutions.length"
-            :value-style="{ color: '#1890ff' }"
-          >
-            <template #prefix><building-outlined /></template>
-          </a-statistic>
+    <!-- Stats -->
+    <a-row :gutter="16" class="section">
+      <a-col :xs="12" :md="6">
+        <a-card class="stat-card" bordered>
+          <div class="stat-label">Total Institutions</div>
+          <div class="stat-value">{{ institutions.length }}</div>
+        </a-card>
+      </a-col>
+      <a-col :xs="12" :md="6">
+        <a-card class="stat-card" bordered>
+          <div class="stat-label">Active</div>
+          <div class="stat-value">{{ institutions.filter(i => i.active).length }}</div>
+        </a-card>
+      </a-col>
+      <a-col :xs="12" :md="6">
+        <a-card class="stat-card" bordered>
+          <div class="stat-label">Departments</div>
+          <div class="stat-value">{{ institutions.reduce((s,i)=>s+(i.departments?.length||0),0) }}</div>
+        </a-card>
+      </a-col>
+      <a-col :xs="12" :md="6">
+        <a-card class="stat-card" bordered>
+          <div class="stat-label">Students (est.)</div>
+          <div class="stat-value">{{ totalStudents }}</div>
+        </a-card>
+      </a-col>
+    </a-row>
+
+    <!-- Filters -->
+    <a-card class="section" bordered>
+      <a-row :gutter="12">
+        <a-col :xs="24" :md="12">
+          <a-input-search v-model:value="searchQuery" placeholder="Search by name or location" @search="onSearch">
+            <template #prefix><SearchOutlined /></template>
+          </a-input-search>
         </a-col>
-        <a-col :xs="24" :sm="12" :md="6">
-          <a-statistic
-            title="Active"
-            :value="institutions.filter(i => i.active).length"
-            :value-style="{ color: '#52c41a' }"
-          >
-            <template #prefix><check-circle-outlined /></template>
-          </a-statistic>
+        <a-col :xs="12" :md="6">
+          <a-select v-model:value="filterStatus" style="width: 100%" @change="onFilterChange">
+            <a-select-option value="">All Status</a-select-option>
+            <a-select-option value="active">Active</a-select-option>
+            <a-select-option value="inactive">Inactive</a-select-option>
+          </a-select>
         </a-col>
-        <a-col :xs="24" :sm="12" :md="6">
-          <a-statistic
-            title="Total Departments"
-            :value="institutions.reduce((sum, i) => sum + (i.departments?.length || 0), 0)"
-            :value-style="{ color: '#faad14' }"
-          >
-            <template #prefix><team-outlined /></template>
-          </a-statistic>
-        </a-col>
-        <a-col :xs="24" :sm="12" :md="6">
-          <a-statistic
-            title="Total Students"
-            :value="totalStudents"
-            :value-style="{ color: '#eb2f96' }"
-          >
-            <template #prefix><user-outlined /></template>
-          </a-statistic>
+        <a-col :xs="12" :md="6" class="flex justify-end">
+          <a-switch v-model:checked="isDarkMode" @change="toggleDarkMode" />
+          <span class="ml-2">Dark mode</span>
         </a-col>
       </a-row>
+    </a-card>
 
-      <!-- Search & Filter -->
-      <a-card class="mb-6" :bordered="false">
-        <a-space direction="vertical" style="width: 100%">
-          <a-row :gutter="16">
-            <a-col :xs="24" :sm="12">
-              <a-input-search
-                v-model:value="searchQuery"
-                placeholder="Search institutions..."
-                @search="onSearch"
-              >
-                <template #prefix><search-outlined /></template>
-              </a-input-search>
-            </a-col>
-            <a-col :xs="24" :sm="12">
-              <a-select
-                v-model:value="filterStatus"
-                style="width: 100%"
-                @change="onFilterChange"
-              >
-                <a-select-option value="">All Status</a-select-option>
-                <a-select-option value="active">Active</a-select-option>
-                <a-select-option value="inactive">Inactive</a-select-option>
-              </a-select>
-            </a-col>
-          </a-row>
-        </a-space>
-      </a-card>
-
-      <!-- Institutions List -->
-      <a-empty v-if="filteredInstitutions.length === 0" description="No institutions found" class="py-12" />
-
-      <a-row v-else :gutter="16">
+    <!-- Grid -->
+    <div class="section">
+      <a-empty v-if="!loading && filteredInstitutions.length === 0" description="No institutions found" />
+      <a-row v-else :gutter="[16,16]">
         <a-col v-for="inst in paginatedInstitutions" :key="inst.id" :xs="24" :sm="12" :lg="8">
-          <a-card hoverable class="h-full flex flex-col" :class="{ 'opacity-60': !inst.active }">
-            <!-- Card Header -->
-            <template #title>
-              <a-space>
-                <building-outlined style="font-size: 20px; color: #1890ff" />
-                <span class="font-semibold">{{ inst.name }}</span>
-              </a-space>
-            </template>
+          <a-card class="inst-card" :class="{ inactive: inst.active === false }" bordered hoverable>
+            <div class="card-head">
+              <div>
+                <div class="card-title">{{ inst.name }}</div>
+                <div class="card-sub">{{ inst.location || 'No location' }}</div>
+              </div>
+              <a-tag :color="inst.active ? 'green' : 'red'">{{ inst.active ? 'Active' : 'Inactive' }}</a-tag>
+            </div>
 
-            <!-- Status Tag -->
-            <a-tag :color="inst.active ? 'success' : 'error'" class="mb-3">
-              {{ inst.active ? 'Active' : 'Inactive' }}
-            </a-tag>
-
-            <!-- Institution Details -->
-            <div class="mb-4 text-sm text-gray-600">
-              <div class="mb-2">
-                <strong>Type:</strong> {{ inst.type }}
+            <div class="card-body">
+              <div class="row"><span>Type</span><strong>{{ inst.type || '—' }}</strong></div>
+              <div class="row" v-if="inst.email || inst.phone">
+                <span>Contact</span>
+                <strong>{{ inst.email || inst.phone || '—' }}</strong>
               </div>
-              <div class="mb-2">
-                <strong>Location:</strong> {{ inst.location }}
+              <div class="row">
+                <span>Departments</span><strong>{{ inst.departments?.length || 0 }}</strong>
               </div>
-              <div v-if="inst.email" class="mb-2">
-                <strong>Email:</strong> {{ inst.email }}
-              </div>
-              <div v-if="inst.phone" class="mb-2">
-                <strong>Phone:</strong> {{ inst.phone }}
+              <div class="row">
+                <span>Members</span><strong>{{ inst.members?.length || 0 }}</strong>
               </div>
             </div>
 
-            <!-- Departments Info -->
-            <a-divider class="my-3" />
-            <div class="mb-4">
-              <div class="text-sm font-semibold mb-2">Departments</div>
-              <a-progress
-                :percent="Math.round((inst.departments?.length || 0) / 10 * 100)"
-                :format="() => `${inst.departments?.length || 0} departments`"
-              />
+            <div class="card-actions">
+              <a-button type="text" size="small" @click="editInstitution(inst)">
+                <EditOutlined /> Edit
+              </a-button>
+              <a-button type="text" size="small" danger @click="deleteInstitution(inst.id)">
+                <DeleteOutlined /> Archive
+              </a-button>
+              <a-button type="primary" size="small" @click="navigateTo(`/institutions/${inst.id}`)">
+                Open
+              </a-button>
             </div>
-
-            <!-- Students Count -->
-            <div class="mb-4">
-              <div class="text-sm font-semibold mb-2">Students</div>
-              <a-statistic
-                :value="calculateStudentCount(inst)"
-                :value-style="{ fontSize: '16px', color: '#1890ff' }"
-              >
-                <template #prefix><user-outlined /></template>
-              </a-statistic>
-            </div>
-
-            <!-- Actions -->
-            <template #extra>
-              <a-space>
-                <a-button type="text" size="small" @click="editInstitution(inst)">
-                  <template #icon><edit-outlined /></template>
-                </a-button>
-                <a-popconfirm
-                  title="Delete Institution"
-                  description="Are you sure you want to delete this institution?"
-                  ok-text="Yes"
-                  cancel-text="No"
-                  @confirm="deleteInstitution(inst.id)"
-                >
-                  <a-button type="text" danger size="small">
-                    <template #icon><delete-outlined /></template>
-                  </a-button>
-                </a-popconfirm>
-                <a-button type="primary" size="small" @click="navigateTo(`/institutions/${inst.id}`)">
-                  Open
-                </a-button>
-              </a-space>
-            </template>
           </a-card>
         </a-col>
       </a-row>
 
-      <!-- Pagination -->
-      <div class="mt-6 flex justify-center">
+      <div class="mt-4 flex justify-center">
         <a-pagination
           v-model:current="currentPage"
           :total="filteredInstitutions.length"
@@ -174,8 +120,8 @@
           :show-total="(total) => `Total ${total} institutions`"
         />
       </div>
-    </a-layout-content>
-  </a-layout>
+    </div>
+  </div>
 
   <!-- Create/Edit Modal -->
   <a-modal
@@ -234,9 +180,12 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRuntimeConfig, useRouter } from '#imports'
+import { useAuth } from '../../../../packages/shared-ui/src/composables/useAuth'
 import { message } from 'ant-design-vue'
 import {
   PlusOutlined,
+  ReloadOutlined,
   SearchOutlined,
   EditOutlined,
   DeleteOutlined,
@@ -249,12 +198,14 @@ import {
 interface Institution {
   id: string
   name: string
-  type: string
-  location: string
+  type?: string
+  location?: string
   email?: string
   phone?: string
-  active: boolean
+  active?: boolean
   departments?: Array<{ id: string; name: string; studentCount?: number }>
+  classrooms?: Array<{ id: string }>
+  members?: Array<{ id: string; role: string }>
 }
 
 // State
@@ -266,6 +217,15 @@ const editingInst = ref<Institution | null>(null)
 const currentPage = ref(1)
 const pageSize = ref(12)
 const isDarkMode = ref(false)
+const apiBase = useRuntimeConfig().public?.apiBase || 'http://localhost:4000'
+const loading = ref(false)
+const router = useRouter()
+const { token } = useAuth()
+
+function tokenHeader() {
+  const t = token?.value || (typeof window !== 'undefined' ? localStorage.getItem('token') : '')
+  return t ? { Authorization: `Bearer ${t}` } : {}
+}
 
 // Form data
 const formData = ref({
@@ -287,53 +247,34 @@ onMounted(() => {
   }
 })
 
-function loadInstitutions() {
-  const saved = localStorage.getItem('institutions')
-  if (saved) {
-    institutions.value = JSON.parse(saved)
-  } else {
-    institutions.value = [
-      {
-        id: 'inst-1',
-        name: 'Demo University',
-        type: 'University',
-        location: 'New York, USA',
-        email: 'info@demouniv.edu',
-        phone: '+1-800-123-4567',
-        active: true,
-        departments: [
-          { id: 'dep-1', name: 'Computer Science', studentCount: 450 },
-          { id: 'dep-2', name: 'Engineering', studentCount: 380 },
-          { id: 'dep-3', name: 'Business', studentCount: 320 },
-        ],
+async function loadInstitutions() {
+  try {
+    loading.value = true
+    const resp = await fetch(`${apiBase}/api/institutions/graphql`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...(tokenHeader()),
       },
-      {
-        id: 'inst-2',
-        name: 'Tech Faculty',
-        type: 'College',
-        location: 'San Francisco, USA',
-        email: 'contact@techfaculty.edu',
-        phone: '+1-888-999-7777',
-        active: true,
-        departments: [
-          { id: 'dep-4', name: 'Software Engineering', studentCount: 280 },
-          { id: 'dep-5', name: 'Data Science', studentCount: 200 },
-        ],
-      },
-      {
-        id: 'inst-3',
-        name: 'Global Institute',
-        type: 'Institute',
-        location: 'London, UK',
-        email: 'hello@globalinst.org',
-        phone: '+44-20-1234-5678',
-        active: false,
-        departments: [
-          { id: 'dep-6', name: 'International Studies', studentCount: 150 },
-        ],
-      },
-    ]
-    saveInstitutions()
+      body: JSON.stringify({
+        query: `query {
+          institutions {
+            id name type location email phone active
+            departments { id name }
+            classrooms { id }
+            members { id role }
+          }
+        }`,
+      }),
+    })
+    const json = await resp.json()
+    const data = json?.data?.institutions || []
+    institutions.value = data
+  } catch (e) {
+    console.warn('[institutions] load failed', e)
+    message.error('Unable to load institutions')
+  } finally {
+    loading.value = false
   }
 }
 
@@ -368,6 +309,20 @@ function calculateStudentCount(inst: Institution) {
   return inst.departments?.reduce((sum, dep) => sum + (dep.studentCount || 0), 0) || 0
 }
 
+function openCreate() {
+  editingInst.value = null
+  resetForm()
+  showCreateModal.value = true
+}
+
+function navigateTo(path: string) {
+  router.push(path)
+}
+
+function refresh() {
+  loadInstitutions()
+}
+
 function onSearch() {
   currentPage.value = 1
 }
@@ -388,39 +343,58 @@ function saveInstitution() {
     return
   }
 
-  if (editingInst.value) {
-    const index = institutions.value.findIndex(i => i.id === editingInst.value!.id)
-    if (index > -1) {
-      institutions.value[index] = {
-        ...institutions.value[index],
-        ...formData.value,
-      }
-      message.success('Institution updated successfully')
-    }
-  } else {
-    const newInst: Institution = {
-      id: `inst-${Date.now()}`,
-      ...formData.value,
-      departments: [],
-    }
-    institutions.value.push(newInst)
-    message.success('Institution created successfully')
-  }
+  const mutation = editingInst.value
+    ? `mutation($id:String!,$name:String,$slug:String,$type:String,$location:String,$email:String,$phone:String,$active:Boolean){
+        updateInstitution(id:$id,name:$name,slug:$slug,type:$type,location:$location,email:$email,phone:$phone,active:$active){ id }
+      }`
+    : `mutation($name:String!,$slug:String!,$type:String,$location:String,$email:String,$phone:String,$active:Boolean){
+        createInstitution(name:$name,slug:$slug,type:$type,location:$location,email:$email,phone:$phone,active:$active){ id }
+      }`
 
-  saveInstitutions()
-  showCreateModal.value = false
-  editingInst.value = null
-  resetForm()
+  const vars: any = { ...formData.value }
+  if (editingInst.value) vars.id = editingInst.value.id
+  // basic slug guess
+  if (!vars.slug) vars.slug = formData.value.name.toLowerCase().replace(/\s+/g, '-')
+
+  fetch(`${apiBase}/api/institutions/graphql`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      ...(tokenHeader()),
+    },
+    body: JSON.stringify({ query: mutation, variables: vars }),
+  })
+    .then(r => r.json())
+    .then((json) => {
+      if (json.errors?.length) throw new Error(json.errors[0].message)
+      message.success(editingInst.value ? 'Institution updated' : 'Institution created')
+      showCreateModal.value = false
+      editingInst.value = null
+      resetForm()
+      loadInstitutions()
+    })
+    .catch((e) => {
+      message.error(e?.message || 'Unable to save institution')
+    })
 }
 
 function deleteInstitution(id: string) {
-  institutions.value = institutions.value.filter(i => i.id !== id)
-  saveInstitutions()
-  message.success('Institution deleted successfully')
-}
-
-function saveInstitutions() {
-  localStorage.setItem('institutions', JSON.stringify(institutions.value))
+  const mutation = `mutation($id:String!){ updateInstitution(id:$id, active:false){ id active } }`
+  fetch(`${apiBase}/api/institutions/graphql`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      ...(tokenHeader()),
+    },
+    body: JSON.stringify({ query: mutation, variables: { id } }),
+  })
+    .then(r => r.json())
+    .then((json) => {
+      if (json.errors?.length) throw new Error(json.errors[0].message)
+      message.success('Institution archived')
+      loadInstitutions()
+    })
+    .catch((e) => message.error(e?.message || 'Unable to archive'))
 }
 
 function resetForm() {
@@ -451,6 +425,94 @@ function applyTheme() {
 </script>
 
 <style scoped>
+:global(body) {
+  background: #f5f7fb;
+}
+
+.inst-shell {
+  padding: 16px 24px 32px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+}
+.top-left .title {
+  font-size: 24px;
+  font-weight: 700;
+}
+.top-left .subtitle {
+  color: #6b7280;
+}
+.top-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.section {
+  margin-top: 16px;
+}
+
+.stat-card {
+  border-radius: 10px;
+}
+.stat-label {
+  color: #6b7280;
+  font-size: 13px;
+}
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.inst-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.inst-card.inactive {
+  opacity: 0.6;
+}
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.card-title {
+  font-weight: 700;
+  font-size: 17px;
+}
+.card-sub {
+  color: #94a3b8;
+  font-size: 13px;
+}
+.card-body {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0;
+  font-size: 13px;
+}
+.card-body .row {
+  display: flex;
+  justify-content: space-between;
+}
+.card-body span {
+  color: #94a3b8;
+}
+.card-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+}
+
 :deep(.ant-card) {
   border-radius: 8px;
   transition: all 0.3s ease;

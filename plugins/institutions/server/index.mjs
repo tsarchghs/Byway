@@ -16,10 +16,12 @@ export async function register(app) {
   const server = new ApolloServer({
     typeDefs,
     resolvers,
-    context: async () => {
+    context: async ({ req }) => {
       // Ensure Prisma available in context
       const prisma = await (await import('./graphql/resolvers.js')).getPrisma?.()
-      return { prisma }
+      const auth = req?.headers?.authorization || ''
+      const token = auth.replace('Bearer ', '').trim()
+      return { prisma, token }
     },
   })
 

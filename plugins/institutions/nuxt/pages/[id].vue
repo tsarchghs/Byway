@@ -1,779 +1,418 @@
 <template>
-  <a-config-provider :theme="{ algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm }">
-    <a-layout class="institution-wrap" data-test-id="institution-wrap">
-      <!-- GLOBAL STATUS BANNERS -->
-      <div class="global-banners">
-        <a-alert
-          v-if="!isOnline"
-          type="warning"
-          banner
-          show-icon
-          message="You're offline. Working in local mode; changes will sync when you reconnect."
-          data-test-id="offline-banner"
-        />
-        <a-alert
-          v-if="usingMocks"
-          type="info"
-          banner
-          show-icon
-          :message="`Mock data active${mockReason ? ` · ${mockReason}` : ''}`"
-          data-test-id="mock-banner"
-        />
+  <div class="inst-page">
+    <!-- Header -->
+    <div class="page-header">
+      <div>
+        <div class="title">{{ inst?.name || 'Institution' }}</div>
+        <div class="subtitle">{{ inst?.location || 'No location set' }}</div>
       </div>
+      <div class="actions">
+        <a-button @click="refresh" :loading="loading"><ReloadOutlined /> Refresh</a-button>
+        <a-button type="default" @click="openSettings"><SettingOutlined /> Settings</a-button>
+        <a-button type="primary" @click="openInvite"><UserAddOutlined /> Invite</a-button>
+        <a-button type="primary" @click="openDept"><PlusOutlined /> Add Department</a-button>
+        <a-button type="primary" @click="openClassroom"><PlusOutlined /> New Classroom</a-button>
+      </div>
+    </div>
 
-      <!-- PAGE HEADER -->
-      <a-page-header
-        class="page-header"
-        :title="inst?.name || 'Institution'"
-        sub-title="Overview"
-        data-test-id="page-header"
-        @back="$router.push('/institutions')"
-      >
-        <template #extra>
-          <a-space wrap>
-            <a-statistic title="Total Departments" :value="departments.length" />
-            <a-statistic title="Active Classrooms" :value="classroomStats.active" />
-            <a-statistic title="Total Students" :value="totalEnrollment" />
-            <a-dropdown trigger="click">
-              <a-button>
-                <template #icon><SettingOutlined /></template>
-                Settings
-              </a-button>
-              <template #overlay>
-                <a-menu>
-                  <a-menu-item @click="isDark = !isDark">
-                    <BulbOutlined />
-                    <span class="ml-1">Toggle Dark Mode</span>
-                  </a-menu-item>
-                  <a-menu-divider />
-                  <a-menu-item @click="clearLocalData">
-                    <DeleteOutlined />
-                    <span class="ml-1">Clear Local Data</span>
-                  </a-menu-item>
-                </a-menu>
-              </template>
-            </a-dropdown>
-          </a-space>
-        </template>
-      </a-page-header>
+    <!-- Stats -->
+    <a-row :gutter="16" class="section">
+      <a-col :xs="12" :md="6"><a-card><div class="stat-label">Departments</div><div class="stat-value">{{ departments.length }}</div></a-card></a-col>
+      <a-col :xs="12" :md="6"><a-card><div class="stat-label">Classrooms</div><div class="stat-value">{{ classroomStats.total }}</div></a-card></a-col>
+      <a-col :xs="12" :md="6"><a-card><div class="stat-label">Active Classrooms</div><div class="stat-value">{{ classroomStats.active }}</div></a-card></a-col>
+      <a-col :xs="12" :md="6"><a-card><div class="stat-label">Total Enrollment</div><div class="stat-value">{{ totalEnrollment }}</div></a-card></a-col>
+    </a-row>
 
-      <a-layout>
-        <!-- LEFT SIDER: DEPARTMENTS -->
-        <a-layout-sider
-          width="300"
-          class="left-sider"
-          collapsible
-          v-model:collapsed="siderCollapsed"
-          :collapsed-width="60"
-          data-test-id="left-sider"
-        >
-          <div class="sider-inner">
-            <a-card :title="$t('Departments')" :bordered="false">
-              <a-button type="primary" block class="mb-3" @click="openNewDeptModal = true">
-                + Add Department
-              </a-button>
-
-              <a-input-search
-                v-model:value="deptFilter"
-                placeholder="Search departments..."
-                allow-clear
-                class="mb-3"
-                data-test-id="dept-search"
-              />
-
-              <!-- Department List -->
-              <a-empty v-if="filteredDepartments.length === 0" description="No departments yet" />
-              <a-list v-else :data-source="filteredDepartments" :render-item="renderDeptItem" size="small">
-                <template #renderItem="{ item: dept }">
-                  <a-list-item
-                    :class="['dept-row', selectedDept?.id === dept.id && 'active']"
-                    @click="selectDepartment(dept)"
-                    style="cursor: pointer"
-                  >
-                    <a-list-item-meta
-                      :title="dept.name"
-                      :description="`${classroomsByDept(dept.id).length} classrooms`"
-                    />
-                  </a-list-item>
-                </template>
-              </a-list>
-            </a-card>
-
-            <!-- FILTERS -->
-            <a-card :title="$t('Filters')" :bordered="false" class="mt-3">
-              <a-space direction="vertical" style="width: 100%">
-                <a-checkbox v-model:checked="filterActive" data-test-id="filter-active">
-                  Active Only
-                </a-checkbox>
-                <a-checkbox v-model:checked="filterFull" data-test-id="filter-full">
-                  Full Classrooms
-                </a-checkbox>
-              </a-space>
-            </a-card>
-          </div>
-        </a-layout-sider>
-
-        <!-- CENTER CONTENT: CLASSROOMS -->
-        <a-layout-content class="content" data-test-id="content">
-          <div class="mb-4">
-            <a-row :gutter="16" class="mb-4">
-              <a-col :xs="24" :sm="8">
-                <a-card :bordered="false">
-                  <a-statistic title="Total Departments" :value="departments.length" />
-                </a-card>
-              </a-col>
-              <a-col :xs="24" :sm="8">
-                <a-card :bordered="false">
-                  <a-statistic title="Total Classrooms" :value="classroomStats.total" />
-                </a-card>
-              </a-col>
-              <a-col :xs="24" :sm="8">
-                <a-card :bordered="false">
-                  <a-statistic title="Total Enrollment" :value="totalEnrollment" />
-                </a-card>
-              </a-col>
-            </a-row>
-          </div>
-
-          <a-card
-            :title="selectedDept ? `${selectedDept.name} - Classrooms` : 'All Classrooms'"
-            :bordered="false"
-            class="mb-4"
-          >
-            <template #extra>
-              <a-button type="primary" @click="openNewClassModal = true">
-                + New Classroom
-              </a-button>
+    <a-row :gutter="16" class="section">
+      <!-- Departments -->
+      <a-col :xs="24" :md="6">
+        <a-card title="Departments" :loading="loading">
+          <a-list :data-source="departments">
+            <template #renderItem="{ item: d }">
+              <a-list-item
+                :class="['dept-item', selectedDept?.id === d.id ? 'active' : '']"
+                @click="selectDept(d)"
+              >
+                <a-list-item-meta :title="d.name" :description="d.active ? 'Active' : 'Inactive'" />
+              </a-list-item>
             </template>
+          </a-list>
+        </a-card>
+      </a-col>
 
-            <a-input-search
-              v-model:value="classFilter"
-              placeholder="Search classrooms..."
-              allow-clear
-              class="mb-4"
-              data-test-id="class-search"
-            />
+      <!-- Classrooms -->
+      <a-col :xs="24" :md="12">
+        <a-card :title="selectedDept ? `${selectedDept.name} Classrooms` : 'All Classrooms'" :loading="loading">
+          <a-input-search v-model:value="classFilter" placeholder="Search classrooms..." class="mb-3" />
+          <a-empty v-if="filteredClassrooms.length === 0" description="No classrooms" />
+          <a-row v-else :gutter="12">
+            <a-col v-for="c in filteredClassrooms" :key="c.id" :xs="24" :sm="12">
+              <a-card hoverable>
+                <div class="card-head">
+                  <div>
+                    <div class="card-title">{{ c.title || c.code }}</div>
+                    <div class="card-sub">{{ c.code }}</div>
+                  </div>
+                  <a-tag :color="c.status === 'active' ? 'green' : 'default'">{{ c.status || 'pending' }}</a-tag>
+                </div>
+                <div class="row"><span>Capacity</span><strong>{{ c.capacity || 30 }}</strong></div>
+                <div class="row"><span>Enrollment</span><strong>{{ c.enrollment || 0 }}</strong></div>
+                <div class="row"><span>Department</span><strong>{{ deptName(c.departmentId) }}</strong></div>
+                <div class="card-actions">
+                  <a-button size="small" @click="editClassroom(c)">Edit</a-button>
+                </div>
+              </a-card>
+            </a-col>
+          </a-row>
+        </a-card>
+      </a-col>
 
-            <!-- Classrooms Grid -->
-            <a-empty v-if="filteredClassrooms.length === 0" description="No classrooms found" />
+      <!-- Members / Invites -->
+      <a-col :xs="24" :md="6">
+        <a-card title="Members" :loading="loading">
+          <a-list :data-source="members">
+            <template #renderItem="{ item: m }">
+              <a-list-item>
+                <a-list-item-meta :title="m.userId" :description="m.role" />
+              </a-list-item>
+            </template>
+          </a-list>
+        </a-card>
+        <a-card title="Invites" class="mt-3" :loading="loading">
+          <a-list :data-source="invites">
+            <template #renderItem="{ item: i }">
+              <a-list-item>
+                <a-list-item-meta :title="i.code" :description="`Role: ${i.role}`" />
+              </a-list-item>
+            </template>
+          </a-list>
+        </a-card>
+      </a-col>
+    </a-row>
 
-            <a-row :gutter="16" v-else>
-              <a-col
-                v-for="classroom in filteredClassrooms"
-                :key="classroom.id"
-                :xs="24"
-                :sm="12"
-                :md="8"
-              >
-                <a-card
-                  hoverable
-                  :title="classroom.title"
-                  @click="selectClassroom(classroom)"
-                  :bordered="selectedClassroom?.id === classroom.id"
-                  data-test-id="classroom-card"
-                >
-                  <template #extra>
-                    <a-tag
-                      :color="classroom.status === 'active' ? 'green' : 'default'"
-                    >
-                      {{ classroom.status || 'Pending' }}
-                    </a-tag>
-                  </template>
-
-                  <a-descriptions :column="1" size="small" :bordered="false">
-                    <a-descriptions-item label="Code">
-                      {{ classroom.code }}
-                    </a-descriptions-item>
-                    <a-descriptions-item label="Enrollment">
-                      {{ classroom.enrollment || 0 }} / {{ classroom.capacity || 30 }}
-                    </a-descriptions-item>
-                    <a-descriptions-item label="Capacity Used">
-                      <a-progress
-                        type="circle"
-                        :percent="Math.round((classroom.enrollment || 0) / (classroom.capacity || 30) * 100)"
-                        :size="40"
-                      />
-                    </a-descriptions-item>
-                  </a-descriptions>
-
-                  <a-space class="mt-3" style="width: 100%">
-                    <a-button
-                      size="small"
-                      @click.stop="editClassroom(classroom)"
-                      data-test-id="edit-btn"
-                    >
-                      Edit
-                    </a-button>
-                    <a-popconfirm
-                      title="Delete Classroom?"
-                      description="Are you sure you want to delete this classroom?"
-                      @confirm="deleteClassroom(classroom.id)"
-                      ok-text="Yes"
-                      cancel-text="No"
-                    >
-                      <a-button size="small" danger @click.stop>Delete</a-button>
-                    </a-popconfirm>
-                  </a-space>
-                </a-card>
-              </a-col>
-            </a-row>
-          </a-card>
-        </a-layout-content>
-
-        <!-- RIGHT SIDER: DETAIL PANEL -->
-        <a-layout-sider
-          v-if="selectedClassroom"
-          width="320"
-          class="right-sider"
-          collapsible
-          v-model:collapsed="rightCollapsed"
-          :collapsed-width="60"
-          data-test-id="right-sider"
-        >
-          <a-card :title="$t('Classroom Details')" :bordered="false" class="sider-inner">
-            <a-descriptions :column="1" size="small" :bordered="false">
-              <a-descriptions-item label="Title">
-                {{ selectedClassroom.title }}
-              </a-descriptions-item>
-              <a-descriptions-item label="Code">
-                {{ selectedClassroom.code }}
-              </a-descriptions-item>
-              <a-descriptions-item label="Department">
-                {{ getDeptName(selectedClassroom.institutionId) }}
-              </a-descriptions-item>
-              <a-descriptions-item label="Capacity">
-                {{ selectedClassroom.capacity || 30 }}
-              </a-descriptions-item>
-              <a-descriptions-item label="Enrollment">
-                {{ selectedClassroom.enrollment || 0 }}
-              </a-descriptions-item>
-              <a-descriptions-item label="Enrollment %">
-                {{ Math.round((selectedClassroom.enrollment || 0) / (selectedClassroom.capacity || 30) * 100) }}%
-              </a-descriptions-item>
-              <a-descriptions-item label="Status">
-                <a-tag :color="selectedClassroom.status === 'active' ? 'green' : 'default'">
-                  {{ selectedClassroom.status || 'Pending' }}
-                </a-tag>
-              </a-descriptions-item>
-              <a-descriptions-item label="Created">
-                {{ new Date(selectedClassroom.createdAt).toLocaleDateString() }}
-              </a-descriptions-item>
-            </a-descriptions>
-
-            <a-progress
-              class="mt-3"
-              :percent="Math.round((selectedClassroom.enrollment || 0) / (selectedClassroom.capacity || 30) * 100)"
-              status="active"
-            />
-
-            <a-space class="mt-4" style="width: 100%">
-              <a-button type="primary" block @click="editClassroom(selectedClassroom)">
-                Edit Classroom
-              </a-button>
-              <a-popconfirm
-                title="Delete Classroom?"
-                description="Are you sure?"
-                @confirm="deleteClassroom(selectedClassroom.id)"
-                ok-text="Yes"
-                cancel-text="No"
-              >
-                <a-button danger block>Delete</a-button>
-              </a-popconfirm>
-            </a-space>
-          </a-card>
-        </a-layout-sider>
-      </a-layout>
-    </a-layout>
-
-    <!-- MODALS -->
-
-    <!-- New Department Modal -->
-    <a-modal
-      v-model:open="openNewDeptModal"
-      title="New Department"
-      @ok="createDepartment"
-      @cancel="openNewDeptModal = false"
-      data-test-id="dept-modal"
-    >
+    <!-- Settings Modal -->
+    <a-modal v-model:open="settingsOpen" title="Institution Settings" ok-text="Save" @ok="saveSettings">
       <a-form layout="vertical">
-        <a-form-item label="Department Name">
-          <a-input
-            v-model:value="newDeptName"
-            placeholder="e.g., Computer Science"
-            data-test-id="dept-name-input"
-          />
-        </a-form-item>
+        <a-form-item label="Name"><a-input v-model:value="instForm.name" /></a-form-item>
+        <a-form-item label="Slug"><a-input v-model:value="instForm.slug" /></a-form-item>
+        <a-form-item label="Type"><a-input v-model:value="instForm.type" /></a-form-item>
+        <a-form-item label="Location"><a-input v-model:value="instForm.location" /></a-form-item>
+        <a-form-item label="Email"><a-input v-model:value="instForm.email" /></a-form-item>
+        <a-form-item label="Phone"><a-input v-model:value="instForm.phone" /></a-form-item>
+        <a-form-item label="Active"><a-switch v-model:checked="instForm.active" /></a-form-item>
       </a-form>
     </a-modal>
 
-    <!-- New/Edit Classroom Modal -->
-    <a-modal
-      v-model:open="openNewClassModal"
-      :title="`${editingClass ? 'Edit' : 'New'} Classroom`"
-      @ok="saveClassroom"
-      @cancel="closeClassModal"
-      data-test-id="class-modal"
-    >
+    <!-- Department Modal -->
+    <a-modal v-model:open="deptOpen" title="Department" ok-text="Save" @ok="saveDept">
       <a-form layout="vertical">
-        <a-form-item label="Title">
-          <a-input
-            v-model:value="classForm.title"
-            placeholder="Classroom title"
-            data-test-id="class-title-input"
-          />
-        </a-form-item>
-        <a-form-item label="Code">
-          <a-input
-            v-model:value="classForm.code"
-            placeholder="e.g., CS101"
-            data-test-id="class-code-input"
-          />
-        </a-form-item>
+        <a-form-item label="Name"><a-input v-model:value="deptForm.name" /></a-form-item>
+        <a-form-item label="Slug"><a-input v-model:value="deptForm.slug" /></a-form-item>
+        <a-form-item label="Active"><a-switch v-model:checked="deptForm.active" /></a-form-item>
+      </a-form>
+    </a-modal>
+
+    <!-- Classroom Modal -->
+    <a-modal v-model:open="classOpen" title="Classroom" ok-text="Save" @ok="saveClassroom">
+      <a-form layout="vertical">
+        <a-form-item label="Title"><a-input v-model:value="classForm.title" /></a-form-item>
+        <a-form-item label="Code"><a-input v-model:value="classForm.code" /></a-form-item>
         <a-form-item label="Department">
-          <a-select
-            v-model:value="classForm.deptId"
-            placeholder="Select a department"
-            data-test-id="dept-select"
-          >
-            <a-select-option value="">-- Choose --</a-select-option>
-            <a-select-option v-for="dept in departments" :key="dept.id" :value="dept.id">
-              {{ dept.name }}
-            </a-select-option>
+          <a-select v-model:value="classForm.departmentId" allow-clear>
+            <a-select-option :value="undefined">—</a-select-option>
+            <a-select-option v-for="d in departments" :key="d.id" :value="d.id">{{ d.name }}</a-select-option>
           </a-select>
         </a-form-item>
-        <a-form-item label="Capacity">
-          <a-input-number
-            v-model:value="classForm.capacity"
-            :min="1"
-            :max="500"
-            data-test-id="capacity-input"
-          />
+        <a-form-item label="Capacity"><a-input-number v-model:value="classForm.capacity" :min="1" :max="500" style="width: 100%" /></a-form-item>
+        <a-form-item label="Status"><a-input v-model:value="classForm.status" placeholder="active/inactive" /></a-form-item>
+      </a-form>
+    </a-modal>
+
+    <!-- Invite Modal -->
+    <a-modal v-model:open="inviteOpen" title="Create Invite" ok-text="Create" @ok="saveInvite">
+      <a-form layout="vertical">
+        <a-form-item label="Role">
+          <a-select v-model:value="inviteForm.role">
+            <a-select-option value="student">Student</a-select-option>
+            <a-select-option value="teacher">Teacher</a-select-option>
+            <a-select-option value="admin">Admin</a-select-option>
+          </a-select>
         </a-form-item>
-        <a-form-item label="Current Enrollment">
-          <a-input-number
-            v-model:value="classForm.enrollment"
-            :min="0"
-            data-test-id="enrollment-input"
-          />
+        <a-form-item label="Expires At (optional)">
+          <a-date-picker v-model:value="inviteForm.expiresAt" style="width: 100%" show-time />
         </a-form-item>
       </a-form>
     </a-modal>
-  </a-config-provider>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { theme, message } from 'ant-design-vue'
-import { SettingOutlined, BulbOutlined, DeleteOutlined } from '@ant-design/icons-vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { useRuntimeConfig } from '#imports'
+import { message } from 'ant-design-vue'
+import { useAuth } from '../../../../packages/shared-ui/src/composables/useAuth'
+import { PlusOutlined, ReloadOutlined, SettingOutlined, UserAddOutlined } from '@ant-design/icons-vue'
 
+const route = useRoute()
+const config = useRuntimeConfig()
+const apiBase = config.public?.apiBase || 'http://localhost:4000'
+const { token } = useAuth()
 
-// Types
-type Department = { id: string; name: string; createdAt: string }
-type Classroom = {
-  id: string
-  institutionId: string
-  title: string
-  code: string
-  capacity: number
-  enrollment: number
-  status?: string
-  createdAt: string
+const inst = ref<any>(null)
+const departments = ref<any[]>([])
+const classrooms = ref<any[]>([])
+const members = ref<any[]>([])
+const invites = ref<any[]>([])
+const loading = ref(false)
+const classFilter = ref('')
+
+const settingsOpen = ref(false)
+const deptOpen = ref(false)
+const classOpen = ref(false)
+const inviteOpen = ref(false)
+
+const selectedDept = ref<any>(null)
+
+const instForm = ref<any>({})
+const deptForm = ref<any>({})
+const classForm = ref<any>({})
+const inviteForm = ref<any>({ role: 'student', expiresAt: null })
+
+function tokenHeader() {
+  const t = token?.value || (typeof window !== 'undefined' ? localStorage.getItem('token') : '')
+  return t ? { Authorization: `Bearer ${t}` } : {}
 }
 
-// Route & Router
-const route = useRoute()
-const router = useRouter()
+async function gql(query: string, variables: any = {}) {
+  const resp = await fetch(`${apiBase}/api/institutions/graphql`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...tokenHeader() },
+    body: JSON.stringify({ query, variables }),
+  })
+  const json = await resp.json()
+  if (json.errors?.length) throw new Error(json.errors[0].message)
+  return json.data
+}
 
-// State
-const isDark = ref(false)
-const inst = ref<any>(null)
-const departments = ref<Department[]>([])
-const classrooms = ref<Classroom[]>([])
-const selectedDept = ref<Department | null>(null)
-const selectedClassroom = ref<Classroom | null>(null)
-
-// UI State
-const isOnline = ref(typeof navigator !== 'undefined' ? navigator.onLine : true)
-const usingMocks = ref(false)
-const mockReason = ref('')
-
-// Filters & Search
-const deptFilter = ref('')
-const classFilter = ref('')
-const filterActive = ref(false)
-const filterFull = ref(false)
-
-// Modals
-const openNewDeptModal = ref(false)
-const openNewClassModal = ref(false)
-const siderCollapsed = ref(false)
-const rightCollapsed = ref(false)
-const newDeptName = ref('')
-const editingClass = ref<Classroom | null>(null)
-const classForm = reactive({
-  title: '',
-  code: '',
-  deptId: '',
-  capacity: 30,
-  enrollment: 0
-})
-
-// Mock data
-function makeMockInstitution(instId: string) {
-  return {
-    id: instId || 'inst-1',
-    name: 'Demo University',
-    description: 'A comprehensive institution management system',
-    createdAt: new Date().toISOString()
+async function load() {
+  loading.value = true
+  try {
+    const id = String(route.params.id)
+    const data = await gql(
+      `
+      query($id:String!){
+        institution(id:$id){ id name slug type location email phone active }
+        departments(institutionId:$id){ id name slug active }
+        classrooms(institutionId:$id){ id title code departmentId capacity status enrollments { id } }
+        members(institutionId:$id){ id userId role status }
+        stats(institutionId:$id){ classrooms activeClassrooms departments members students }
+      }
+    `,
+      { id }
+    )
+    inst.value = data?.institution || null
+    departments.value = data?.departments || []
+    classrooms.value = (data?.classrooms || []).map((c: any) => ({
+      ...c,
+      enrollment: c.enrollments?.length || 0,
+    }))
+    members.value = data?.members || []
+  } catch (e: any) {
+    message.error(e?.message || 'Unable to load institution')
+  } finally {
+    loading.value = false
   }
 }
-
-function makeMockDepartments(): Department[] {
-  return [
-    { id: 'dept-1', name: 'Computer Science', createdAt: new Date().toISOString() },
-    { id: 'dept-2', name: 'Mathematics', createdAt: new Date().toISOString() },
-    { id: 'dept-3', name: 'Physics', createdAt: new Date().toISOString() }
-  ]
-}
-
-function makeMockClassrooms(): Classroom[] {
-  return [
-    {
-      id: 'cls-1',
-      institutionId: 'dept-1',
-      title: 'Introduction to Programming',
-      code: 'CS101',
-      capacity: 30,
-      enrollment: 28,
-      status: 'active',
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 'cls-2',
-      institutionId: 'dept-1',
-      title: 'Data Structures',
-      code: 'CS201',
-      capacity: 25,
-      enrollment: 22,
-      status: 'active',
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 'cls-3',
-      institutionId: 'dept-2',
-      title: 'Calculus I',
-      code: 'MATH101',
-      capacity: 35,
-      enrollment: 32,
-      status: 'active',
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 'cls-4',
-      institutionId: 'dept-3',
-      title: 'Mechanics',
-      code: 'PHYS101',
-      capacity: 40,
-      enrollment: 38,
-      status: 'active',
-      createdAt: new Date().toISOString()
-    }
-  ]
-}
-
-// Computed Properties
-const filteredDepartments = computed(() => {
-  return departments.value.filter(d =>
-    d.name.toLowerCase().includes(deptFilter.value.toLowerCase())
-  )
-})
 
 const filteredClassrooms = computed(() => {
-  let filtered = classrooms.value
-    .filter(c => selectedDept.value ? c.institutionId === selectedDept.value.id : true)
-    .filter(c => c.title.toLowerCase().includes(classFilter.value.toLowerCase()))
-
-  if (filterActive.value) {
-    filtered = filtered.filter(c => c.status === 'active')
-  }
-  if (filterFull.value) {
-    filtered = filtered.filter(c => (c.enrollment || 0) >= (c.capacity || 30) * 0.9)
-  }
-
-  return filtered
+  return classrooms.value.filter((c) => {
+    const matchesDept = selectedDept.value ? c.departmentId === selectedDept.value.id : true
+    const matchesText = classFilter.value ? (c.title || '').toLowerCase().includes(classFilter.value.toLowerCase()) || (c.code || '').toLowerCase().includes(classFilter.value.toLowerCase()) : true
+    return matchesDept && matchesText
+  })
 })
 
 const classroomStats = computed(() => {
   const total = classrooms.value.length
-  const active = classrooms.value.filter(c => c.status === 'active').length
+  const active = classrooms.value.filter((c) => c.status === 'active').length
   return { total, active }
 })
 
-const totalEnrollment = computed(() => {
-  return classrooms.value.reduce((sum, c) => sum + (c.enrollment || 0), 0)
-})
+const totalEnrollment = computed(() => classrooms.value.reduce((s, c) => s + (c.enrollment || 0), 0))
 
-// Methods
-function selectDepartment(dept: Department) {
-  selectedDept.value = selectedDept.value?.id === dept.id ? null : dept
+function deptName(id?: string) {
+  if (!id) return '—'
+  return departments.value.find((d: any) => d.id === id)?.name || '—'
 }
 
-function selectClassroom(classroom: Classroom) {
-  selectedClassroom.value = classroom
+function selectDept(d: any) {
+  selectedDept.value = selectedDept.value?.id === d.id ? null : d
 }
 
-function classroomsByDept(deptId: string): Classroom[] {
-  return classrooms.value.filter(c => c.institutionId === deptId)
+function openSettings() {
+  instForm.value = { ...inst.value }
+  settingsOpen.value = true
+}
+function openDept(d?: any) {
+  deptForm.value = d ? { ...d } : { name: '', slug: '', active: true }
+  deptOpen.value = true
+}
+function openClassroom(c?: any) {
+  classForm.value = c
+    ? { ...c }
+    : { title: '', code: '', departmentId: selectedDept.value?.id, capacity: 30, status: 'active' }
+  classOpen.value = true
+}
+function openInvite() {
+  inviteForm.value = { role: 'student', expiresAt: null }
+  inviteOpen.value = true
 }
 
-function getDeptName(deptId: string): string {
-  return departments.value.find(d => d.id === deptId)?.name || 'Unknown'
-}
-
-function createDepartment() {
-  if (!newDeptName.value.trim()) return
-
-  const newDept: Department = {
-    id: 'dept-' + Date.now(),
-    name: newDeptName.value.trim(),
-    createdAt: new Date().toISOString()
-  }
-
-  departments.value.push(newDept)
-  newDeptName.value = ''
-  openNewDeptModal.value = false
-  persistData()
-}
-
-function editClassroom(classroom: Classroom) {
-  editingClass.value = classroom
-  classForm.title = classroom.title
-  classForm.code = classroom.code
-  classForm.deptId = classroom.institutionId
-  classForm.capacity = classroom.capacity
-  classForm.enrollment = classroom.enrollment
-  openNewClassModal.value = true
-}
-
-function closeClassModal() {
-  openNewClassModal.value = false
-  editingClass.value = null
-  classForm.title = ''
-  classForm.code = ''
-  classForm.deptId = ''
-  classForm.capacity = 30
-  classForm.enrollment = 0
-}
-
-function saveClassroom() {
-  if (!classForm.title.trim() || !classForm.code.trim() || !classForm.deptId) {
-    message.error('Please fill all fields')
-    return
-  }
-
-  if (editingClass.value) {
-    const idx = classrooms.value.findIndex(c => c.id === editingClass.value!.id)
-    if (idx >= 0) {
-      classrooms.value[idx] = {
-        ...classrooms.value[idx],
-        title: classForm.title,
-        code: classForm.code,
-        institutionId: classForm.deptId,
-        capacity: classForm.capacity,
-        enrollment: classForm.enrollment
-      }
-    }
-  } else {
-    const newClass: Classroom = {
-      id: 'cls-' + Date.now(),
-      institutionId: classForm.deptId,
-      title: classForm.title,
-      code: classForm.code,
-      capacity: classForm.capacity,
-      enrollment: classForm.enrollment,
-      status: 'active',
-      createdAt: new Date().toISOString()
-    }
-    classrooms.value.push(newClass)
-  }
-
-  closeClassModal()
-  persistData()
-}
-
-function deleteClassroom(id: string) {
-  if (confirm('Are you sure?')) {
-    classrooms.value = classrooms.value.filter(c => c.id !== id)
-    if (selectedClassroom.value?.id === id) selectedClassroom.value = null
-    persistData()
-  }
-}
-
-// Persistence
-const LS_KEY = `institution.${route.params.id}`
-
-function persistData() {
+async function saveSettings() {
   try {
-    const data = { inst: inst.value, departments: departments.value, classrooms: classrooms.value }
-    localStorage.setItem(LS_KEY, JSON.stringify(data))
+    await gql(
+      `mutation($id:String!,$name:String,$slug:String,$type:String,$location:String,$email:String,$phone:String,$active:Boolean){
+        updateInstitution(id:$id,name:$name,slug:$slug,type:$type,location:$location,email:$email,phone:$phone,active:$active){ id }
+      }`,
+      { ...instForm.value, id: inst.value.id }
+    )
+    settingsOpen.value = false
+    await load()
+    message.success('Institution updated')
+  } catch (e: any) {
+    message.error(e?.message || 'Update failed')
+  }
+}
+
+async function saveDept() {
+  try {
+    const vars = { institutionId: inst.value.id, ...deptForm.value }
+    const mutation = deptForm.value.id
+      ? `mutation($id:String!,$name:String,$slug:String,$contact:String,$head:String,$active:Boolean){ updateDepartment(id:$id,name:$name,slug:$slug,contact:$contact,head:$head,active:$active){ id } }`
+      : `mutation($institutionId:String!,$name:String!,$slug:String!,$contact:String,$head:String,$active:Boolean){ createDepartment(institutionId:$institutionId,name:$name,slug:$slug,contact:$contact,head:$head,active:$active){ id } }`
+    await gql(mutation, vars)
+    deptOpen.value = false
+    await load()
+    message.success('Department saved')
+  } catch (e: any) {
+    message.error(e?.message || 'Save failed')
+  }
+}
+
+async function saveClassroom() {
+  try {
+    const vars = { institutionId: inst.value.id, ...classForm.value }
+    const mutation = classForm.value.id
+      ? `mutation($id:String!,$departmentId:String,$name:String,$code:String,$teacherId:String,$capacity:Int,$status:String,$startsAt:String,$endsAt:String){
+          updateClassroom(id:$id,departmentId:$departmentId,name:$name,code:$code,teacherId:$teacherId,capacity:$capacity,status:$status,startsAt:$startsAt,endsAt:$endsAt){ id }
+        }`
+      : `mutation($institutionId:String!,$departmentId:String,$name:String!,$code:String!,$teacherId:String,$capacity:Int,$status:String,$startsAt:String,$endsAt:String){
+          createClassroom(institutionId:$institutionId,departmentId:$departmentId,name:$name,code:$code,teacherId:$teacherId,capacity:$capacity,status:$status,startsAt:$startsAt,endsAt:$endsAt){ id }
+        }`
+    // map title->name
+    vars.name = vars.title || vars.name
+    await gql(mutation, vars)
+    classOpen.value = false
+    await load()
+    message.success('Classroom saved')
+  } catch (e: any) {
+    message.error(e?.message || 'Save failed')
+  }
+}
+
+async function saveInvite() {
+  try {
+    const vars: any = { institutionId: inst.value.id, role: inviteForm.value.role }
+    if (inviteForm.value.expiresAt) vars.expiresAt = inviteForm.value.expiresAt
+    await gql(`mutation($institutionId:String!,$role:String!,$expiresAt:String){ createInvite(institutionId:$institutionId, role:$role, expiresAt:$expiresAt){ id code } }`, vars)
+    inviteOpen.value = false
+    message.success('Invite created')
+    await loadInvites()
+  } catch (e: any) {
+    message.error(e?.message || 'Invite failed')
+  }
+}
+
+async function loadInvites() {
+  try {
+    const data = await gql(`query($id:String!){ stats(institutionId:$id){ members } }`, { id: inst.value.id })
+    // simple refresh of members already done in load; invites not listed by API; skip if unavailable
   } catch {}
 }
 
-function loadLocalData() {
-  try {
-    const data = localStorage.getItem(LS_KEY)
-    if (data) {
-      const parsed = JSON.parse(data)
-      if (parsed.inst) inst.value = parsed.inst
-      if (parsed.departments) departments.value = parsed.departments
-      if (parsed.classrooms) classrooms.value = parsed.classrooms
-    }
-  } catch {}
+function editClassroom(c: any) {
+  openClassroom({ ...c, name: c.title })
 }
 
-function clearLocalData() {
-  if (confirm('Clear all local data?')) {
-    localStorage.removeItem(LS_KEY)
-    inst.value = makeMockInstitution(String(route.params.id))
-    departments.value = makeMockDepartments()
-    classrooms.value = makeMockClassrooms()
-  }
+function refresh() {
+  load()
 }
 
-// Event listeners
-function onOnline() { isOnline.value = true }
-function onOffline() { isOnline.value = false }
-
-// Lifecycle
 onMounted(() => {
-  window.addEventListener('online', onOnline)
-  window.addEventListener('offline', onOffline)
-
-  // Load local data first
-  loadLocalData()
-
-  // Then load/mock
-  if (!inst.value || !departments.value.length) {
-    inst.value = makeMockInstitution(String(route.params.id))
-    departments.value = makeMockDepartments()
-    classrooms.value = makeMockClassrooms()
-    usingMocks.value = true
-    mockReason.value = 'Using demo data'
-    persistData()
-  }
+  load()
 })
-
-onBeforeUnmount(() => {
-  window.removeEventListener('online', onOnline)
-  window.removeEventListener('offline', onOffline)
-})
-
-// Watch for dark mode
-watch(isDark, (v) => {
-  if (v) document.documentElement.classList.add('dark')
-  else document.documentElement.classList.remove('dark')
-})
-
-// i18n helper (simple version)
-function $t(key: string) {
-  const translations: Record<string, string> = {
-    'Departments': 'Departments',
-    'Filters': 'Filters',
-    'Classroom Details': 'Classroom Details'
-  }
-  return translations[key] || key
-}
 </script>
 
 <style scoped>
-.institution-wrap {
-  min-height: 100vh;
+.inst-page {
+  padding: 16px 20px 32px;
 }
-
-.global-banners {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-}
-
-.global-banners :deep(.ant-alert) {
-  border-radius: 0;
-}
-
 .page-header {
-  background: #fff;
-  border-bottom: 1px solid #f0f0f0;
-  position: sticky;
-  top: 0;
-  z-index: 9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
-
-.left-sider,
-.right-sider {
-  background: transparent;
+.title {
+  font-size: 24px;
+  font-weight: 700;
 }
-
-.sider-inner {
-  padding: 12px;
+.subtitle {
+  color: #6b7280;
 }
-
-.content {
-  padding: 24px;
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
-
-.dept-row {
-  border-radius: 6px;
-  transition: background-color 0.15s ease;
-  padding: 8px;
-}
-
-.dept-row:hover {
-  background-color: #f5f5f5;
-}
-
-.dept-row.active {
-  background-color: #e6f7ff;
-  border-left: 3px solid #1890ff;
-}
-
-.mt-1 {
-  margin-top: 8px;
-}
-
-.mt-3 {
+.section {
   margin-top: 12px;
 }
-
-.mt-4 {
-  margin-top: 16px;
+.stat-label {
+  color: #64748b;
+  font-size: 13px;
 }
-
-.mb-3 {
-  margin-bottom: 12px;
+.stat-value {
+  font-size: 22px;
+  font-weight: 700;
 }
-
-.mb-4 {
-  margin-bottom: 16px;
+.dept-item.active {
+  background: #f0f5ff;
 }
-
-.ml-1 {
-  margin-left: 6px;
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
-
-/* Dark mode support */
-:deep(.ant-config-provider[class*="dark"]) {
-  .page-header {
-    background: #141414;
-    border-bottom-color: #434343;
-  }
-
-  .dept-row:hover {
-    background-color: #262626;
-  }
-
-  .dept-row.active {
-    background-color: #111a26;
-  }
+.card-title {
+  font-weight: 700;
+}
+.card-sub {
+  color: #94a3b8;
+  font-size: 12px;
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin: 4px 0;
+}
+.card-actions {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

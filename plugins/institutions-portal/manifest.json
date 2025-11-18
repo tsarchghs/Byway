@@ -1,0 +1,9 @@
+{
+  "name": "institutions-portal",
+  "routes": [
+    {
+      "path": "/institution/[institution_id]",
+      "file": "nuxt/pages/inst-portal-role-based.vue"
+    }
+  ]
+}
