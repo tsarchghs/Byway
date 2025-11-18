@@ -1,141 +1,93 @@
 import express from 'express'
 import cors from 'cors'
 
+const apiBase = process.env.API_BASE || 'http://localhost:4000'
+
+async function gql(path, query, variables, token) {
+  const resp = await fetch(`${apiBase}${path}`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ query, variables }),
+  })
+  const text = await resp.text()
+  let json
+  try {
+    json = JSON.parse(text)
+  } catch (e) {
+    throw new Error(`Upstream ${path} returned non-JSON (status ${resp.status})`)
+  }
+  if (!resp.ok) throw new Error(json?.errors?.[0]?.message || `Request failed (${resp.status})`)
+  if (json.errors?.length) throw new Error(json.errors[0].message)
+  return json.data
+}
+
+async function loadInstitutionBundle(inst, token) {
+  const data = await gql(
+    '/api/institutions/graphql',
+    `query($id:String!){
+      institution(id:$id){ id name slug type location email phone active }
+      departments(institutionId:$id){ id name slug active institutionId head contact }
+      classrooms(institutionId:$id){ id title code departmentId institutionId status capacity enrollments { id } }
+      members(institutionId:$id){ id userId role status institutionId }
+      stats(institutionId:$id){ classrooms activeClassrooms departments members students }
+    }`,
+    { id: inst.id },
+    token
+  )
+  return {
+    institution: data?.institution || inst,
+    departments: (data?.departments || []).map((d) => ({ ...d, institutionId: inst.id })),
+    classrooms: (data?.classrooms || []).map((c) => ({ ...c, enrollment: c.enrollments?.length || 0, institutionId: inst.id })),
+    members: (data?.members || []).map((m) => ({ ...m, institutionId: inst.id })),
+    stats: data?.stats || null,
+  }
+}
+
 export async function register(app) {
   const router = express.Router()
 
-  router.use(cors({
-    origin: ['http://localhost:3000'],
-    credentials: true
-  }))
+  router.use(cors({ origin: ['http://localhost:3000'], credentials: true }))
 
-  //
-  // GET /api/institution-portal/overview  (MOCKED)
-  //
+  // GET /api/institution-portal/overview (real aggregation)
   router.get('/overview', async (req, res) => {
-    const userId = 'user_1'
+    const token = (req.headers.authorization || '').replace('Bearer ', '').trim()
+    if (!token) return res.status(401).json({ error: 'Missing token' })
 
-    const institutions = [
-      {
-        id: 'inst_1',
-        name: 'Byway University',
-        slug: 'byway-university',
-        type: 'University',
-        location: 'Berlin, Germany',
-        email: 'info@bywayuni.eu',
-        phone: '+49 30 1234567',
-        active: true,
-      },
-      {
-        id: 'inst_2',
-        name: 'Tech Academy',
-        slug: 'tech-academy',
-        type: 'Academy',
-        location: 'Munich, Germany',
-        email: 'contact@techacademy.eu',
-        phone: '+49 89 2345678',
-        active: true,
-      },
-      {
-        id: 'inst_3',
-        name: 'Old Institute (Archived)',
-        slug: 'old-institute',
-        type: 'Institute',
-        location: 'Hamburg, Germany',
-        active: false,
-      }
-    ]
+    try {
+      const meData = await gql(
+        '/api/authentication/graphql',
+        `query{ me { id email firstName lastName role roles } }`,
+        {},
+        token
+      )
+      const user = meData?.me || null
 
-    const departments = [
-      { id: 'dep_1', institutionId: 'inst_1', name: 'Computer Science', slug: 'cs', active: true },
-      { id: 'dep_2', institutionId: 'inst_1', name: 'Mathematics', slug: 'math', active: true },
-      { id: 'dep_3', institutionId: 'inst_2', name: 'Design', slug: 'design', active: true }
-    ]
+      const instData = await gql(
+        '/api/institutions/graphql',
+        `query{
+          institutions { id name slug active type location email phone }
+        }`,
+        {},
+        token
+      )
+      const institutions = instData?.institutions || []
 
-    const classrooms = [
-      {
-        id: 'class_1',
-        institutionId: 'inst_1',
-        departmentId: 'dep_1',
-        title: 'Intro to Programming',
-        code: 'CS101',
-        capacity: 30,
-        status: 'active',
-        teacherId: userId,
-        enrollments: [{}, {}, {}]
-      },
-      {
-        id: 'class_2',
-        institutionId: 'inst_1',
-        departmentId: 'dep_2',
-        title: 'Linear Algebra',
-        code: 'MATH100',
-        capacity: 25,
-        status: 'active',
-        teacherId: 'other_teacher',
-        enrollments: [{}, {}]
-      },
-      {
-        id: 'class_3',
-        institutionId: 'inst_2',
-        departmentId: 'dep_3',
-        title: 'UX Design Basics',
-        code: 'UX100',
-        capacity: 20,
-        status: 'pending',
-        teacherId: userId,
-        enrollments: []
-      }
-    ]
+      const bundles = await Promise.all(institutions.map((i) => loadInstitutionBundle(i, token)))
+      const departments = bundles.flatMap((b) => b.departments)
+      const classrooms = bundles.flatMap((b) => b.classrooms)
+      const members = bundles.flatMap((b) => b.members)
+      const stats = bundles.map((b) => ({ institutionId: b.institution.id, stats: b.stats }))
 
-    const members = [
-      { id: 'm1', institutionId: 'inst_1', userId, role: 'teacher', status: 'ACTIVE' },
-      { id: 'm2', institutionId: 'inst_1', userId: 'std_1', role: 'student', status: 'ACTIVE' },
-
-      { id: 'm3', institutionId: 'inst_2', userId, role: 'teacher', status: 'ACTIVE' },
-      { id: 'm4', institutionId: 'inst_2', userId: 'std_2', role: 'student', status: 'ACTIVE' },
-
-      { id: 'm5', institutionId: 'inst_3', userId, role: 'admin', status: 'ARCHIVED' }
-    ]
-
-    res.json({
-      institutions,
-      departments,
-      classrooms,
-      members
-    })
+      res.json({ user, institutions, departments, classrooms, members, stats })
+    } catch (err) {
+      console.error('[institution-portal] overview error', err)
+      res.status(500).json({ error: err?.message || 'Failed to load overview' })
+    }
   })
 
-  //
-  // OPTIONAL: Mock teach-internal GraphQL
-  //
-  router.post('/graphql-teach', async (req, res) => {
-    res.json({
-      data: {
-        myCourses: [
-          {
-            id: 'course_1',
-            title: 'Full Stack Web',
-            difficulty: 'Intermediate',
-            category: 'Web Dev',
-            institutionId: 'inst_1'
-          },
-          {
-            id: 'course_2',
-            title: 'UI/UX Foundations',
-            difficulty: 'Beginner',
-            category: 'Design',
-            institutionId: 'inst_2'
-          }
-        ]
-      }
-    })
-  })
-
-  //
-  // Mount plugin at /api/institution-portal
-  //
   app.use('/api/institution-portal', router)
-
-  console.log('[institution-portal] Mock API ready at /api/institution-portal/overview')
+  console.log('[institution-portal] API ready at /api/institution-portal')
 }

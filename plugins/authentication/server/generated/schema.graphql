@@ -36,6 +36,9 @@ type GqlUser {
   id: ID!
   lastName: String
 
+  """Primary role such as student, teacher, admin"""
+  role: String
+
   """List of user roles such as student, teacher, admin, etc."""
   roles: [String]
   teacherProfileId: String

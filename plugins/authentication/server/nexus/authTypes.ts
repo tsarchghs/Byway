@@ -25,6 +25,10 @@ export const User = objectType({
     t.string('token')
     t.nullable.string('teacherProfileId')
     t.string('lastName')
+    t.string('role', {
+      description: 'Primary role such as student, teacher, admin',
+      resolve: (user) => (user as any).role || null,
+    })
     t.nonNull.string('createdAt')
     t.nonNull.string('updatedAt')
 
@@ -34,11 +38,14 @@ export const User = objectType({
       resolve: async (user, _args, ctx) => {
         // Try to resolve roles from your DB or context
         if (user.roles) return user.roles // already present on the user object
-        if (!ctx.prisma?.userRole) return []
-        const roleRecords = await ctx.prisma.userRole.findMany({
-          where: { userId: user.id },
-        })
-        return roleRecords.map((r) => r.name)
+        const derivedRoles = []
+        if ((user as any).role) derivedRoles.push((user as any).role)
+        if ((user as any).teacherProfileId) derivedRoles.push('teacher')
+        if (ctx.prisma?.userRole) {
+          const roleRecords = await ctx.prisma.userRole.findMany({ where: { userId: user.id } })
+          derivedRoles.push(...roleRecords.map((r) => r.name))
+        }
+        return Array.from(new Set(derivedRoles.filter(Boolean)))
       },
     })
   },

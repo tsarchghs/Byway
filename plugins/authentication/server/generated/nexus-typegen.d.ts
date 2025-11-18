@@ -116,6 +116,7 @@ export interface NexusGenFieldTypes {
     firstName: string | null; // String
     id: string; // ID!
     lastName: string | null; // String
+    role: string | null; // String
     roles: Array<string | null> | null; // [String]
     teacherProfileId: string | null; // String
     token: string | null; // String
@@ -165,6 +166,7 @@ export interface NexusGenFieldTypeNames {
     firstName: 'String'
     id: 'ID'
     lastName: 'String'
+    role: 'String'
     roles: 'String'
     teacherProfileId: 'String'
     token: 'String'
