@@ -1,4 +1,5 @@
 <template>
+  <Header />
   <a-config-provider :theme="{ algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm }">
     <a-layout :class="['course-listing', isDark ? 'is-dark' : '']">
       <a-page-header
@@ -11,6 +12,9 @@
             <a-tooltip :title="isDark ? 'Switch to light' : 'Switch to dark'">
               <a-button shape="circle" @click="toggleDark"><BulbOutlined /></a-button>
             </a-tooltip>
+            <a-button v-if="itemCount>0" type="primary" ghost @click="goCart">
+              Cart ({{ itemCount }})
+            </a-button>
             <a-button shape="circle" @click="reload" :loading="loading" title="Refresh">
               <svg viewBox="0 0 24 24" width="1em" height="1em"><path fill="currentColor" d="M12 6V3L8 7l4 4V8a4 4 0 1 1-4 4H6a6 6 0 1 0 6-6z"/></svg>
             </a-button>
@@ -103,8 +107,18 @@
                   <a-space>
                     <a-button @click="openCourse(c)">View</a-button>
                     <a-button
+                      @click="addCourseToCart(c)"
+                      :disabled="isPurchased(c) || isInCart(c.id)"
+                      :loading="cartLoading"
+                    >
+                      <template v-if="isPurchased(c)">Purchased</template>
+                      <template v-else-if="isInCart(c.id)">In Cart</template>
+                      <template v-else>Add to cart</template>
+                    </a-button>
+                    <a-button
                       type="primary"
-                      @click="isPurchased(c) ? openCourse(c) : addToCart(c)"
+                      @click="isPurchased(c) ? openCourse(c) : checkoutCourse(c)"
+                      :loading="purchasingId===c.id"
                     >
                       <template v-if="isPurchased(c)">Continue</template>
                       <template v-else>Buy</template>
@@ -154,7 +168,20 @@
                     </span>
                     <a-space>
                       <a-button @click="openCourse(c)">View</a-button>
-                      <a-button type="primary" @click="isPurchased(c) ? openCourse(c) : addToCart(c)">
+                      <a-button
+                        @click="addCourseToCart(c)"
+                        :disabled="isPurchased(c) || isInCart(c.id)"
+                        :loading="cartLoading"
+                      >
+                        <template v-if="isPurchased(c)">Purchased</template>
+                        <template v-else-if="isInCart(c.id)">In Cart</template>
+                        <template v-else>Add to cart</template>
+                      </a-button>
+                      <a-button
+                        type="primary"
+                        @click="isPurchased(c) ? openCourse(c) : checkoutCourse(c)"
+                        :loading="purchasingId===c.id"
+                      >
                         <template v-if="isPurchased(c)">Continue</template>
                         <template v-else>Buy</template>
                       </a-button>
@@ -195,9 +222,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watchEffect } from 'vue'
 import { theme, message } from 'ant-design-vue'
 import { BulbOutlined, FieldTimeOutlined } from '@ant-design/icons-vue'
+import Header from '../../../../packages/shared-ui/src/components/Header.vue'
+import { useRuntimeConfig } from '#imports'
+import { useRouter } from '#imports'
+import { useAuth } from '../../../../packages/shared-ui/src/composables/useAuth'
+import { useCart } from '../../../../packages/shared-ui/src/composables/useCart'
 
 type Lesson = { id: string; duration?: number; preview?: boolean }
 type ModuleT = { lessons?: Lesson[] }
@@ -211,7 +243,15 @@ type Course = {
   discount?: number
   coverUrl?: string
   modules?: ModuleT[]
+  isEnrolled?: boolean
 }
+
+const router = useRouter()
+const config = useRuntimeConfig()
+const apiBase = config.public?.apiBase || 'http://localhost:4000'
+const { user, token, isLoggedIn } = useAuth()
+const { addToCart, isInCart, fetchCart, loading: cartLoading, itemCount } = useCart()
+const studentId = ref<string | null>(null)
 
 /** ------------------------------------
  * Dark toggle (UI preference)
@@ -233,14 +273,16 @@ async function loadCourses() {
     const query = `
       query Courses {
         courses {
-          id title category difficulty description price discount coverUrl
+          id title category difficulty description price discount coverUrl isEnrolled
           modules { lessons { id duration preview } }
         }
       }`
+    const headers: Record<string, string> = { 'content-type': 'application/json' }
+    if (token.value) headers.Authorization = `Bearer ${token.value}`
     const res = await fetch(API_URL, {
       method: 'POST',
       credentials: 'include',
-      headers: { 'content-type': 'application/json' },
+      headers,
       body: JSON.stringify({ query }),
     })
     const { data, errors } = await res.json()
@@ -315,9 +357,7 @@ function noop(){}
 const categories = computed(() => Array.from(new Set(courses.value.map(c => c.category).filter(Boolean))) as string[])
 const difficulties = computed(() => Array.from(new Set(courses.value.map(c => c.difficulty).filter(Boolean))) as string[])
 
-/** Purchased detection (same keying as detail page) */
-function purchasedKey(c: Course){ return `byway-course:${c.id || c.title || 'draft'}:purchased` }
-function isPurchased(c: Course){ return /* TODO: replace with gqlFetch to proper query */ undefined && (purchasedKey(c)) === '1' }
+function isPurchased(c: Course){ return !!c.isEnrolled }
 
 /** Price helpers */
 function isFree(c: Course){ return (c.price || 0) <= 0 }
@@ -381,10 +421,120 @@ function cover(c: Course){
 }
 
 /** Actions */
-function addToCart(c: Course){ message.success(`Added "${c.title}" to cart (demo).`) }
+async function addCourseToCart(c: Course){
+  if (!isLoggedIn.value || !user.value?.id) {
+    message.warning('Please log in to add courses to your cart')
+    router.push('/login')
+    return
+  }
+  try {
+    await addToCart(c.id, 1)
+    message.success(`Added "${c.title}" to cart`)
+    await fetchCart()
+  } catch (e:any) {
+    message.error(e?.message || 'Failed to add to cart')
+  }
+}
+
+const purchasingId = ref<string | null>(null)
+async function checkoutCourse(c: Course){
+  if (isPurchased(c)) { openCourse(c); return }
+  if (!isLoggedIn.value || !user.value?.id) {
+    message.warning('Please log in to purchase courses')
+    router.push('/login')
+    return
+  }
+  const sid = await ensureStudentProfile()
+  purchasingId.value = c.id
+  try {
+    const successUrl = `${window.location.origin}/checkout/success`
+    const cancelUrl = `${window.location.origin}/categories`
+    const res = await fetch(`${apiBase}/api/ecommerce/graphql`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...(token.value ? { Authorization: `Bearer ${token.value}` } : {}),
+      },
+      body: JSON.stringify({
+        query: `
+          mutation($items:[EcCartItemInput!]!, $successUrl:String!, $cancelUrl:String!) {
+            createCheckout(items:$items, successUrl:$successUrl, cancelUrl:$cancelUrl, studentId:$studentId, email:$email) { url orderId }
+          }`,
+        variables: {
+          items: [{ courseId: c.id, quantity: 1 }],
+          successUrl,
+          cancelUrl,
+          studentId: sid,
+          email: (user.value as any)?.email || null,
+        },
+      }),
+    })
+    const json = await res.json()
+    if (json.errors?.length) throw new Error(json.errors[0].message)
+    const url = json?.data?.createCheckout?.url
+    if (url) {
+      window.location.href = url
+    } else {
+      // Fallback: ensure item is in cart and take user there
+      try {
+        await addToCart(c.id, 1)
+        await fetchCart()
+      } catch (err:any) {
+        console.warn('[checkout fallback] addToCart failed', err?.message || err)
+      }
+      message.warning('Checkout link not available, opening cart instead.')
+      router.push('/cart')
+    }
+  } catch (e:any) {
+    const msg = e?.message || 'Unable to start checkout'
+    if (msg.includes('Already enrolled')) {
+      message.info('You already own this course — opening it instead.')
+      openCourse(c)
+    } else {
+      message.error(msg)
+    }
+  } finally {
+    purchasingId.value = null
+  }
+}
+
+async function ensureStudentProfile(){
+  if (studentId.value) return studentId.value
+  const authId = (user.value as any)?.userId || user.value?.id
+  if (!authId) throw new Error('Not authenticated')
+
+  const headers: Record<string,string> = { 'content-type':'application/json' }
+  if (token.value) headers.Authorization = `Bearer ${token.value}`
+
+  try {
+    const res = await fetch(`${apiBase}/api/students-internal/graphql`, {
+      method:'POST',
+      headers,
+      body: JSON.stringify({ query:`query($uid:String!){ studentByUserId(userId:$uid){ id } }`, variables:{ uid: authId } })
+    })
+    const json = await res.json()
+    const sid = json?.data?.studentByUserId?.id
+    if (sid) { studentId.value = sid; return sid }
+  } catch {}
+
+  const create = await fetch(`${apiBase}/api/students-internal/graphql`, {
+    method:'POST',
+    headers,
+    body: JSON.stringify({ query:`mutation($uid:String!,$name:String){ createStudent(userId:$uid, displayName:$name){ id } }`, variables:{ uid: authId, name: (user.value as any)?.email || 'Student' } })
+  })
+  const created = await create.json()
+  const sid = created?.data?.createStudent?.id
+  if (!sid) throw new Error('Student profile not found')
+  studentId.value = sid
+  return sid
+}
+
 function openCourse(c: Course){
-  // If you have a named route, replace with router.push({ name:'course-internal', params:{ id:c.id }})
-  window.location.href = `/course/${encodeURIComponent(c.id)}`
+  router.push(`/course/${encodeURIComponent(c.id)}`)
+}
+
+function goCart(){
+  router.push('/cart')
 }
 
 /** Utils */

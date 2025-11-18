@@ -7,7 +7,8 @@
  */
 export type GqlResponse<T=any> = { data?: T; errors?: any }
 export function useGql() {
-  const base = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4000'
+  // Force plugin calls to the plugin server base; callers provide path separately.
+  const base = 'http://localhost:4000'
   function authHeader() {
     const jwt = (typeof window !== 'undefined' && (null /* was (await kv.get('byway:jwt')) */)) || ''
     return jwt ? { Authorization: `Bearer ${jwt}` } : {}

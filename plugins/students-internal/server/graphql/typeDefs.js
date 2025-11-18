@@ -12,7 +12,7 @@ export const typeDefs = gql`
     id: ID!
     studentId: String!
     courseId: String!
-    progressPct: Int!
+    progress: Int!
     createdAt: String!
     updatedAt: String!
   }
@@ -47,6 +47,14 @@ type GqlStudentCourse {
   enrolledAt: String!
   completed: Boolean!
   course: GqlCourse
+  }
+
+  type GqlStudent {
+    id: ID!
+    userId: String
+    displayName: String
+    createdAt: String
+    updatedAt: String
   }
 
   type GqlCourse {
@@ -87,11 +95,13 @@ type GqlStudentCourse {
   }
   type Query {
 myCourses(studentId: String!): [GqlStudentCourse!]!
+    studentByUserId(userId: String!): GqlStudent
 
     kvGet(key: String!): KV
     isEnrolled(studentId: String!, courseId: String!): Boolean!
     enrollments(studentId: String, courseId: String): [Enrollment!]!
     courseGradebook(courseId: ID!): [GradebookEntry!]!
+    studentExists(studentId: String!): Boolean!
 
     # 👇 Add this new query to match your resolver
     myProgress(courseId: String, moduleId: String, lessonId: String): [StudentProgress!]!

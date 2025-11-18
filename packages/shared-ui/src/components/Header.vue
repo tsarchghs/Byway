@@ -9,11 +9,10 @@
 
       <!-- Nav links -->
       <nav class="nav">
-        <NuxtLink to="/explore" class="nav-link" exact-active-class="nav-active">Explore</NuxtLink>
-        <NuxtLink to="/courses" class="nav-link" exact-active-class="nav-active">Courses</NuxtLink>
+        <NuxtLink to="/categories" class="nav-link" exact-active-class="nav-active">Browse</NuxtLink>
+        <NuxtLink to="/course-author" class="nav-link" exact-active-class="nav-active">Teach</NuxtLink>
         <NuxtLink to="/institutions" class="nav-link" exact-active-class="nav-active">Institutions</NuxtLink>
-        <NuxtLink to="/assignments" class="nav-link" exact-active-class="nav-active">Assignments</NuxtLink>
-        <NuxtLink to="/analytics" class="nav-link" exact-active-class="nav-active">Analytics</NuxtLink>
+        <NuxtLink to="/students" class="nav-link" exact-active-class="nav-active">My Learning</NuxtLink>
       </nav>
 
       <!-- Actions -->
@@ -32,7 +31,8 @@
             </a-button>
             <template #overlay>
               <a-menu>
-                <a-menu-item><NuxtLink to="/dashboard">Dashboard</NuxtLink></a-menu-item>
+                <a-menu-item><NuxtLink to="/students">My Learning</NuxtLink></a-menu-item>
+                <a-menu-item><NuxtLink to="/cart">Cart</NuxtLink></a-menu-item>
                 <a-menu-item @click="doLogout">Logout</a-menu-item>
               </a-menu>
             </template>
@@ -70,8 +70,8 @@
         
         <div class="cart-footer">
           <div class="cart-total">
-            <span class="total-label">Total items:</span>
-            <span class="total-value">{{ itemCount }}</span>
+            <div><span class="total-label">Items:</span> <span class="total-value">{{ itemCount }}</span></div>
+            <div><span class="total-label">Subtotal:</span> <span class="total-value">€{{ totalPrice.toFixed(2) }}</span></div>
           </div>
           <a-space style="width: 100%; margin-top: 12px">
             <a-button block @click="handleClearCart" :loading="loading">
@@ -79,13 +79,13 @@
             </a-button>
             <NuxtLink to="/cart" style="flex: 1">
               <a-button type="primary" block @click="cartOpen = false">
-                View Cart
+                Go to Cart
               </a-button>
             </NuxtLink>
           </a-space>
-          <NuxtLink to="/checkout" style="width: 100%; display: block; margin-top: 8px">
+          <NuxtLink to="/cart" style="width: 100%; display: block; margin-top: 8px">
             <a-button type="primary" block danger @click="cartOpen = false">
-              Checkout
+              Proceed to checkout
             </a-button>
           </NuxtLink>
         </div>
@@ -96,7 +96,7 @@
           <ShoppingCartOutlined style="font-size: 48px; color: #d9d9d9; margin-bottom: 16px" />
           <div class="empty-text">Your cart is empty</div>
           <div class="empty-hint">Add courses to get started</div>
-          <NuxtLink to="/courses">
+          <NuxtLink to="/categories">
             <a-button type="primary" style="margin-top: 16px" @click="cartOpen = false">
               Browse Courses
             </a-button>
@@ -108,16 +108,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, h, computed, watch } from 'vue'
+import { ref, h, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ShoppingCartOutlined, DownOutlined, DeleteOutlined, MinusOutlined, PlusOutlined } from '@ant-design/icons-vue'
+import { ShoppingCartOutlined, DownOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 import { useAuth } from '../../../shared-ui/src/composables/useAuth'
 import { useCart } from '../../../shared-ui/src/composables/useCart'
 import { message, Modal } from 'ant-design-vue'
 
 const router = useRouter()
 const { user, isLoggedIn, logout } = useAuth()
-const { cart, items, itemCount, loading, isEmpty, fetchCart, removeFromCart, clearCart } = useCart()
+const { cart, items, itemCount, totalPrice, loading, isEmpty, fetchCart, removeFromCart, clearCart } = useCart()
 
 const cartOpen = ref(false)
 
@@ -161,17 +161,30 @@ async function handleClearCart() {
 }
 
 function renderCartItem(item: any) {
+  const title = item.titleSnapshot || `Course ${item.courseId}`
+  const price = typeof item.priceSnapshot === 'number' ? item.priceSnapshot : null
   return h('div', { class: 'cart-item' }, [
     h('div', { class: 'cart-item-main' }, [
-      h('div', { class: 'cart-item-title' }, `Course ID: ${item.courseId}`),
-      h('div', { class: 'cart-item-meta' }, `Quantity: ${item.quantity}`)
+      h('div', { class: 'cart-item-title' }, title),
+      h('div', { class: 'cart-item-meta' }, [
+        h('span', `Qty: ${item.quantity}`),
+        price !== null ? h('span', { class: 'cart-price' }, ` · €${price.toFixed(2)}`) : null
+      ].filter(Boolean))
     ]),
     h('div', { class: 'cart-item-actions' }, [
       h('a', {
         class: 'cart-action-btn',
         onClick: () => handleRemoveItem(item),
         title: 'Remove from cart'
-      }, [h(DeleteOutlined)])
+      }, [h(DeleteOutlined)]),
+      h('a', {
+        class: 'cart-action-btn',
+        onClick: () => {
+          cartOpen.value = false
+          router.push(`/course/${encodeURIComponent(item.courseId)}`)
+        },
+        title: 'View course'
+      }, 'View')
     ])
   ])
 }
@@ -314,8 +327,8 @@ function renderCartItem(item: any) {
 
 .cart-total {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 4px;
   margin-bottom: 12px;
   padding: 8px 0;
 }
@@ -329,6 +342,10 @@ function renderCartItem(item: any) {
   font-size: 18px;
   font-weight: 600;
   color: rgba(0,0,0,.85);
+}
+
+.cart-price {
+  color: rgba(0,0,0,.6);
 }
 
 .empty-cart {

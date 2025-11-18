@@ -39,12 +39,36 @@
       </a-page-header>
 
       <a-layout-content class="dashboard-content">
+        <!-- QUICK ACTIONS -->
+        <a-row gutter="12" class="mb-3 quick-actions">
+          <a-col :xs="24" :sm="12" :lg="6">
+            <a-card hoverable @click="createCourse">
+              <a-card-meta title="Create course" description="Draft a new curriculum" />
+            </a-card>
+          </a-col>
+          <a-col :xs="24" :sm="12" :lg="6">
+            <a-card hoverable @click="openModules">
+              <a-card-meta title="Manage modules" description="Edit lessons & order" />
+            </a-card>
+          </a-col>
+          <a-col :xs="24" :sm="12" :lg="6">
+            <a-card hoverable @click="openAssignments">
+              <a-card-meta title="Grade assignments" description="Review submissions" />
+            </a-card>
+          </a-col>
+          <a-col :xs="24" :sm="12" :lg="6">
+            <a-card hoverable @click="openRevenue">
+              <a-card-meta title="Payouts" description="Check earnings & status" />
+            </a-card>
+          </a-col>
+        </a-row>
+
         <!-- OVERVIEW -->
         <div v-if="activeKey === 'overview'" class="overview-section">
           <a-row gutter="24">
             <a-col :xs="24" :sm="12" :md="8">
               <a-card>
-                <a-statistic title="Active Courses" :value="teacher.stats.courses" />
+                <a-statistic title="Active Courses" :value="teacher.stats.courses" suffix="live" />
               </a-card>
             </a-col>
             <a-col :xs="24" :sm="12" :md="8">
@@ -62,6 +86,25 @@
           <a-card title="Performance Progress" class="mt-4">
             <a-progress :percent="78" status="active" stroke-color="#1677ff" />
           </a-card>
+
+          <a-row gutter="16" class="mt-4">
+            <a-col :xs="24" :lg="12">
+              <a-card title="Recent reviews">
+                <a-empty v-if="!teacher.reviews.length" description="No reviews yet" />
+                <a-list v-else :data-source="teacher.reviews" :renderItem="renderReview" />
+              </a-card>
+            </a-col>
+            <a-col :xs="24" :lg="12">
+              <a-card title="Upcoming tasks">
+                <a-timeline>
+                  <a-timeline-item v-for="task in upcoming" :key="task.title">
+                    <strong>{{ task.title }}</strong>
+                    <div class="muted">{{ task.when }}</div>
+                  </a-timeline-item>
+                </a-timeline>
+              </a-card>
+            </a-col>
+          </a-row>
         </div>
 
         <!-- COURSES TAB -->
@@ -148,6 +191,10 @@ const teacher = reactive({
     { name: 'Ronald Richards', email: 'ronald@byway.com', progress: 70 },
     { name: 'Cody Fisher', email: 'cody@byway.com', progress: 35 },
   ],
+  reviews: [
+    { author: 'Savannah Nguyen', rating: 5, text: 'Loved the pacing and examples.' },
+    { author: 'Courtney Henry', rating: 4, text: 'Great depth on composition API.' },
+  ],
 })
 
 const columns = [
@@ -163,6 +210,9 @@ const columns = [
 ]
 
 const createCourse = () => router.push("/teach-internal/" + teacher.id + "/course/create")
+const openModules = () => router.push("/teach-internal/" + teacher.id + "/course/create/module/create")
+const openAssignments = () => router.push("/teach-internal/" + teacher.id + "/institutions/_/assignments/1/grading")
+const openRevenue = () => { selectedKeys.value = ['revenue']; activeKey.value = 'revenue' }
 const saveSettings = () => message.success('Profile updated successfully!')
 const renderStudent = (student: any) =>
   h('a-list-item', {}, [
@@ -173,6 +223,21 @@ const renderStudent = (student: any) =>
     }),
     h('a-progress', { percent: student.progress, size: 'small', status: 'active' }),
   ])
+const renderReview = (review: any) =>
+  h('a-list-item', {}, [
+    h('a-list-item-meta', {
+      title: `${review?.author || 'Anonymous'}`,
+      description: review?.text || '',
+      avatar: h('a-avatar', (review?.author || ' ').slice(0,1)),
+    }),
+    h('a-rate', { value: review?.rating || 0, disabled: true, allowHalf: true }),
+  ])
+
+const upcoming = [
+  { title: 'Publish “Vue 3 Workshop” updates', when: 'Tomorrow' },
+  { title: 'Grade Assignment #2', when: 'Friday, 3pm' },
+  { title: 'Schedule live Q&A', when: 'Next Monday' },
+]
 </script>
 
 <style scoped>
@@ -204,6 +269,10 @@ const renderStudent = (student: any) =>
   flex: 1;
 }
 
+.quick-actions .ant-card {
+  height: 100%;
+}
+
 .mt-2 {
   margin-top: 12px;
 }
@@ -211,4 +280,6 @@ const renderStudent = (student: any) =>
 .mt-4 {
   margin-top: 24px;
 }
+
+.muted { color:#999; }
 </style>

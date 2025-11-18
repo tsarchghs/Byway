@@ -6,6 +6,10 @@
       "file": "nuxt/pages/stundent.vue"
     },
     {
+      "path": "/students/my-courses",
+      "file": "nuxt/pages/my-courses.vue"
+    },
+    {
       "path": "/categories",
       "file": "nuxt/pages/course-listing.vue"
     },

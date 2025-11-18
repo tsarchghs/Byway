@@ -8,6 +8,11 @@
         </a-card>
       </a-col>
       <a-col :xs="24" :md="8">
+        <a-card title="My Courses" hoverable @click="$router.push('/students/my-courses')">
+          <p>Jump back into any course.</p>
+        </a-card>
+      </a-col>
+      <a-col :xs="24" :md="8">
         <a-card title="Gradebook" hoverable @click="$router.push('/students/gradebook')">
           <p>View grades by course and assignment.</p>
         </a-card>

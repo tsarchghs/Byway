@@ -1,4 +1,4 @@
-export function useGradebook(endpoint = '/api/students-internal/graphql') {
+export function useGradebook(endpoint = 'http://localhost:4000/api/students-internal/graphql') {
   async function call(query: string, variables: any = {}) {
     const res = await fetch(endpoint, {
       method: 'POST',

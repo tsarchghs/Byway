@@ -33,6 +33,25 @@ export async function register(app) {
     }
   });
 
+  // Ensure student profile exists for authenticated userId (idempotent)
+  router.post('/api/ensure-student', express.json(), async (req, res) => {
+    try {
+      const auth = req.headers.authorization || '';
+      const token = auth.replace('Bearer ', '').trim();
+      const userId = req.body?.userId || req.query?.userId;
+      const displayName = req.body?.displayName || req.query?.displayName || null;
+      if (!userId) return res.status(400).json({ success: false, error: 'userId required' });
+      const student = await prisma.student.upsert({
+        where: { userId: String(userId) },
+        update: { displayName: displayName || undefined },
+        create: { userId: String(userId), displayName: displayName || undefined },
+      });
+      res.json({ success: true, data: student });
+    } catch (e) {
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
   router.get('/health', (_, res) => res.json({ ok: true, plugin: 'students-internal' }));
 
   app.use('/api/students-internal', router);

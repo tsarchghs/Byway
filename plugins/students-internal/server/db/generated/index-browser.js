@@ -117,6 +117,14 @@ exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
   Serializable: 'Serializable'
 });
 
+exports.Prisma.StudentScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  displayName: 'displayName',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.StudentNoteScalarFieldEnum = {
   id: 'id',
   studentId: 'studentId',
@@ -197,6 +205,7 @@ exports.Prisma.NullsOrder = {
 
 
 exports.Prisma.ModelName = {
+  Student: 'Student',
   StudentNote: 'StudentNote',
   Course: 'Course',
   GradebookEntry: 'GradebookEntry',

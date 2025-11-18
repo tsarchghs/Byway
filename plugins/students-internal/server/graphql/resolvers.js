@@ -25,6 +25,10 @@ Query: {
     const row = await prisma.kV.findUnique({ where: { key } });
     return row ? { key: row.key, value: row.value ?? null } : null;
   },
+  async studentByUserId(_, { userId }) {
+    if (!userId) return null
+    return prisma.student.findUnique({ where: { userId } })
+  },
   async myCourses(_, { studentId }, ctx) {
     return prisma.studentCourse.findMany({
       where: { studentId },
@@ -33,11 +37,11 @@ Query: {
     })
   },
   async isEnrolled(_, { studentId, courseId }) {
-    const e = await prisma.enrollment.findFirst({ where: { studentId, courseId } });
+    const e = await prisma.studentCourse.findFirst({ where: { studentId, courseId } });
     return !!e;
   },
   async enrollments(_, args) {
-    return prisma.enrollment.findMany({ where: { ...args } });
+    return prisma.studentCourse.findMany({ where: { ...args } });
   },
   async courseGradebook(_, { courseId }) {
     return prisma.gradebookEntry.findMany({
@@ -53,7 +57,12 @@ async myProgress(_, { studentId }) {
     where: filters,
     orderBy: { updatedAt: "desc" },
   });
-}
+},
+
+  async studentExists(_, { studentId }) {
+    const s = await prisma.student.findUnique({ where: { id: studentId } }).catch(() => null)
+    return !!s
+  }
 },
 
   Mutation: {
@@ -73,10 +82,24 @@ async myProgress(_, { studentId }) {
         return false
       }
     },
-    async enrollStudent(_, { studentId, courseId }) {
-      const existing = await prisma.enrollment.findFirst({ where: { studentId, courseId } })
+  async enrollStudent(_, { studentId, courseId }) {
+      const existing = await prisma.studentCourse.findFirst({ where: { studentId, courseId } })
       if (existing) return existing
-      return prisma.enrollment.create({ data: { studentId, courseId, progressPct: 0 } })
+
+      // Ensure a Course row exists to satisfy FK; create minimal stub if missing
+      const course = await prisma.course.findUnique({ where: { id: courseId } })
+      if (!course) {
+        await prisma.course.create({
+          data: {
+            id: courseId,
+            title: 'Course',
+            description: '',
+            progressPct: 0,
+          },
+        })
+      }
+
+      return prisma.studentCourse.create({ data: { studentId, courseId, progress: 0 } })
     },
     async upsertGrade(_, { input }) {
       if (input.id) {
@@ -87,8 +110,8 @@ async myProgress(_, { studentId }) {
       }
       return prisma.gradebookEntry.create({ data: input })
     },
-    async setProgress(_, { enrollmentId, progressPct }) {
-      return prisma.enrollment.update({ where: { id: enrollmentId }, data: { progressPct } })
+  async setProgress(_, { enrollmentId, progressPct }) {
+      return prisma.studentCourse.update({ where: { id: enrollmentId }, data: { progress: progressPct } })
     }
   }
 }

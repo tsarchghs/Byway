@@ -38,6 +38,38 @@ export const typeDefs = /* GraphQL */ `
     payments: [EcPayment!]!
   }
 
+  # Legacy cart types (kept for useCart() composable)
+  type Payment {
+    id: ID!
+    orderId: String!
+    provider: String
+    status: String
+    amount: Float!
+    createdAt: String
+  }
+
+  type OrderItem {
+    id: ID!
+    orderId: String!
+    courseId: String!
+    titleSnapshot: String!
+    priceSnapshot: Float!
+    quantity: Int!
+  }
+
+  type Cart {
+    id: ID!
+    studentId: String!
+    status: String!
+    items: [OrderItem!]!
+    payments: [Payment!]!
+    updatedAt: String
+    createdAt: String
+  }
+
+  type RemoveResult { ok: Boolean! }
+  type ClearResult { ok: Boolean! }
+
   type CouponValidation { percent: Int! }
 
   type CheckoutPayload {
@@ -47,6 +79,7 @@ export const typeDefs = /* GraphQL */ `
   }
 
   type Query {
+    cartByStudent(studentId: String!): Cart
     myOrders(studentId: String): [EcOrder!]!
     isEnrolled(courseId: String!, studentId: String): Boolean!
     verifyCheckout(sessionId: String!): VerifyCheckout!
@@ -54,6 +87,9 @@ export const typeDefs = /* GraphQL */ `
   }
 
   type Mutation {
+    addCartItem(studentId: String!, courseId: String!, quantity: Int = 1): OrderItem!
+    removeCartItem(studentId: String!, orderItemId: String!): RemoveResult!
+    clearCart(studentId: String!): ClearResult!
     createCheckout(
       items: [EcCartItemInput!]!
       coupon: String
