@@ -6,6 +6,23 @@ const token = ref<string | null>(null)
 export function useAuth() {
   const isLoggedIn = computed(() => !!token.value)
 
+  const roleList = computed<string[]>(() => {
+    const roles = user.value?.roles
+    if (Array.isArray(roles))
+      return roles.map(r => String(r))
+    return []
+  })
+
+  const isStudent = computed(() => roleList.value.some(role => role.toLowerCase().includes('student')))
+  const isTeacher = computed(() => roleList.value.some(role => role.toLowerCase().includes('teacher')))
+  const isInstitutionAdmin = computed(() =>
+    roleList.value.some(role =>
+      role.toLowerCase().includes('admin') ||
+      role.toLowerCase().includes('institution_admin') ||
+      role.toLowerCase().includes('institution-admin'),
+    ),
+  )
+
   function login(payload: { user: any; token: string }) {
     user.value = payload.user
     token.value = payload.token
@@ -34,5 +51,15 @@ export function useAuth() {
     }
   }
 
-  return { user, token, isLoggedIn, login, logout }
+  return {
+    user,
+    me: user,
+    token,
+    isLoggedIn,
+    login,
+    logout,
+    isStudent,
+    isTeacher,
+    isInstitutionAdmin,
+  }
 }

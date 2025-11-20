@@ -1,397 +1,592 @@
 <template>
-  <div
-    class="inst-portal-page"
-    :class="[
-      `role-${effectiveRole}`,
-      isDarkMode ? 'theme-dark' : 'theme-light',
-      devMode ? 'dev-mode' : '',
-    ]"
-  >
-    <!-- ===========================
-         TOP: LOADING / ERROR / GUEST
-    ============================ -->
-    <div v-if="initialLoading" class="full-center">
-      <a-spin tip="Loading institution portal..." />
+  <div class="institution-role-portal" :class="themeClass">
+    <div v-if="initialLoading" class="portal-state portal-state--loading">
+      <a-spin tip="Synchronizing institution insights..." />
     </div>
 
-    <div v-else-if="loadError" class="full-center">
+    <div v-else-if="loadError" class="portal-state">
       <a-result
         status="warning"
-        title="Could not load institution overview"
+        title="Unable to load institution portal"
         :sub-title="loadError"
       >
         <template #extra>
-          <a-button type="primary" @click="refreshAll">
-            <ReloadOutlined /> Retry
+          <a-button type="primary" @click="handleRefresh">
+            <ReloadOutlined /> Try again
           </a-button>
         </template>
       </a-result>
     </div>
 
-    <div v-else-if="!me">
+    <div v-else-if="!activeInstitution" class="portal-state">
       <a-result
-        status="403"
-        title="You’re not signed in"
-        sub-title="Sign in to access institutions, classrooms and your learning journey."
+        status="404"
+        title="Institution not found"
+        sub-title="The ID in the URL does not match any institution you have access to."
       >
         <template #extra>
-          <a-button type="primary" @click="emitLogin">
-            <UserOutlined /> Go to sign in
+          <a-button type="primary" @click="goFallbackInstitution">
+            Jump to default institution
           </a-button>
         </template>
       </a-result>
     </div>
 
-    <!-- ===========================
-         MAIN PORTAL (AUTH ONLY)
-    ============================ -->
     <div v-else class="portal-shell">
-      <!-- Header / Hero -->
-      <header class="portal-header">
-        <div class="left">
-          <div class="pill-row">
-            <span class="role-pill" :data-role="effectiveRole">
-              <span class="dot" :class="`dot-${effectiveRole}`"></span>
-              <span class="role-label">{{ roleLabel }}</span>
-            </span>
-            <span v-if="primaryInstitution" class="inst-pill">
+      <header class="portal-hero">
+        <div class="portal-hero__left">
+          <p class="eyebrow">Institution control room</p>
+          <h1>{{ activeInstitution.name }}</h1>
+          <p class="hero-subtitle">{{ heroSubtitle }}</p>
+
+          <ul class="hero-meta">
+            <li>
               <TeamOutlined />
-              <span class="inst-name">{{ primaryInstitution.name }}</span>
-            </span>
-          </div>
-
-          <h1 class="title">
-            {{ meDisplayName }}
-          </h1>
-          <p class="subtitle">
-            {{ roleTagline }}
-          </p>
-
-          <div class="quick-meta">
-            <div class="meta-item">
-              <span class="meta-label">Institutions</span>
-              <span class="meta-value">{{ institutions.length }}</span>
-            </div>
-            <div class="meta-item">
-              <span class="meta-label">Classrooms</span>
-              <span class="meta-value">{{ classrooms.length }}</span>
-            </div>
-            <div class="meta-item">
-              <span class="meta-label">Departments</span>
-              <span class="meta-value">{{ departments.length }}</span>
-            </div>
-            <div class="meta-item">
-              <span class="meta-label">Memberships</span>
-              <span class="meta-value">{{ myMemberships.length }}</span>
-            </div>
-          </div>
+              {{ activeInstitution.type || 'Comprehensive campus' }} ·
+              {{ activeInstitution.location || 'Location TBC' }}
+            </li>
+            <li>
+              <ApartmentOutlined />
+              {{ institutionDepartments.length }} departments ·
+              {{ institutionClassrooms.length }} classrooms
+            </li>
+            <li>
+              <SafetyCertificateOutlined />
+              {{ roleViewDescription }}
+            </li>
+          </ul>
         </div>
 
-        <div class="right">
-          <div class="top-actions">
+        <div class="portal-hero__right">
+          <div class="hero-controls">
             <a-switch
               v-model:checked="isDarkMode"
               checked-children="Dark"
               un-checked-children="Light"
-              @change="persistTheme"
             />
-            <a-tooltip title="Developer view (mock role override, raw JSON)">
-              <a-switch
-                v-model:checked="devMode"
-                style="margin-left: 8px"
-                checked-children="Dev"
-                un-checked-children="Dev"
-              />
-            </a-tooltip>
+            <a-select
+              class="role-select"
+              :value="roleControlValue"
+              style="width: 200px"
+              :options="roleSelectOptions"
+              @change="handleRoleSelect"
+            />
           </div>
 
-          <div class="primary-actions">
-            <a-button v-if="isAdminLike" type="primary" @click="openCreateInstitution">
-              <PlusOutlined /> New Institution
+          <div class="hero-actions">
+            <a-button
+              type="primary"
+              @click="openAdminModal('department')"
+              v-if="isAdminView"
+            >
+              <ClusterOutlined /> New department plan
             </a-button>
-            <a-button v-if="isTeacherLike" @click="openTeacherFocus">
-              <BulbOutlined /> Teaching focus
+            <a-button v-if="isAdminView" @click="openAdminModal('classroom')">
+              <ApartmentOutlined /> Add classroom shell
             </a-button>
-            <a-button v-if="isStudent" @click="openStudentFocus">
-              <FieldTimeOutlined /> My learning
+            <a-button v-if="isTeacherView" @click="openTeachingDrawerFromHero">
+              <BookOutlined /> Teaching playbook
+            </a-button>
+            <a-button v-if="isStudentView" @click="focusTab = 'students'">
+              <FieldTimeOutlined /> Learner spotlight
             </a-button>
           </div>
 
-          <div class="badge-grid">
-            <div class="badge">
-              <CheckCircleOutlined />
-              <div class="b-title">Linked to Teach</div>
-              <div class="b-sub">Classrooms &amp; courses related by IDs</div>
-            </div>
-            <div class="badge">
-              <ClusterOutlined />
-              <div class="b-title">API-level ORM</div>
-              <div class="b-sub">No shared Prisma, all through HTTP</div>
-            </div>
-            <div class="badge">
-              <SafetyCertificateOutlined />
-              <div class="b-title">Role-aware</div>
-              <div class="b-sub">Admin, teacher, student flows mocked</div>
-            </div>
-          </div>
+          <p class="hero-updated">Last synced: {{ lastSyncedLabel }}</p>
         </div>
       </header>
 
-      <!-- Stats row -->
-      <section class="stats-section">
-        <a-row :gutter="16">
-          <a-col :xs="12" :md="6">
-            <a-card class="stat-card">
-              <div class="stat-label">Total Institutions</div>
-              <div class="stat-value">{{ institutions.length }}</div>
-              <div class="stat-hint">
-                <TeamOutlined /> {{ activeInstitutions.length }} active
-              </div>
-            </a-card>
-          </a-col>
-          <a-col :xs="12" :md="6">
-            <a-card class="stat-card">
-              <div class="stat-label">Total Classrooms</div>
-              <div class="stat-value">{{ classrooms.length }}</div>
-              <div class="stat-hint">
-                <ApartmentOutlined /> {{ activeClassrooms.length }} active
-              </div>
-            </a-card>
-          </a-col>
-          <a-col :xs="12" :md="6">
-            <a-card class="stat-card">
-              <div class="stat-label">My Classrooms</div>
-              <div class="stat-value">
-                <template v-if="isTeacherLike">
-                  {{ myTeacherClassrooms.length }}
-                </template>
-                <template v-else-if="isStudent">
-                  {{ myStudentClassrooms.length }}
-                </template>
-                <template v-else>
-                  {{ myMembershipClassrooms.length }}
-                </template>
-              </div>
-              <div class="stat-hint">
-                <CalendarOutlined /> role-aware
-              </div>
-            </a-card>
-          </a-col>
-          <a-col :xs="12" :md="6">
-            <a-card class="stat-card">
-              <div class="stat-label">Linked Courses (mock)</div>
-              <div class="stat-value">{{ teacherCourses.length }}</div>
-              <div class="stat-hint">
-                <BookOutlined /> via teach-internal
-              </div>
-            </a-card>
-          </a-col>
-        </a-row>
+      <section class="role-narrative">
+        <div class="role-narrative__copy">
+          <p class="role-narrative__badge">{{ roleNarrative.badge }}</p>
+          <h2>{{ roleNarrative.title }}</h2>
+          <p>{{ roleNarrative.description }}</p>
+          <p class="role-narrative__helper">{{ roleNarrative.helper }}</p>
+        </div>
+        <div class="role-narrative__spotlights">
+          <a-card
+            v-for="spotlight in roleSpotlights"
+            :key="spotlight.id"
+            class="spotlight-card"
+            :bordered="false"
+          >
+            <div class="spotlight-card__icon">
+              <component :is="spotlight.icon" />
+            </div>
+            <div class="spotlight-card__content">
+              <p class="spotlight-card__title">{{ spotlight.title }}</p>
+              <p class="spotlight-card__detail">{{ spotlight.detail }}</p>
+            </div>
+            <p class="spotlight-card__metric">{{ spotlight.metric }}</p>
+          </a-card>
+        </div>
       </section>
 
-      <!-- Tabs -->
-      <section class="tabs-section">
-        <a-tabs v-model:activeKey="activeTabKey">
-          <a-tab-pane key="overview" tab="Overview">
-            <OverviewSection
-              :institutions="institutions"
-              :members="members"
-              :classrooms="classrooms"
-              :departments="departments"
-              :effective-role="effectiveRole"
-              :primary-institution-id="primaryInstitutionId"
-              @open-inst="handleOpenInstitution"
-            />
+      <section class="stat-grid" aria-label="Key indicators">
+        <a-card
+          v-for="stat in heroStats"
+          :key="stat.id"
+          class="stat-card"
+          :bordered="false"
+        >
+          <div class="stat-icon">
+            <component :is="stat.icon" />
+          </div>
+          <div>
+            <p class="stat-label">{{ stat?.label }}</p>
+            <p class="stat-value">{{ stat?.value }}</p>
+            <p class="stat-hint">{{ stat?.hint }}</p>
+          </div>
+        </a-card>
+      </section>
+
+      <section class="role-tabs" aria-label="Role specific focus">
+        <a-tabs v-model:activeKey="focusTab">
+          <a-tab-pane key="overview" tab="Unified overview">
+            <div class="lanes-grid">
+              <article
+                class="role-lane"
+                :class="{ 'role-lane--highlight': isAdminView }"
+              >
+                <header>
+                  <div>
+                    <p class="role-lane__eyebrow">Administrators</p>
+                    <h3>Operational guardrails</h3>
+                  </div>
+                  <span class="role-lane__badge">{{ adminMembers.length }} leads</span>
+                </header>
+                <a-list :data-source="adminSnapshots" :split="false">
+                  <template #renderItem="{ item }">
+                    <a-list-item>
+                      <a-list-item-meta
+                        :title="item.label"
+                        :description="item.detail"
+                      />
+                      <template #actions>
+                        <span class="metric-pill" :data-status="item.status">
+                          {{ item.metric }}
+                        </span>
+                      </template>
+                    </a-list-item>
+                  </template>
+                </a-list>
+                <footer>
+                  <a-button type="link" @click="focusTab = 'administrators'">
+                    Open administrator workspace
+                  </a-button>
+                </footer>
+              </article>
+
+              <article
+                class="role-lane"
+                :class="{ 'role-lane--highlight': isTeacherView }"
+              >
+                <header>
+                  <div>
+                    <p class="role-lane__eyebrow">Teachers</p>
+                    <h3>Instruction playbooks</h3>
+                  </div>
+                  <span class="role-lane__badge">{{ teacherMembers.length }} faculty</span>
+                </header>
+                <a-list :data-source="teacherMissions" :split="false">
+                  <template #renderItem="{ item }">
+                    <a-list-item @click="item.classroom && openClassroomDrawer(item.classroom)">
+                      <a-list-item-meta
+                        :title="item.title"
+                        :description="item.description"
+                      />
+                      <template #actions>
+                        <span class="metric-pill metric-pill--accent">
+                          {{ item.timeline }}
+                        </span>
+                      </template>
+                    </a-list-item>
+                  </template>
+                </a-list>
+                <footer>
+                  <a-button type="link" @click="focusTab = 'teachers'">
+                    Open teaching workspace
+                  </a-button>
+                </footer>
+              </article>
+
+              <article
+                class="role-lane"
+                :class="{ 'role-lane--highlight': isStudentView }"
+              >
+                <header>
+                  <div>
+                    <p class="role-lane__eyebrow">Students</p>
+                    <h3>Learning guidance</h3>
+                  </div>
+                  <span class="role-lane__badge">{{ studentMembers.length }} learners</span>
+                </header>
+                <a-list :data-source="studentMoments" :split="false">
+                  <template #renderItem="{ item }">
+                    <a-list-item>
+                      <a-list-item-meta
+                        :title="item.title"
+                        :description="item.description"
+                      />
+                      <template #actions>
+                        <span class="metric-pill" :data-status="item.status">
+                          {{ item.helper }}
+                        </span>
+                      </template>
+                    </a-list-item>
+                  </template>
+                </a-list>
+                <footer>
+                  <a-button type="link" @click="focusTab = 'students'">
+                    Open learner workspace
+                  </a-button>
+                </footer>
+              </article>
+            </div>
           </a-tab-pane>
 
-          <a-tab-pane v-if="isAdminLike" key="admin" tab="Admin">
-            <AdminSection
-              :institutions="institutions"
-              :members="members"
-              :departments="departments"
-              :classrooms="classrooms"
-              :loading="savingAdmin"
-              @request-create="openCreateInstitution"
-              @open-inst="handleOpenInstitution"
-            />
+          <a-tab-pane key="administrators" tab="Administrator cockpit">
+            <a-row :gutter="16">
+              <a-col :xs="24" :md="10">
+                <a-card title="Governance metrics" class="admin-card">
+                  <a-timeline>
+                    <a-timeline-item
+                      v-for="item in adminSnapshots"
+                      :key="item.id"
+                      :color="item.status === 'good' ? 'green' : 'orange'"
+                    >
+                      <p class="timeline-title">{{ item.label }}</p>
+                      <p class="timeline-description">{{ item.detail }}</p>
+                      <p class="timeline-metric">{{ item.metric }}</p>
+                    </a-timeline-item>
+                  </a-timeline>
+                  <a-button block type="dashed" @click="handleMockAction('compliance')">
+                    <SafetyCertificateOutlined /> Run compliance pulse (mock)
+                  </a-button>
+                </a-card>
+                <a-card title="Strategic queue" class="admin-card">
+                  <a-list :data-source="adminWorkflowQueue" size="small" bordered>
+                    <template #renderItem="{ item }">
+                      <a-list-item>
+                        <a-list-item-meta
+                          :title="item.label"
+                          :description="item.description"
+                        />
+                        <template #actions>
+                          <span class="metric-pill metric-pill--accent">
+                            {{ item.owner }}
+                          </span>
+                        </template>
+                      </a-list-item>
+                    </template>
+                  </a-list>
+                </a-card>
+              </a-col>
+              <a-col :xs="24" :md="14">
+                <a-card title="Department operating picture" class="admin-card">
+                  <a-table
+                    size="small"
+                    :dataSource="institutionDepartments"
+                    :pagination="{ pageSize: 6 }"
+                    rowKey="id"
+                  >
+                    <a-table-column key="name" title="Department" dataIndex="name" />
+                    <a-table-column key="slug" title="Slug" dataIndex="slug" />
+                    <a-table-column key="classrooms" title="Classrooms">
+                      <template #default="{ record }">
+                        {{ departmentClassroomCount[record.id] || 0 }}
+                      </template>
+                    </a-table-column>
+                    <a-table-column key="status" title="Status">
+                      <template #default="{ record }">
+                        <a-tag :color="record.active !== false ? 'green' : 'default'">
+                          {{ record.active !== false ? 'Active' : 'Inactive' }}
+                        </a-tag>
+                      </template>
+                    </a-table-column>
+                  </a-table>
+                  <template #extra>
+                    <a-space>
+                      <a-button type="primary" @click="openAdminModal('department')">
+                        Create department
+                      </a-button>
+                      <a-button @click="openAdminModal('classroom')">
+                        Create classroom
+                      </a-button>
+                    </a-space>
+                  </template>
+                </a-card>
+              </a-col>
+            </a-row>
           </a-tab-pane>
 
-          <a-tab-pane v-if="isTeacherLike" key="teaching" tab="Teaching">
-            <TeacherSection
-              :me="me"
-              :institutions="institutions"
-              :departments="departments"
-              :classrooms="classrooms"
-              :teacher-classrooms="myTeacherClassrooms"
-              :teacher-courses="teacherCourses"
-            />
+          <a-tab-pane key="teachers" tab="Teacher workspace">
+            <a-row :gutter="16">
+              <a-col :xs="24" :md="14">
+                <a-card title="Classrooms connected to Teach">
+                  <a-table
+                    size="small"
+                    :dataSource="teacherTableData"
+                    :pagination="{ pageSize: 6 }"
+                    :rowKey="record => record.id"
+                    :customRow="teacherTableCustomRow"
+                  >
+                    <a-table-column key="title" title="Classroom">
+                      <template #default="{ record }">
+                        <div>
+                          <strong>{{ record.title || record.code }}</strong>
+                          <p class="table-sub">Code: {{ record.code }}</p>
+                        </div>
+                      </template>
+                    </a-table-column>
+                    <a-table-column key="dept" title="Department">
+                      <template #default="{ record }">
+                        {{ record.departmentName }}
+                      </template>
+                    </a-table-column>
+                    <a-table-column key="capacity" title="Capacity" dataIndex="capacity" />
+                    <a-table-column key="enrollment" title="Enrollment">
+                      <template #default="{ record }">
+                        {{ record.enrollmentCount ?? '—' }}
+                      </template>
+                    </a-table-column>
+                    <a-table-column key="status" title="Status">
+                      <template #default="{ record }">
+                        <a-tag :color="record.status === 'active' ? 'green' : 'default'">
+                          {{ record.status || 'pending' }}
+                        </a-tag>
+                      </template>
+                    </a-table-column>
+                  </a-table>
+                </a-card>
+              </a-col>
+              <a-col :xs="24" :md="10">
+                <a-card title="Mission queue">
+                  <a-list :data-source="teacherMissions" size="small">
+                    <template #renderItem="{ item }">
+                      <a-list-item @click="item.classroom && openClassroomDrawer(item.classroom)">
+                        <a-list-item-meta
+                          :title="item.title"
+                          :description="item.description"
+                        />
+                        <template #actions>
+                          <span class="metric-pill metric-pill--accent">
+                            {{ item.timeline }}
+                          </span>
+                        </template>
+                      </a-list-item>
+                    </template>
+                  </a-list>
+                  <a-divider />
+                  <p class="card-subtitle">Linked courses</p>
+                  <ul class="course-list">
+                    <li v-for="course in highlightCourses" :key="course.id">
+                      <p class="course-name">{{ course.title }}</p>
+                      <p class="course-meta">
+                        {{ course.category || 'Institution-linked' }} ·
+                        {{ course.difficulty || 'Mixed level' }}
+                      </p>
+                    </li>
+                  </ul>
+                </a-card>
+                <a-card title="Teaching day timeline">
+                  <a-timeline>
+                    <a-timeline-item
+                      v-for="entry in teacherDayTimeline"
+                      :key="entry.id"
+                      color="blue"
+                    >
+                      <p class="timeline-title">{{ entry.title }}</p>
+                      <p class="timeline-description">{{ entry.description }}</p>
+                      <p class="timeline-metric">{{ entry.slot }}</p>
+                    </a-timeline-item>
+                  </a-timeline>
+                </a-card>
+              </a-col>
+            </a-row>
           </a-tab-pane>
 
-          <a-tab-pane v-if="isStudent" key="learning" tab="Learning">
-            <StudentSection
-              :me="me"
-              :institutions="institutions"
-              :departments="departments"
-              :classrooms="classrooms"
-              :student-classrooms="myStudentClassrooms"
-            />
-          </a-tab-pane>
-
-          <a-tab-pane v-if="devMode" key="dev" tab="Dev / JSON">
-            <DevSection
-              :me="me"
-              :institutions="institutions"
-              :departments="departments"
-              :classrooms="classrooms"
-              :members="members"
-              :teacher-courses="teacherCourses"
-              v-model:roleOverride="devRoleOverride"
-            />
+          <a-tab-pane key="students" tab="Student workspace">
+            <a-row :gutter="16">
+              <a-col :xs="24" :md="10">
+                <a-card title="Engagement snapshot" class="student-card">
+                  <div class="progress-grid">
+                    <div
+                      v-for="progress in studentEngagement"
+                      :key="progress.id"
+                      class="progress-item"
+                    >
+                      <a-progress type="circle" :percent="progress.percent" :width="90" />
+                      <p class="progress-label">{{ progress.label }}</p>
+                      <p class="progress-helper">{{ progress.helper }}</p>
+                    </div>
+                  </div>
+                </a-card>
+              </a-col>
+              <a-col :xs="24" :md="14">
+                <a-card title="Advisory feed">
+                  <a-list :data-source="studentMoments" size="small">
+                    <template #renderItem="{ item }">
+                      <a-list-item>
+                        <a-list-item-meta
+                          :title="item.title"
+                          :description="item.description"
+                        />
+                        <template #actions>
+                          <span class="metric-pill" :data-status="item.status">
+                            {{ item.helper }}
+                          </span>
+                        </template>
+                      </a-list-item>
+                    </template>
+                  </a-list>
+                  <a-divider />
+                  <p class="card-subtitle">Next important dates</p>
+                  <ul class="important-dates">
+                    <li v-for="event in nextImportantDates" :key="event.id">
+                      <CalendarOutlined />
+                      <div>
+                        <p class="date-label">{{ event.title }}</p>
+                        <p class="date-helper">
+                          {{ event.date }} · {{ event.description }}
+                        </p>
+                      </div>
+                    </li>
+                  </ul>
+                </a-card>
+                <a-card title="Action center">
+                  <a-list :data-source="studentActionItems" size="small" bordered>
+                    <template #renderItem="{ item }">
+                      <a-list-item>
+                        <a-list-item-meta
+                          :title="item.label"
+                          :description="item.description"
+                        />
+                        <template #actions>
+                          <span class="metric-pill" :data-status="item.status">
+                            {{ item.helper }}
+                          </span>
+                        </template>
+                      </a-list-item>
+                    </template>
+                  </a-list>
+                  <a-button block type="dashed" @click="handleMockAction('student-workflow')">
+                    Record study reflection (mock)
+                  </a-button>
+                </a-card>
+              </a-col>
+            </a-row>
           </a-tab-pane>
         </a-tabs>
       </section>
 
-      <!-- Institution drawer -->
+      <section class="ops-grid" aria-label="Operations">
+        <a-card title="Operational timeline">
+          <a-timeline>
+            <a-timeline-item v-for="event in opsTimeline" :key="event.id" :color="event.color">
+              <p class="timeline-title">{{ event.title }}</p>
+              <p class="timeline-description">{{ event.description }}</p>
+              <p class="timeline-meta">{{ event.date }}</p>
+            </a-timeline-item>
+          </a-timeline>
+        </a-card>
+
+        <a-card title="Membership mix">
+          <div class="membership-grid">
+            <div>
+              <p class="membership-label">Administrators</p>
+              <p class="membership-value">{{ adminMembers.length }}</p>
+              <p class="membership-helper">Core governance</p>
+            </div>
+            <div>
+              <p class="membership-label">Teachers</p>
+              <p class="membership-value">{{ teacherMembers.length }}</p>
+              <p class="membership-helper">Linked to classrooms</p>
+            </div>
+            <div>
+              <p class="membership-label">Students</p>
+              <p class="membership-value">{{ studentMembers.length }}</p>
+              <p class="membership-helper">Active enrollments</p>
+            </div>
+          </div>
+          <a-progress :percent="capacityUsage" status="active" />
+          <p class="membership-footnote">Capacity utilization across classrooms</p>
+        </a-card>
+
+        <a-card title="Course initiatives">
+          <a-empty
+            v-if="highlightCourses.length === 0"
+            description="No linked courses yet"
+          />
+          <a-list v-else :data-source="highlightCourses" size="small">
+            <template #renderItem="{ item }">
+              <a-list-item>
+                <a-list-item-meta :title="item.title" :description="item.category" />
+                <template #actions>
+                  <span>{{ item.difficulty || 'Balanced' }}</span>
+                </template>
+              </a-list-item>
+            </template>
+          </a-list>
+          <a-button block type="dashed" @click="handleMockAction('courses')">
+            Sync with Teach-internal (mock)
+          </a-button>
+        </a-card>
+      </section>
+
       <a-drawer
-        v-model:open="instDrawerOpen"
-        :title="selectedInstitution && selectedInstitution.name || 'Institution'"
-
+        v-model:open="classroomDrawerOpen"
+        :title="selectedClassroom?.title || selectedClassroom?.code || 'Classroom'"
         placement="right"
-        width="480"
+        width="420"
       >
-        <template v-if="selectedInstitution">
-          <p class="drawer-sub">
-            {{ selectedInstitution.location || 'No location' }} ·
-            <span :class="selectedInstitution.active ? 'tag-active' : 'tag-inactive'">
-              {{ selectedInstitution.active ? 'Active' : 'Inactive' }}
-            </span>
+        <template v-if="selectedClassroom">
+          <p class="drawer-meta">
+            {{ selectedClassroom.code }} · {{ selectedClassroom.status || 'pending' }}
           </p>
-
-          <a-descriptions bordered size="small" :column="1">
-            <a-descriptions-item label="Type">
-              {{ selectedInstitution.type || '—' }}
+          <a-descriptions bordered column="1" size="small">
+            <a-descriptions-item label="Department">
+              {{ deptById[selectedClassroom.departmentId || '']?.name || 'Unassigned' }}
             </a-descriptions-item>
-            <a-descriptions-item label="Email">
-              {{ selectedInstitution.email || '—' }}
+            <a-descriptions-item label="Capacity">
+              {{ selectedClassroom.capacity ?? '—' }}
             </a-descriptions-item>
-            <a-descriptions-item label="Phone">
-              {{ selectedInstitution.phone || '—' }}
+            <a-descriptions-item label="Enrollment">
+              {{ selectedClassroom.enrollmentCount ?? '—' }}
             </a-descriptions-item>
           </a-descriptions>
 
           <div class="drawer-section">
-            <h4>Departments</h4>
-            <a-empty
-              v-if="selectedInstDepartments.length === 0"
-              description="No departments yet"
-              :image="simpleEmptyImage"
-            />
-            <a-list v-else :data-source="selectedInstDepartments" size="small">
-              <template #renderItem="{ item }">
-                <a-list-item>
-                  <a-list-item-meta :title="item.name" :description="item.slug" />
-                  <template #actions>
-                    <span v-if="item.active" class="badge-green">Active</span>
-                    <span v-else class="badge-grey">Inactive</span>
-                  </template>
-                </a-list-item>
-              </template>
-            </a-list>
-          </div>
-
-          <div class="drawer-section">
-            <h4>Classrooms</h4>
-            <a-empty
-              v-if="selectedInstClassrooms.length === 0"
-              description="No classrooms yet"
-            />
-            <a-list
-              v-else
-              :data-source="selectedInstClassrooms"
-              size="small"
-              item-layout="horizontal"
-            >
-              <template #renderItem="{ item }">
-                <a-list-item>
-                  <a-list-item-meta
-                    :title="item.title || item.code"
-                    :description="`Code: ${item.code} · Capacity: ${item.capacity ?? 30}`"
-                  />
-                  <template #actions>
-                    <a-tag :color="item.status === 'active' ? 'green' : 'default'">
-                      {{ item.status || 'pending' }}
-                    </a-tag>
-                  </template>
-                </a-list-item>
-              </template>
-            </a-list>
-          </div>
-
-          <div class="drawer-section">
-            <h4>Members (mock)</h4>
-            <a-empty
-              v-if="selectedInstMembers.length === 0"
-              description="No members yet"
-            />
-            <a-list v-else :data-source="selectedInstMembers" size="small">
-              <template #renderItem="{ item }">
-                <a-list-item>
-                  <a-list-item-meta
-                    :title="item.userId"
-                    :description="item.role || 'member'"
-                  />
-                  <template #actions>
-                    <a-tag color="blue">{{ item.status || 'ACTIVE' }}</a-tag>
-                  </template>
-                </a-list-item>
-              </template>
-            </a-list>
-          </div>
-
-          <div class="drawer-footer">
-            <a-button v-if="isStudent" type="primary" @click="mockJoinInstitution">
-              <UserAddOutlined /> Join institution (mock)
-            </a-button>
-            <a-button v-if="isAdminLike" @click="mockArchiveInstitution" danger>
-              <DeleteOutlined /> Archive (mock)
-            </a-button>
+            <p class="drawer-section__title">Recommended next steps</p>
+            <ul>
+              <li v-for="action in classroomRecommendations" :key="action.id">
+                <p class="action-label">{{ action.label }}</p>
+                <p class="action-helper">{{ action.detail }}</p>
+              </li>
+            </ul>
           </div>
         </template>
         <template v-else>
-          <a-empty description="Select an institution" />
+          <a-empty description="Select a classroom from the teaching table" />
         </template>
       </a-drawer>
 
-      <!-- Create/edit institution (mock submit) -->
       <a-modal
-        v-model:open="instModalOpen"
-        :title="instForm.id ? 'Edit Institution (mock)' : 'Create Institution (mock)'"
+        v-model:open="adminModalOpen"
+        :title="adminModalTitle"
         ok-text="Save"
         cancel-text="Cancel"
-        @ok="mockSaveInstitution"
+        @ok="handleAdminModalOk"
       >
         <a-form layout="vertical">
           <a-form-item label="Name" required>
-            <a-input v-model:value="instForm.name" />
+            <a-input v-model:value="adminForm.name" />
           </a-form-item>
-          <a-form-item label="Slug">
-            <a-input v-model:value="instForm.slug" />
+          <a-form-item label="Owner">
+            <a-input v-model:value="adminForm.owner" />
           </a-form-item>
-          <a-form-item label="Type">
-            <a-input v-model:value="instForm.type" />
-          </a-form-item>
-          <a-form-item label="Location">
-            <a-input v-model:value="instForm.location" />
-          </a-form-item>
-          <a-form-item label="Email">
-            <a-input v-model:value="instForm.email" />
-          </a-form-item>
-          <a-form-item label="Phone">
-            <a-input v-model:value="instForm.phone" />
-          </a-form-item>
-          <a-form-item>
-            <a-switch v-model:checked="instForm.active" />
-            <span class="ml-2">Active</span>
+          <a-form-item label="Notes">
+            <a-textarea v-model:value="adminForm.note" :rows="3" />
           </a-form-item>
         </a-form>
       </a-modal>
@@ -400,76 +595,44 @@
 </template>
 
 <script setup lang="ts">
-/**
- * Institution Portal – single-file, role-aware, mocked integration between:
- * - institutions plugin (institutions, departments, classrooms, members)
- * - teach-internal plugin (courses/classrooms via ID-based relation)
- *
- * Drop-in idea:
- *   plugins/institution-portal/nuxt/pages/index.vue
- *
- * Expects:
- *   - Ant Design Vue registered globally
- *   - useAuth composable providing token + me (with roles)
- */
-
-import {
-  ref,
-  computed,
-  onMounted,
-  watch,
-  defineComponent,
-} from 'vue'
-import { useRuntimeConfig, useRoute } from 'nuxt/app'
-import { useAuth } from '../../../../packages/shared-ui/src/composables/useAuth'
+import { computed, onMounted, ref, watch, type Component } from 'vue'
+import { useRoute, useRouter, useRuntimeConfig } from 'nuxt/app'
 import { message } from 'ant-design-vue'
+
 import {
   ReloadOutlined,
-  PlusOutlined,
   TeamOutlined,
-  UserOutlined,
-  CheckCircleOutlined,
+  DashboardOutlined,
+  ApartmentOutlined,
+  BookOutlined,
   FieldTimeOutlined,
-  BulbOutlined,
-  ClusterOutlined,
   SafetyCertificateOutlined,
   CalendarOutlined,
-  BookOutlined,
-  DeleteOutlined,
-  UserAddOutlined,
-  ApartmentOutlined,
+  ProfileOutlined,
+  ClusterOutlined,
 } from '@ant-design/icons-vue'
-
-/* ----------------- Types ----------------- */
+import { useAuth  as useGraphqlAuth } from '../../../../packages/shared-ui/src/composables/useAuth'
 
 type RoleKey = 'admin' | 'teacher' | 'student'
-
-interface PortalUser {
-  id: string
-  email?: string | null
-  firstName?: string | null
-  lastName?: string | null
-  role?: string | null
-  roles?: string[] | null
-}
+type RoleToggleValue = 'auto' | RoleKey
+type TabKey = 'overview' | 'administrators' | 'teachers' | 'students'
 
 interface Institution {
   id: string
   name: string
   slug?: string
-  description?: string | null
-  type?: string | null
-  location?: string | null
-  email?: string | null
-  phone?: string | null
+  location?: string
+  type?: string
   active?: boolean
+  email?: string
+  phone?: string
 }
 
 interface Department {
   id: string
-  institutionId: string
   name: string
   slug?: string
+  institutionId: string
   active?: boolean
 }
 
@@ -481,1211 +644,702 @@ interface PortalClassroom {
   code: string
   capacity?: number | null
   status?: string | null
-  // derived fields for teacher/student
   teacherId?: string | null
-  enrollmentCount?: number
+  enrollmentCount?: number | null
 }
 
 interface Member {
   id: string
-  institutionId: string
   userId: string
+  institutionId: string
   role: string
-  status: string
+  status?: string
 }
 
 interface TeacherCourse {
   id: string
   title: string
-  institutionId?: string | null
   difficulty?: string | null
   category?: string | null
+  institutionId?: string | null
 }
 
-/* ----------------- Child Sections (inline) ----------------- */
-/**
- * OverviewSection – common high-level list of institutions, with quick filters,
- * used for all roles.
- */
-import { h } from 'vue'
+interface StatCard {
+  id: string
+  label: string
+  value: string
+  hint: string
+  icon: Component
+}
+
+interface AdminSnapshot {
+  id: string
+  label: string
+  metric: string
+  detail: string
+  status: 'good' | 'watch'
+}
+
+interface TeacherMission {
+  id: string
+  title: string
+  description: string
+  timeline: string
+  classroom?: PortalClassroom
+}
+
+interface StudentMoment {
+  id: string
+  title: string
+  description: string
+  helper: string
+  status: 'good' | 'warn'
+}
+
+interface TimelineEvent {
+  id: string
+  title: string
+  description: string
+  date: string
+  color: 'green' | 'blue' | 'orange'
+}
+
+interface EngagementItem {
+  id: string
+  label: string
+  helper: string
+  percent: number
+}
+
+interface DrawerAction {
+  id: string
+  label: string
+  detail: string
+}
+
+interface SpotlightCard {
+  id: string
+  title: string
+  detail: string
+  metric: string
+  icon: Component
+}
+
+interface RoleNarrative {
+  badge: string
+  title: string
+  description: string
+  helper: string
+}
+
+interface ActionCenterItem {
+  id: string
+  label: string
+  description: string
+  helper: string
+  status: 'good' | 'warn'
+}
 
-const OverviewSection = defineComponent({
-  name: 'OverviewSection',
-  props: {
-    institutions: { type: Array as PropType<Institution[]>, required: true },
-    members: { type: Array as () => Member[], required: true },
-    classrooms: { type: Array as () => PortalClassroom[], required: true },
-    departments: { type: Array as () => Department[], required: true },
-    effectiveRole: { type: String as () => RoleKey, required: true },
-    primaryInstitutionId: { type: String, default: '' },
-  },
-  emits: ['open-inst'],
-  setup(props, { emit }) {
-    const search = ref('')
-    const statusFilter = ref<'all' | 'active' | 'inactive'>('all')
-
-    const instStatsMap = computed(() => {
-      const out: Record<string, {
-        departments: number
-        classrooms: number
-        members: number
-      }> = {}
-
-      props.institutions.forEach(i => {
-        out[i.id] = { departments: 0, classrooms: 0, members: 0 }
-      })
-
-      props.departments.forEach(d => {
-        if (!out[d.institutionId])
-          out[d.institutionId] = { departments: 0, classrooms: 0, members: 0 }
-        out[d.institutionId].departments++
-      })
-
-      props.classrooms.forEach(c => {
-        if (!out[c.institutionId])
-          out[c.institutionId] = { departments: 0, classrooms: 0, members: 0 }
-        out[c.institutionId].classrooms++
-      })
-
-      props.members.forEach(m => {
-        if (!out[m.institutionId])
-          out[m.institutionId] = { departments: 0, classrooms: 0, members: 0 }
-        out[m.institutionId].members++
-      })
-
-      return out
-    })
-
-    const filteredInstitutions = computed(() => {
-      const q = search.value.toLowerCase().trim()
-      return props.institutions.filter(i => {
-        if (statusFilter.value === 'active' && !i.active) return false
-        if (statusFilter.value === 'inactive' && i.active) return false
-        if (!q) return true
-        return (
-          (i.name || '').toLowerCase().includes(q) ||
-          (i.location || '').toLowerCase().includes(q)
-        )
-      })
-    })
-
-    const sortedInstitutions = computed(() => {
-      const list = [...filteredInstitutions.value]
-      if (props.primaryInstitutionId) {
-        list.sort((a, b) => {
-          if (a.id === props.primaryInstitutionId) return -1
-          if (b.id === props.primaryInstitutionId) return 1
-          return a.name.localeCompare(b.name)
-        })
-      } else {
-        list.sort((a, b) => a.name.localeCompare(b.name))
-      }
-      return list
-    })
-
-    const openInst = (inst: Institution) => emit('open-inst', inst)
-
-    /* ============================================================
-       RETURN (h function)
-    ============================================================ */
-    return () =>
-      h(
-        'div',
-        { class: 'section overview-section' },
-        [
-          h(
-            'a-card',
-            { class: 'section-card', bordered: true },
-            {
-              default: () => [
-                // --- HEADER ---
-                h('div', { class: 'section-header' }, [
-                  h('div', null, [
-                    h('h3', null, 'Institutions overview'),
-                    h('p', { class: 'section-sub' },
-                      'High-level list of all institutions you have access to. Content below adapts to your role.'
-                    ),
-                  ]),
-
-                  h('div', { class: 'controls' }, [
-                    h('a-input-search', {
-                      'allow-clear': true,
-                      placeholder: 'Search by name or location',
-                      style: 'width: 220px',
-                      'v-model:value': search.value,
-                      onInput: (e: any) => (search.value = e.target.value),
-                    }),
-
-                    h(
-                      'a-select',
-                      {
-                        style: 'width: 150px; margin-left: 8px',
-                        'v-model:value': statusFilter.value,
-                        onChange: (v: any) => (statusFilter.value = v),
-                      },
-                      {
-                        default: () => [
-                          h('a-select-option', { value: 'all' }, { default: () => 'All' }),
-                          h('a-select-option', { value: 'active' }, { default: () => 'Active' }),
-                          h('a-select-option', { value: 'inactive' }, { default: () => 'Inactive' }),
-                        ],
-                      }
-                    ),
-                  ]),
-                ]),
-
-                // --- EMPTY ---
-                sortedInstitutions.value.length === 0
-                  ? h('a-empty', { description: 'No institutions found' })
-
-                  // --- INSTITUTIONS GRID ---
-                  : h(
-                      'a-row',
-                      { gutter: [16, 16] },
-                      {
-                        default: () =>
-                          sortedInstitutions.value.map(inst => {
-                            const stats = instStatsMap.value[inst.id] || {
-                              departments: 0,
-                              classrooms: 0,
-                              members: 0,
-                            }
-
-                            const isPrimary = inst.id === props.primaryInstitutionId
-
-                            return h(
-                              'a-col',
-                              {
-                                xs: 24,
-                                sm: 12,
-                                lg: 8,
-                                key: inst.id,
-                              },
-                              {
-                                default: () =>
-                                  h(
-                                    'a-card',
-                                    {
-                                      class: {
-                                        'inst-card': true,
-                                        'inst-card-primary': isPrimary,
-                                        inactive: inst.active === false,
-                                      },
-                                      bordered: true,
-                                      hoverable: true,
-                                      onClick: () => openInst(inst),
-                                    },
-                                    {
-                                      default: () => [
-                                        // HEAD
-                                        h('div', { class: 'inst-card-head' }, [
-                                          h('div', null, [
-                                            h('div', { class: 'inst-name' }, inst.name),
-                                            h(
-                                              'div',
-                                              { class: 'inst-location' },
-                                              inst.location || 'No location'
-                                            ),
-                                          ]),
-
-                                          h('div', { class: 'inst-tag-wrap' }, [
-                                            h(
-                                              'a-tag',
-                                              { color: inst.active === false ? 'red' : 'green' },
-                                              { default: () => (inst.active === false ? 'Inactive' : 'Active') }
-                                            ),
-                                            isPrimary
-                                              ? h(
-                                                  'a-tag',
-                                                  { color: 'blue' },
-                                                  { default: () => 'Primary' }
-                                                )
-                                              : null,
-                                          ]),
-                                        ]),
-
-                                        // GRID
-                                        h('div', { class: 'inst-grid' }, [
-                                          h('div', { class: 'inst-row' }, [
-                                            h('span', null, 'Departments'),
-                                            h('strong', null, stats.departments),
-                                          ]),
-                                          h('div', { class: 'inst-row' }, [
-                                            h('span', null, 'Classrooms'),
-                                            h('strong', null, stats.classrooms),
-                                          ]),
-                                          h('div', { class: 'inst-row' }, [
-                                            h('span', null, 'Members'),
-                                            h('strong', null, stats.members),
-                                          ]),
-                                        ]),
-
-                                        // FOOTER
-                                        h('div', { class: 'inst-footer' }, [
-                                          inst.type
-                                            ? h(
-                                                'a-tag',
-                                                { color: 'geekblue' },
-                                                { default: () => inst.type }
-                                              )
-                                            : null,
-
-                                          h(
-                                            'span',
-                                            { class: 'inst-role-hint' },
-                                            props.effectiveRole === 'admin'
-                                              ? 'Click to administer'
-                                              : props.effectiveRole === 'teacher'
-                                              ? 'Click to see teaching context'
-                                              : 'Click to see classrooms'
-                                          ),
-                                        ]),
-                                      ],
-                                    }
-                                  ),
-                              }
-                            )
-                          }),
-                      }
-                    ),
-              ],
-            }
-          ),
-        ]
-      )
-  },
-})
-
-
-/**
- * AdminSection – heavy management oriented; still mocked for write actions.
- */
-import {PropType } from 'vue'
-const AdminSection = defineComponent({
-  name: 'AdminSection',
-  props: {
-    institutions: { type: Array as PropType<Institution[]>, required: true },
-    members: { type: Array as () => Member[], required: true },
-    departments: { type: Array as () => Department[], required: true },
-    classrooms: { type: Array as () => PortalClassroom[], required: true },
-    loading: { type: Boolean, default: false },
-  },
-  emits: ['request-create', 'open-inst'],
-  setup(props, { emit }) {
-    const instSearch = ref('')
-    const selectedInstId = ref<string | null>(null)
-
-    const membersByInstitution = computed(() => {
-      const map: Record<string, Member[]> = {}
-      props.members.forEach(m => {
-        if (!map[m.institutionId]) map[m.institutionId] = []
-        map[m.institutionId].push(m)
-      })
-      return map
-    })
-
-    const filteredInst = computed(() => {
-      const q = instSearch.value.toLowerCase().trim()
-      let list = [...props.institutions]
-      if (q) {
-        list = list.filter(
-          i =>
-            i.name.toLowerCase().includes(q) ||
-            (i.slug || '').toLowerCase().includes(q),
-        )
-      }
-      list.sort((a, b) => a.name.localeCompare(b.name))
-      return list
-    })
-
-    const currentInst = computed(() =>
-      props.institutions.find(i => i.id === selectedInstId.value),
-    )
-
-    const currentDepartments = computed(() =>
-      props.departments.filter(d => d.institutionId === selectedInstId.value),
-    )
-
-    const currentClassrooms = computed(() =>
-      props.classrooms.filter(c => c.institutionId === selectedInstId.value),
-    )
-
-    const currentMembers = computed(
-      () => membersByInstitution.value[selectedInstId.value || ''] || [],
-    )
-
-    const openInst = (inst: Institution) => {
-      selectedInstId.value = inst.id
-      emit('open-inst', inst)
-    }
-
-    const triggerCreate = () => emit('request-create')
-
-    /* =================================================
-       RETURN (h FUNCTION ONLY)
-    ================================================= */
-    return () =>
-      h('div', { class: 'section admin-section' }, [
-        h(
-          'a-row',
-          { gutter: 16 },
-          {
-            default: () => [
-              /* ---------------- LEFT COLUMN ---------------- */
-              h(
-                'a-col',
-                { xs: 24, md: 8 },
-                {
-                  default: () =>
-                    h(
-                      'a-card',
-                      {
-                        class: 'section-card',
-                        title: 'Institutions',
-                        loading: props.loading,
-                        extra: () =>
-                          h(
-                            'a-button',
-                            {
-                              size: 'small',
-                              type: 'primary',
-                              onClick: triggerCreate,
-                            },
-                            { default: () => ['New'] }
-                          ),
-                      },
-                      {
-                        default: () => [
-                          /* Search */
-                          h('a-input-search', {
-                            'allow-clear': true,
-                            placeholder: 'Search institutions...',
-                            'v-model:value': instSearch.value,
-                            onInput: (e: any) =>
-                              (instSearch.value = e.target.value),
-                          }),
-
-                          /* List */
-                          h(
-                            'a-list',
-                            {
-                              class: 'mt-2',
-                              size: 'small',
-                              bordered: true,
-                              dataSource: filteredInst.value,
-                            },
-                            {
-                              renderItem: ({ item }: any) =>
-                                h(
-                                  'a-list-item',
-                                  {
-                                    class: {
-                                      'inst-item': true,
-                                      active: item.id === selectedInstId.value,
-                                    },
-                                    onClick: () => openInst(item),
-                                  },
-                                  {
-                                    default: () =>
-                                      h('a-list-item-meta', {
-                                        title: item.name,
-                                        description: item.slug || 'no slug',
-                                      }),
-
-                                    actions: () => [
-                                      h(
-                                        'a-tag',
-                                        {
-                                          size: 'small',
-                                          color:
-                                            item.active === false
-                                              ? 'red'
-                                              : 'green',
-                                        },
-                                        {
-                                          default: () =>
-                                            item.active === false
-                                              ? 'Inactive'
-                                              : 'Active',
-                                        },
-                                      ),
-                                    ],
-                                  }
-                                ),
-                            }
-                          ),
-                        ],
-                      }
-                    ),
-                }
-              ),
-
-              /* ---------------- RIGHT COLUMN ---------------- */
-              h(
-                'a-col',
-                { xs: 24, md: 16 },
-                {
-                  default: () =>
-                    h(
-                      'a-card',
-                      {
-                        class: 'section-card',
-                        title:
-                          currentInst.value?.name ||
-                          'Select an institution',
-                        loading: props.loading,
-                      },
-                      {
-                        default: () =>
-                          currentInst.value
-                            ? [
-                                h(
-                                  'p',
-                                  { class: 'section-sub' },
-                                  'Manage departments, classrooms and members. Actions are mocked – you can wire them to your institution API later.'
-                                ),
-
-                                /* Tabs */
-                                h(
-                                  'a-tabs',
-                                  { 'default-active-key': 'departments' },
-                                  {
-                                    default: () => [
-                                      /* ---------------- Departments tab ---------------- */
-                                      h(
-                                        'a-tab-pane',
-                                        {
-                                          key: 'departments',
-                                          tab: 'Departments',
-                                        },
-                                        {
-                                          default: () =>
-                                            currentDepartments.value.length ===
-                                            0
-                                              ? h('a-empty', {
-                                                  description:
-                                                    'No departments yet',
-                                                })
-                                              : h(
-                                                  'a-list',
-                                                  {
-                                                    size: 'small',
-                                                    bordered: true,
-                                                    dataSource:
-                                                      currentDepartments.value,
-                                                  },
-                                                  {
-                                                    renderItem: ({
-                                                      item,
-                                                    }: any) =>
-                                                      h(
-                                                        'a-list-item',
-                                                        null,
-                                                        {
-                                                          default: () =>
-                                                            h(
-                                                              'a-list-item-meta',
-                                                              {
-                                                                title:
-                                                                  item.name,
-                                                                description:
-                                                                  item.slug,
-                                                              }
-                                                            ),
-                                                          actions: () => [
-                                                            h(
-                                                              'a-tag',
-                                                              {
-                                                                color:
-                                                                  item.active ===
-                                                                  false
-                                                                    ? 'default'
-                                                                    : 'green',
-                                                              },
-                                                              {
-                                                                default: () =>
-                                                                  item.active ===
-                                                                  false
-                                                                    ? 'Inactive'
-                                                                    : 'Active',
-                                                              }
-                                                            ),
-                                                          ],
-                                                        }
-                                                      ),
-                                                  }
-                                                ),
-                                        }
-                                      ),
-
-                                      /* ---------------- Classrooms tab ---------------- */
-                                      h(
-                                        'a-tab-pane',
-                                        {
-                                          key: 'classrooms',
-                                          tab: 'Classrooms',
-                                        },
-                                        {
-                                          default: () =>
-                                            currentClassrooms.value.length ===
-                                            0
-                                              ? h('a-empty', {
-                                                  description:
-                                                    'No classrooms yet',
-                                                })
-                                              : h(
-                                                  'a-table',
-                                                  {
-                                                    size: 'small',
-                                                    dataSource:
-                                                      currentClassrooms.value,
-                                                    pagination: false,
-                                                    rowKey: 'id',
-                                                  },
-                                                  {
-                                                    default: () => [
-                                                      h(
-                                                        'a-table-column',
-                                                        {
-                                                          title: 'Title',
-                                                          dataIndex: 'title',
-                                                          key: 'title',
-                                                          customRender: ({
-                                                            text,
-                                                            record,
-                                                          }: any) =>
-                                                            text ||
-                                                            record.code,
-                                                        }
-                                                      ),
-
-                                                      h(
-                                                        'a-table-column',
-                                                        {
-                                                          title: 'Code',
-                                                          dataIndex: 'code',
-                                                          key: 'code',
-                                                        }
-                                                      ),
-
-                                                      h(
-                                                        'a-table-column',
-                                                        {
-                                                          title: 'Capacity',
-                                                          dataIndex:
-                                                            'capacity',
-                                                          key: 'capacity',
-                                                        }
-                                                      ),
-
-                                                      h(
-                                                        'a-table-column',
-                                                        {
-                                                          title: 'Status',
-                                                          key: 'status',
-                                                          customRender: ({
-                                                            record,
-                                                          }: any) =>
-                                                            h(
-                                                              'a-tag',
-                                                              {
-                                                                color:
-                                                                  record.status ===
-                                                                  'active'
-                                                                    ? 'green'
-                                                                    : 'default',
-                                                              },
-                                                              {
-                                                                default: () =>
-                                                                  record.status ||
-                                                                  'pending',
-                                                              }
-                                                            ),
-                                                        }
-                                                      ),
-                                                    ],
-                                                  }
-                                                ),
-                                        }
-                                      ),
-
-                                      /* ---------------- Members tab ---------------- */
-                                      h(
-                                        'a-tab-pane',
-                                        {
-                                          key: 'members',
-                                          tab: 'Members',
-                                        },
-                                        {
-                                          default: () =>
-                                            currentMembers.value.length === 0
-                                              ? h('a-empty', {
-                                                  description:
-                                                    'No members yet',
-                                                })
-                                              : h(
-                                                  'a-table',
-                                                  {
-                                                    size: 'small',
-                                                    dataSource:
-                                                      currentMembers.value,
-                                                    pagination: false,
-                                                    rowKey: 'id',
-                                                  },
-                                                  {
-                                                    default: () => [
-                                                      h(
-                                                        'a-table-column',
-                                                        {
-                                                          title: 'User ID',
-                                                          dataIndex: 'userId',
-                                                          key: 'userId',
-                                                        }
-                                                      ),
-
-                                                      h(
-                                                        'a-table-column',
-                                                        {
-                                                          title: 'Role',
-                                                          dataIndex: 'role',
-                                                          key: 'role',
-                                                        }
-                                                      ),
-
-                                                      h(
-                                                        'a-table-column',
-                                                        {
-                                                          title: 'Status',
-                                                          dataIndex: 'status',
-                                                          key: 'status',
-                                                        }
-                                                      ),
-                                                    ],
-                                                  }
-                                                ),
-                                        }
-                                      ),
-                                    ],
-                                  }
-                                ),
-                              ]
-                            : h('a-empty', {
-                                description: 'Pick an institution on the left',
-                              }),
-                      }
-                    ),
-                }
-              ),
-            ],
-          }
-        ),
-      ])
-  },
-})
-
-
-/**
- * TeacherSection – teacher-focused mapping of classrooms to courses.
- */
-
- const TeacherSection = defineComponent({
-  name: 'TeacherSection',
-  props: {
-    me: { type: Object as PropType<PortalUser>, required: true },
-    institutions: { type: Array as PropType<Institution[]>, required: true },
-    departments: { type: Array as PropType<Department[]>, required: true },
-    classrooms: { type: Array as PropType<PortalClassroom[]>, required: true },
-    teacherClassrooms: { type: Array as PropType<PortalClassroom[]>, required: true },
-    teacherCourses: { type: Array as PropType<TeacherCourse[]>, required: true },
-  },
-
-  setup(props) {
-    const activeView = ref<'grid' | 'table'>('table')
-
-    const instById = computed(() => {
-      const map: Record<string, Institution> = {}
-      props.institutions.forEach(i => map[i.id] = i)
-      return map
-    })
-
-    const deptById = computed(() => {
-      const map: Record<string, Department> = {}
-      props.departments.forEach(d => map[d.id] = d)
-      return map
-    })
-
-    const courseByInstitution = computed(() => {
-      const m: Record<string, TeacherCourse[]> = {}
-      props.teacherCourses.forEach(c => {
-        const instId = c.institutionId || 'unassigned'
-        if (!m[instId]) m[instId] = []
-        m[instId].push(c)
-      })
-      return m
-    })
-
-    const teacherInstIds = computed(() => {
-      const set = new Set<string>()
-      props.teacherClassrooms.forEach(c => set.add(c.institutionId))
-      return [...set]
-    })
-
-    const teacherInstitutions = computed(() =>
-      props.institutions.filter(i => teacherInstIds.value.includes(i.id))
-    )
-
-    // ---------------------------------------------------------
-    // RETURN (PURE H FUNCTION)
-    // ---------------------------------------------------------
-    return () =>
-      h('div', { class: 'section teacher-section' }, [
-
-        /* -----------------------------------------------------
-           ROW
-        ----------------------------------------------------- */
-        h('a-row', { gutter: 16 }, {
-
-          default: () => [
-
-            /* ============================================================
-               LEFT COLUMN — My Institutions
-            ============================================================ */
-            h('a-col', { xs: 24, md: 9 }, {
-              default: () =>
-                h('a-card', {
-                  class: 'section-card',
-                  title: 'My Institutions',
-                  extra: () =>
-                    h('a-tag',
-                      { color: 'purple' },
-                      () => `Teacher · ${props.me.email || props.me.id}`
-                    )
-                }, {
-
-                  default: () =>
-                    teacherInstitutions.value.length === 0
-                      ? h('a-empty', { description: 'You’re not assigned to any institution yet' })
-                      : h('a-timeline', null, {
-                        default: () =>
-                          teacherInstitutions.value.map(inst =>
-                            h('a-timeline-item', { key: inst.id }, {
-                              default: () =>
-                                h('div', { class: 'inst-timeline-item' }, [
-                                  h('div', { class: 'name' }, inst.name),
-                                  h('div', { class: 'meta' },
-                                    `${inst.location || 'No location'} · ${
-                                      courseByInstitution.value[inst.id]?.length || 0
-                                    } courses`
-                                  )
-                                ])
-                            })
-                          )
-                      })
-                })
-            }),
-
-            /* ============================================================
-               RIGHT COLUMN — Classrooms + Courses
-            ============================================================ */
-            h('a-col', { xs: 24, md: 15 }, {
-
-              default: () => [
-
-                // ---------------------------------------------------------
-                // My Classrooms CARD
-                // ---------------------------------------------------------
-                h('a-card', {
-                  class: 'section-card',
-                  title: 'My Classrooms',
-                  extra: () =>
-                    h('a-radio-group', {
-                      size: 'small',
-                      'modelValue': activeView.value,
-                      'onUpdate:modelValue': (v: any) => activeView.value = v
-                    }, {
-                      default: () => [
-                        h('a-radio-button', { value: 'table' }, () => 'Table'),
-                        h('a-radio-button', { value: 'grid' }, () => 'Cards')
-                      ]
-                    })
-                }, {
-
-                  default: () => {
-
-                    // no classrooms
-                    if (props.teacherClassrooms.length === 0) {
-                      return h('a-empty', { description: 'No classrooms yet' })
-                    }
-
-                    // TABLE VIEW
-                    if (activeView.value === 'table') {
-                      return h('a-table', {
-                        size: 'small',
-                        dataSource: props.teacherClassrooms,
-                        rowKey: 'id',
-                        pagination: { pageSize: 7 }
-                      }, {
-                        default: () => [
-
-                          h('a-table-column', {
-                            title: 'Classroom',
-                            key: 'title',
-                            customRender: ({ record }: any) =>
-                              record.title || record.code
-                          }),
-
-                          h('a-table-column', {
-                            title: 'Code',
-                            dataIndex: 'code',
-                            key: 'code'
-                          }),
-
-                          h('a-table-column', {
-                            title: 'Institution',
-                            key: 'inst',
-                            customRender: ({ record }: any) =>
-                              instById.value[record.institutionId]?.name || '—'
-                          }),
-
-                          h('a-table-column', {
-                            title: 'Department',
-                            key: 'dept',
-                            customRender: ({ record }: any) =>
-                              deptById.value[record.departmentId || '']?.name || '—'
-                          }),
-
-                          h('a-table-column', {
-                            title: 'Capacity',
-                            dataIndex: 'capacity',
-                            key: 'capacity'
-                          }),
-
-                          h('a-table-column', {
-                            title: 'Enrollment',
-                            key: 'enrollment',
-                            customRender: ({ record }: any) =>
-                              record.enrollmentCount ?? '—'
-                          }),
-
-                          h('a-table-column', {
-                            title: 'Status',
-                            key: 'status',
-                            customRender: ({ record }: any) =>
-                              h('a-tag', {
-                                color:
-                                  record.status === 'active'
-                                    ? 'green'
-                                    : record.status === 'archived'
-                                    ? 'red'
-                                    : 'default'
-                              }, () => record.status || 'pending')
-                          })
-                        ]
-                      })
-                    }
-
-                    // GRID VIEW
-                    return h('a-row', { gutter: [12, 12] }, {
-                      default: () =>
-                        props.teacherClassrooms.map(c =>
-                          h('a-col', { xs: 24, sm: 12, key: c.id }, {
-                            default: () =>
-                              h('a-card', { hoverable: true }, {
-                                default: () => [
-                                  h('div', { class: 'card-head' }, [
-                                    h('div', null, [
-                                      h('div', { class: 'card-title' }, c.title || c.code),
-                                      h('div', { class: 'card-sub' }, c.code)
-                                    ]),
-                                    h('a-tag', {
-                                      color:
-                                        c.status === 'active'
-                                          ? 'green'
-                                          : c.status === 'archived'
-                                          ? 'red'
-                                          : 'default'
-                                    }, () => c.status || 'pending')
-                                  ]),
-
-                                  h('div', { class: 'row' }, [
-                                    h('span', null, 'Institution'),
-                                    h('strong', null,
-                                      instById.value[c.institutionId]?.name || '—'
-                                    )
-                                  ]),
-
-                                  h('div', { class: 'row' }, [
-                                    h('span', null, 'Department'),
-                                    h('strong', null,
-                                      deptById.value[c.departmentId || '']?.name || '—'
-                                    )
-                                  ]),
-
-                                  h('div', { class: 'row' }, [
-                                    h('span', null, 'Capacity'),
-                                    h('strong', null, c.capacity || 30)
-                                  ]),
-
-                                  h('div', { class: 'row' }, [
-                                    h('span', null, 'Enrollment'),
-                                    h('strong', null,
-                                      c.enrollmentCount != null
-                                        ? c.enrollmentCount
-                                        : '—'
-                                    )
-                                  ])
-                                ]
-                              })
-                          })
-                        )
-                    })
-                  }
-                }),
-
-                // ---------------------------------------------------------
-                // Courses Card
-                // ---------------------------------------------------------
-                h('a-card', {
-                  class: 'section-card mt-2',
-                  title: 'Courses (mocked mapping)'
-                }, {
-                  default: () =>
-                    props.teacherCourses.length === 0
-                      ? h('a-empty', { description: 'No courses returned from teach-internal yet' })
-                      : h('a-row', { gutter: [12, 12] }, {
-                        default: () =>
-                          props.teacherCourses.map(course =>
-                            h('a-col', { xs: 24, sm: 12, md: 8, key: course.id }, {
-                              default: () =>
-                                h('a-card', { hoverable: true, size: 'small' }, {
-                                  default: () => [
-                                    h('div', { class: 'card-title-sm' }, course.title),
-                                    h('div', { class: 'card-meta-sm' },
-                                      `${course.category || 'General'} · ${
-                                        course.difficulty || 'Mixed'
-                                      }`
-                                    ),
-                                    h('div', { class: 'card-meta-sm' }, [
-                                      'Institution: ',
-                                      course.institutionId
-                                        ? instById.value[course.institutionId]?.name ||
-                                          course.institutionId
-                                        : 'Unassigned'
-                                    ])
-                                  ]
-                                })
-                            })
-                          )
-                      })
-                })
-              ]
-            })
-          ]
-        })
-      ])
-  }
-})
-
-/* ----------------- Root logic ----------------- */
-
-const config = useRuntimeConfig()
-const apiBase = config.public?.apiBase || 'http://localhost:4000'
 const route = useRoute()
-const auth: any = useAuth()
+const router = useRouter()
+const runtime = useRuntimeConfig()
+const apiBase = runtime.public?.apiBase || runtime.public?.appBaseUrl || ''
 
-const tokenRef = computed<string | null>(() => {
-  const t =
-    auth?.token?.value ||
-    auth?.accessToken?.value ||
-    (typeof window !== 'undefined'
-      ? window.localStorage.getItem('token')
-      : null)
-  return t || null
-})
+const { me, isStudent, isTeacher, isInstitutionAdmin } = useGraphqlAuth()
 
-const me = computed<PortalUser | null>(() => {
-  const src =
-    auth?.me?.value ||
-    auth?.user?.value ||
-    auth?.currentUser?.value ||
-    null
-  return src
-    ? {
-        id: src.id,
-        email: src.email,
-        firstName: src.firstName,
-        lastName: src.lastName,
-        role: src.role,
-        roles: src.roles,
-      }
-    : null
-})
+const clientReady = ref(false)
+const apiAuthToken = ref<string | null>(null)
 
-function tokenHeader() {
-  const t = tokenRef.value
-  return t ? { Authorization: `Bearer ${t}` } : {}
-}
-
-// main data
 const institutions = ref<Institution[]>([])
 const departments = ref<Department[]>([])
 const classrooms = ref<PortalClassroom[]>([])
 const members = ref<Member[]>([])
 const teacherCourses = ref<TeacherCourse[]>([])
 
-// UI state
 const initialLoading = ref(true)
 const loadError = ref<string | null>(null)
-const savingAdmin = ref(false)
-const activeTabKey = ref('overview')
-const isDarkMode = ref<boolean>(
-  typeof window !== 'undefined' &&
-  window.localStorage.getItem('inst-portal-theme') === 'dark'
+const lastSyncedLabel = ref('never')
+
+const roleControlValue = ref<RoleToggleValue>('auto')
+const focusTab = ref<TabKey>('overview')
+const isDarkMode = ref(false)
+
+const selectedClassroom = ref<PortalClassroom | null>(null)
+const classroomDrawerOpen = ref(false)
+const adminModalOpen = ref(false)
+const adminModalMode = ref<'department' | 'classroom'>('department')
+const adminForm = ref({ name: '', owner: '', note: '' })
+
+function resolveAuthHeader() {
+  const rawToken =
+    apiAuthToken.value ||
+    (typeof window !== 'undefined'
+      ? localStorage.getItem('token') || localStorage.getItem('access_token')
+      : '')
+  if (!rawToken) return null
+  return rawToken.startsWith('Bearer') ? rawToken : `Bearer ${rawToken}`
+}
+
+const roleSelectOptions = [
+  { label: 'Auto (based on role)', value: 'auto' },
+  { label: 'Administrators', value: 'admin' },
+  { label: 'Teachers', value: 'teacher' },
+  { label: 'Students', value: 'student' },
+]
+
+const themeClass = computed(() => (isDarkMode.value ? 'theme-dark' : 'theme-light'))
+
+const institutionKey = ref('')
+
+const resolveInstitutionKey = () => {
+  const param = route.params?.institution_id
+  if (Array.isArray(param)) return param[0]
+  if (typeof param === 'string') return param
+  const queryKey = route.query?.institution_id
+  if (Array.isArray(queryKey)) return queryKey[0]
+  if (typeof queryKey === 'string') return queryKey
+  return ''
+}
+
+watch(
+  () => [route.params?.institution_id, route.query?.institution_id],
+  () => {
+    institutionKey.value = resolveInstitutionKey()
+  },
+  { immediate: true },
 )
 
-const devMode = ref(false)
-const devRoleOverride = ref('')
-const instDrawerOpen = ref(false)
-const selectedInstitution = ref<Institution | null>(null)
-const instModalOpen = ref(false)
-const instForm = ref<any>({
-  id: '',
-  name: '',
-  slug: '',
-  type: '',
-  location: '',
-  email: '',
-  phone: '',
-  active: true,
+const activeInstitution = computed<Institution | null>(() => {
+  if (institutions.value.length === 0) return null
+  if (!institutionKey.value) return institutions.value[0] || null
+  return (
+    institutions.value.find(
+      (i) => i.id === institutionKey.value || i.slug === institutionKey.value,
+    ) || institutions.value[0] || null
+  )
 })
 
-const simpleEmptyImage = 'https://gw.alipayobjects.com/zos/antfincdn/ZHrcdLPrvN/empty.svg'
+const institutionDepartments = computed(() =>
+  activeInstitution.value
+    ? departments.value.filter((d) => d.institutionId === activeInstitution.value!.id)
+    : [],
+)
 
-/* -------- effective role -------- */
+const institutionClassrooms = computed(() =>
+  activeInstitution.value
+    ? classrooms.value.filter((c) => c.institutionId === activeInstitution.value!.id)
+    : [],
+)
 
-const detectedRole = computed<RoleKey>(() => {
-  const user = me.value
-  if (!user) return 'student'
-  const roles = (user.roles || []).map((r) => r.toLowerCase())
-  const primary = (user.role || '').toLowerCase()
+const institutionMembers = computed(() =>
+  activeInstitution.value
+    ? members.value.filter((m) => m.institutionId === activeInstitution.value!.id)
+    : [],
+)
 
-  const all = [...roles, primary].join(',')
-  if (all.includes('admin')) return 'admin'
-  if (all.includes('teacher')) return 'teacher'
+const adminMembers = computed(() =>
+  institutionMembers.value.filter((m) => /admin/i.test(m.role)),
+)
+const teacherMembers = computed(() =>
+  institutionMembers.value.filter((m) => /teach/i.test(m.role)),
+)
+const studentMembers = computed(() =>
+  institutionMembers.value.filter((m) => /student/i.test(m.role)),
+)
+
+const membership = computed(() => {
+  if (!me.value) return null
+  return institutionMembers.value.find((m) => m.userId === me.value!.id) || null
+})
+
+const membershipRole = computed<RoleKey>(() => {
+  if (roleControlValue.value !== 'auto') return roleControlValue.value
+  if (isInstitutionAdmin.value) return 'admin'
+  if (isTeacher.value) return 'teacher'
+  if (isStudent.value) return 'student'
+  const role = membership.value?.role?.toLowerCase()
+  if (role?.includes('admin')) return 'admin'
+  if (role?.includes('teach')) return 'teacher'
   return 'student'
 })
 
-const effectiveRole = computed<RoleKey>(() => {
-  if (!devMode.value || !devRoleOverride.value) return detectedRole.value
-  if (devRoleOverride.value === 'admin') return 'admin'
-  if (devRoleOverride.value === 'teacher') return 'teacher'
-  if (devRoleOverride.value === 'student') return 'student'
-  return detectedRole.value
+const effectiveRole = computed<RoleKey>(() => membershipRole.value)
+
+const isAdminView = computed(() => effectiveRole.value === 'admin')
+const isTeacherView = computed(() => effectiveRole.value === 'teacher')
+const isStudentView = computed(() => effectiveRole.value === 'student')
+
+const heroSubtitle = computed(() => {
+  if (!activeInstitution.value) return ''
+  const deptCount = institutionDepartments.value.length
+  const classCount = institutionClassrooms.value.length
+  return `Live institution workspace with ${deptCount} departments and ${classCount} classrooms mapped to Teach.`
 })
 
-const isAdminLike = computed(() => effectiveRole.value === 'admin')
-const isTeacherLike = computed(
-  () => effectiveRole.value === 'teacher' || effectiveRole.value === 'admin',
-)
-const isStudent = computed(() => effectiveRole.value === 'student')
-
-/* -------- derived data -------- */
-
-const institutionsById = computed<Record<string, Institution>>(() => {
-  const m: Record<string, Institution> = {}
-  institutions.value.forEach((i) => (m[i.id] = i))
-  return m
-})
-
-const primaryInstitutionId = computed(() => {
-  // naive: first membership institution
-  const myId = me.value?.id
-  if (!myId) return ''
-  const mem = members.value.find((m) => m.userId === myId)
-  return mem?.institutionId || ''
-})
-
-const primaryInstitution = computed(
-  () => institutionsById.value[primaryInstitutionId.value],
-)
-
-const activeInstitutions = computed(() =>
-  institutions.value.filter((i) => i.active !== false),
-)
-
-const activeClassrooms = computed(() =>
-  classrooms.value.filter((c) => c.status === 'active'),
-)
-
-const myMemberships = computed(() => {
-  const id = me.value?.id
-  if (!id) return []
-  return members.value.filter((m) => m.userId === id)
-})
-
-const myTeacherClassrooms = computed(() => {
-  if (!me.value) return []
-  const id = me.value.id
-  // from membership OR teacherId field
-  return classrooms.value.filter(
-    (c) =>
-      c.teacherId === id ||
-      myMemberships.value.some(
-        (m) => m.institutionId === c.institutionId && m.role === 'teacher',
-      ),
-  )
-})
-
-const myStudentClassrooms = computed(() => {
-  if (!me.value) return []
-  const id = me.value.id
-  // we don't have ClassroomEnrollment in overview, so approximate with membership
-  return classrooms.value.filter((c) =>
-    myMemberships.value.some(
-      (m) => m.institutionId === c.institutionId && m.role === 'student',
-    ),
-  )
-})
-
-const myMembershipClassrooms = computed(() => {
-  if (!me.value) return []
-  const instIds = new Set(myMemberships.value.map((m) => m.institutionId))
-  return classrooms.value.filter((c) => instIds.has(c.institutionId))
-})
-
-/* -------- header meta -------- */
-
-const meDisplayName = computed(() => {
-  if (!me.value) return 'Welcome'
-  if (me.value.firstName || me.value.lastName) {
-    return `${me.value.firstName || ''} ${me.value.lastName || ''}`.trim()
+const roleViewDescription = computed(() => {
+  const map: Record<RoleKey, string> = {
+    admin: 'Viewing as Administrator',
+    teacher: 'Viewing as Teacher',
+    student: 'Viewing as Student',
   }
-  return me.value.email || me.value.id
+  return map[effectiveRole.value]
 })
 
-const roleLabel = computed(() => {
-  if (effectiveRole.value === 'admin') return 'Institution Admin'
-  if (effectiveRole.value === 'teacher') return 'Teacher'
-  return 'Student'
+const heroStats = computed<StatCard[]>(() => {
+  const deptCount = institutionDepartments.value.length
+  const classCount = institutionClassrooms.value.length
+  const activeClassrooms = institutionClassrooms.value.filter(
+    (c) => c.status !== 'archived',
+  ).length
+  const memberCount = institutionMembers.value.length
+  const facultyCoverage = teacherMembers.value.length
+  const avgCapacity = institutionClassrooms.value.length
+    ? Math.round(
+        institutionClassrooms.value.reduce((sum, c) => sum + (c.capacity || 0), 0) /
+          institutionClassrooms.value.length,
+      )
+    : 0
+  return [
+    {
+      id: 'departments',
+      label: 'Departments',
+      value: `${deptCount}`,
+      hint: `${deptCount ? 'Mapped' : 'Pending mapping'} for ${
+        activeInstitution.value?.name || ''
+      }`,
+      icon: ApartmentOutlined,
+    },
+    {
+      id: 'classrooms',
+      label: 'Classrooms',
+      value: `${classCount}`,
+      hint: `${activeClassrooms} active, ${classCount - activeClassrooms} in draft`,
+      icon: DashboardOutlined,
+    },
+    {
+      id: 'members',
+      label: 'Memberships',
+      value: `${memberCount}`,
+      hint: `${facultyCoverage} teachers, ${studentMembers.value.length} learners`,
+      icon: TeamOutlined,
+    },
+    {
+      id: 'capacity',
+      label: 'Avg Capacity',
+      value: `${avgCapacity}`,
+      hint: 'Seats per classroom',
+      icon: ProfileOutlined,
+    },
+  ]
 })
 
-const roleTagline = computed(() => {
+const deptById = computed<Record<string, Department>>(() => {
+  const map: Record<string, Department> = {}
+  departments.value.forEach((d) => {
+    map[d.id] = d
+  })
+  return map
+})
+
+const departmentClassroomCount = computed<Record<string, number>>(() => {
+  const map: Record<string, number> = {}
+  institutionClassrooms.value.forEach((c) => {
+    if (!c.departmentId) return
+    map[c.departmentId] = (map[c.departmentId] || 0) + 1
+  })
+  return map
+})
+
+const adminSnapshots = computed<AdminSnapshot[]>(() => {
+  const deptActive = institutionDepartments.value.filter((d) => d.active !== false).length
+  const totalDepartments = Math.max(1, institutionDepartments.value.length)
+  const compliance = `${Math.round((deptActive / totalDepartments) * 100)}%`
+  const rooms = `${institutionClassrooms.value.filter((c) => c.status === 'active').length} active`
+  const membershipDepth = `${adminMembers.value.length} admins`
+  return [
+    {
+      id: 'governance',
+      label: 'Governance coverage',
+      metric: compliance,
+      detail: 'Departments with active governance owners',
+      status: deptActive === totalDepartments ? 'good' : 'watch',
+    },
+    {
+      id: 'rooms',
+      label: 'Classroom readiness',
+      metric: rooms,
+      detail: 'Rooms mapped to Teach-internal',
+      status: institutionClassrooms.value.length > 0 ? 'good' : 'watch',
+    },
+    {
+      id: 'membership',
+      label: 'Administrator presence',
+      metric: membershipDepth,
+      detail: 'People with admin role at this institution',
+      status: adminMembers.value.length > 0 ? 'good' : 'watch',
+    },
+  ]
+})
+
+const teacherMissions = computed<TeacherMission[]>(() => {
+  return institutionClassrooms.value.slice(0, 6).map((c, index) => ({
+    id: c.id,
+    title: c.title || c.code,
+    description: `${deptById.value[c.departmentId || '']?.name || 'General studies'} · ${
+      c.capacity || 0
+    } seats`,
+    timeline: `Week ${index + 1}`,
+    classroom: c,
+  }))
+})
+
+const teacherTableData = computed(() =>
+  institutionClassrooms.value.map((c) => ({
+    ...c,
+    departmentName: deptById.value[c.departmentId || '']?.name || 'General studies',
+  })),
+)
+
+const studentMoments = computed<StudentMoment[]>(() => {
+  if (institutionClassrooms.value.length === 0) {
+    return [
+      {
+        id: 'no-classrooms',
+        title: 'No classrooms linked yet',
+        description: 'Connect Teach classrooms to surface student journeys.',
+        helper: 'Setup required',
+        status: 'warn',
+      },
+    ]
+  }
+  return institutionClassrooms.value.slice(0, 5).map((c, idx) => ({
+    id: `student-${c.id}`,
+    title: c.title || `Learning lane ${idx + 1}`,
+    description: `Code ${c.code} · ${deptById.value[c.departmentId || '']?.name || 'General'}`,
+    helper: `${c.enrollmentCount ?? 0} enrolled`,
+    status: c.enrollmentCount && c.enrollmentCount > (c.capacity || 0) ? 'warn' : 'good',
+  }))
+})
+
+const studentEngagement = computed<EngagementItem[]>(() => {
+  const classroomsCount = institutionClassrooms.value.length
+  return [
+    {
+      id: 'attendance',
+      label: 'Attendance',
+      helper: 'Based on classroom check-ins',
+      percent: Math.min(100, 60 + classroomsCount * 5),
+    },
+    {
+      id: 'assignments',
+      label: 'Assignments on track',
+      helper: 'Teach-internal mirrored tasks',
+      percent: Math.min(100, 55 + classroomsCount * 4),
+    },
+    {
+      id: 'labs',
+      label: 'Lab readiness',
+      helper: 'Hands-on modules',
+      percent: Math.min(100, 40 + classroomsCount * 3),
+    },
+  ]
+})
+
+const nextImportantDates = computed(() => {
+  return opsTimeline.value.slice(0, 4)
+})
+
+const opsTimeline = computed<TimelineEvent[]>(() => {
+  return institutionClassrooms.value.slice(0, 6).map((c, idx) => ({
+    id: c.id,
+    title: c.title || c.code,
+    description: `${deptById.value[c.departmentId || '']?.name || 'General'} · Capacity ${
+      c.capacity || 0
+    }`,
+    date: clientReady.value
+      ? new Date(Date.now() + idx * 86400000).toLocaleDateString()
+      : `Day ${idx + 1}`,
+    color: c.status === 'active' ? 'green' : 'blue',
+  }))
+})
+
+const capacityUsage = computed(() => {
+  const totalCapacity = institutionClassrooms.value.reduce(
+    (sum, c) => sum + (c.capacity || 0),
+    0,
+  )
+  const totalEnrollments = institutionClassrooms.value.reduce(
+    (sum, c) => sum + (c.enrollmentCount || 0),
+    0,
+  )
+  if (!totalCapacity) return 0
+  return Math.round((totalEnrollments / totalCapacity) * 100)
+})
+
+const highlightCourses = computed(() => {
+  if (teacherCourses.value.length > 0) {
+    return teacherCourses.value.filter(
+      (course) =>
+        !activeInstitution.value ||
+        !course.institutionId ||
+        course.institutionId === activeInstitution.value.id,
+    )
+  }
+  return teacherMissions.value.slice(0, 3).map((mission) => ({
+    id: mission.id,
+    title: mission.title,
+    category: deptById.value[mission.classroom?.departmentId || '']?.name || 'Integrated program',
+    difficulty: mission.timeline,
+  }))
+})
+
+const classroomRecommendations = computed<DrawerAction[]>(() => {
+  if (!selectedClassroom.value) return []
+  return [
+    {
+      id: 'sync',
+      label: 'Sync attendance from Teach-internal',
+      detail: 'Ensure live roster is mirrored for gradebook accuracy.',
+    },
+    {
+      id: 'assign',
+      label: 'Assign secondary facilitator',
+      detail: 'Add a co-teacher for resilience across lab sessions.',
+    },
+    {
+      id: 'students',
+      label: 'Audit student roster',
+      detail: 'Verify enrollments vs Byway membership records.',
+    },
+  ]
+})
+
+const roleNarrative = computed<RoleNarrative>(() => {
   switch (effectiveRole.value) {
     case 'admin':
-      return 'Configure institutions, departments and classrooms across teach-internal.'
+      return {
+        badge: 'Administrator view',
+        title: 'Keep governance resilient',
+        description:
+          'Track institution readiness, unlock department blueprints, and enforce compliance without leaving this workspace.',
+        helper: 'Auto-linked membership data keeps leadership heatmaps accurate.',
+      }
     case 'teacher':
-      return 'See how your courses and classrooms connect to institutions and students.'
-    case 'student':
-      return 'View your institutions, classrooms and learning context in one place.'
+      return {
+        badge: 'Teacher view',
+        title: 'Orchestrate the learning runway',
+        description:
+          'Line up classrooms, review mission queues, and keep Teach-internal courses in sync with institutional targets.',
+        helper: 'Classrooms and courses mirror Teach IDs so transitions stay seamless.',
+      }
     default:
-      return ''
+      return {
+        badge: 'Student view',
+        title: 'Mentor every learner journey',
+        description:
+          'Surface advisory nudges, track engagement, and highlight upcoming milestones across the institution.',
+        helper: 'Signals adapt based on classroom enrollment and real-time mock data.',
+      }
   }
 })
 
-/* -------- loading / API -------- */
+const roleSpotlights = computed<SpotlightCard[]>(() => {
+  if (effectiveRole.value === 'admin') {
+    return [
+      {
+        id: 'coverage',
+        title: 'Role coverage',
+        detail: `${adminMembers.value.length} admins vs ${teacherMembers.value.length} faculty`,
+        metric: `${capacityUsage.value}% util`,
+        icon: SafetyCertificateOutlined,
+      },
+      {
+        id: 'departments',
+        title: 'Departments mapped',
+        detail: `${institutionDepartments.value.length} total units`,
+        metric: `${Object.keys(departmentClassroomCount.value).length} active`,
+        icon: ClusterOutlined,
+      },
+      {
+        id: 'classrooms',
+        title: 'Rooms ready',
+        detail: `${institutionClassrooms.value.filter((c) => c.status === 'active').length} active`,
+        metric: `${institutionClassrooms.value.length} total`,
+        icon: ApartmentOutlined,
+      },
+    ]
+  }
+
+  if (effectiveRole.value === 'teacher') {
+    return [
+      {
+        id: 'missions',
+        title: 'Missions queued',
+        detail: 'Classrooms needing focus this sprint',
+        metric: `${teacherMissions.value.length}`,
+        icon: BookOutlined,
+      },
+      {
+        id: 'courses',
+        title: 'Courses linked',
+        detail: 'Teach-internal courses synced',
+        metric: `${highlightCourses.value.length}`,
+        icon: DashboardOutlined,
+      },
+      {
+        id: 'timeline',
+        title: 'Timeline readiness',
+        detail: 'Upcoming classroom checkpoints',
+        metric: `${opsTimeline.value.length}`,
+        icon: CalendarOutlined,
+      },
+    ]
+  }
+
+  const engagementAverage = studentEngagement.value.length
+    ? Math.round(
+        studentEngagement.value.reduce((sum, item) => sum + item.percent, 0) /
+          studentEngagement.value.length,
+      )
+    : 0
+
+  return [
+    {
+      id: 'engagement',
+      title: 'Engagement index',
+      detail: 'Attendance and assignments on track',
+      metric: `${engagementAverage}%`,
+      icon: FieldTimeOutlined,
+    },
+    {
+      id: 'advisory',
+      title: 'Advisory signals',
+      detail: `${studentMoments.value.length} active nudges`,
+      metric: `${studentMembers.value.length} learners`,
+      icon: ProfileOutlined,
+    },
+    {
+      id: 'calendar',
+      title: 'Upcoming checkpoints',
+      detail: 'Next cohort events',
+      metric: `${nextImportantDates.value.length}`,
+      icon: CalendarOutlined,
+    },
+  ]
+})
+
+const adminWorkflowQueue = computed(() => {
+  const inactiveDepartments = institutionDepartments.value.filter((d) => d.active === false).length
+  const pendingClassrooms = institutionClassrooms.value.filter((c) => c.status !== 'active').length
+  return [
+    {
+      id: 'dept-audit',
+      label: 'Activate departments',
+      description: `${inactiveDepartments} departments awaiting activation`,
+      owner: 'Governance',
+    },
+    {
+      id: 'classroom-readiness',
+      label: 'Review classroom readiness',
+      description: `${pendingClassrooms} rooms pending launch`,
+      owner: 'Academic ops',
+    },
+    {
+      id: 'membership-review',
+      label: 'Audit memberships',
+      description: `${institutionMembers.value.length} total memberships`,
+      owner: 'HR coordination',
+    },
+  ]
+})
+
+const teacherDayTimeline = computed(() =>
+  (opsTimeline.value.length ? opsTimeline.value : studentMoments.value).slice(0, 4).map(
+    (entry, idx) =>
+      ({
+        ...entry,
+        slot: `Block ${idx + 1}`,
+      }),
+  ),
+)
+
+const studentActionItems = computed<ActionCenterItem[]>(() => {
+  return studentMoments.value.map((moment, index) => ({
+    id: moment.id,
+    label: `Action ${index + 1}`,
+    description: moment.description,
+    helper: moment.helper,
+    status: moment.status,
+  }))
+})
+
+const teacherTableCustomRow = (record: PortalClassroom) => ({
+  onClick: () => openClassroomDrawer(record),
+})
+
+const defaultTabByRole: Record<RoleKey, TabKey> = {
+  admin: 'administrators',
+  teacher: 'teachers',
+  student: 'students',
+}
+
+function handleRoleSelect(value: RoleToggleValue) {
+  roleControlValue.value = value
+  if (value === 'auto') {
+    focusTab.value = defaultTabByRole[effectiveRole.value] || 'overview'
+  } else {
+    focusTab.value = defaultTabByRole[value] || 'overview'
+  }
+}
+
+function openClassroomDrawer(classroom: PortalClassroom) {
+  selectedClassroom.value = classroom
+  classroomDrawerOpen.value = true
+}
+
+function handleRefresh() {
+  loadOverview()
+}
+
+function openAdminModal(mode: 'department' | 'classroom') {
+  adminModalMode.value = mode
+  adminForm.value = { name: '', owner: '', note: '' }
+  adminModalOpen.value = true
+}
+
+const adminModalTitle = computed(() =>
+  adminModalMode.value === 'department'
+    ? 'New department blueprint'
+    : 'New classroom shell',
+)
+
+function handleAdminModalOk() {
+  if (!adminForm.value.name?.trim()) {
+    message.error('Name is required')
+    return
+  }
+  const label = adminModalMode.value === 'department' ? 'Department' : 'Classroom'
+  message.success(`${label} plan saved locally`)
+  adminModalOpen.value = false
+}
+
+function openTeachingDrawerFromHero() {
+  focusTab.value = 'teachers'
+}
+
+function handleMockAction(kind: string) {
+  message.info(`Mock action triggered for ${kind}`)
+}
+
+function goFallbackInstitution() {
+  if (institutions.value.length === 0) return
+  const fallback = institutions.value[0]
+  router.replace({ path: `/institution/${fallback.id}` })
+}
 
 async function loadOverview() {
-  if (!tokenRef.value) {
+  const authToken = resolveAuthHeader()
+  if (!authToken) {
     loadError.value = 'Missing auth token'
     initialLoading.value = false
     return
@@ -1697,43 +1351,38 @@ async function loadOverview() {
       method: 'GET',
       headers: {
         'content-type': 'application/json',
-        ...tokenHeader(),
+        Authorization: authToken,
       } as any,
     })
-    if (!resp.ok) {
-      throw new Error(`HTTP ${resp.status}`)
-    }
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
     const json = await resp.json()
-    const data = json || {}
-
-    institutions.value = data.institutions || []
-    departments.value = data.departments || []
-    classrooms.value = (data.classrooms || []).map((c: any) => ({
+    institutions.value = json.institutions || []
+    departments.value = json.departments || []
+    classrooms.value = (json.classrooms || []).map((c: any) => ({
       ...c,
-      teacherId: c.teacherId || null,
-      enrollmentCount: c.enrollments?.length ?? c.enrollment ?? null,
+      enrollmentCount: c.enrollments?.length ?? c.enrollment ?? c.enrollmentCount ?? null,
     }))
-    members.value = data.members || []
-
-    // Optionally try to pull teacher courses from teach-internal; fallback to mock
-    await loadTeacherCoursesViaTeach()
-  } catch (e: any) {
-    console.warn('[institution-portal] overview load failed', e)
-    loadError.value = e?.message || 'Failed to load overview'
+    members.value = json.members || []
+    await loadTeacherCourses()
+    lastSyncedLabel.value = new Date().toLocaleString()
+  } catch (err: any) {
+    console.warn('[institutions-portal] overview failed', err)
+    loadError.value = err?.message || 'Failed to load overview'
   } finally {
     initialLoading.value = false
   }
 }
 
-async function loadTeacherCoursesViaTeach() {
+async function loadTeacherCourses() {
   teacherCourses.value = []
-  if (!isTeacherLike.value || !tokenRef.value) return
+  const authToken = resolveAuthHeader()
+  if (!authToken) return
   try {
     const resp = await fetch(`${apiBase}/api/teach-internal/graphql`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        ...tokenHeader(),
+        Authorization: authToken,
       } as any,
       body: JSON.stringify({
         query: `
@@ -1749,663 +1398,467 @@ async function loadTeacherCoursesViaTeach() {
         `,
       }),
     })
-
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
     const json = await resp.json()
     const courses = json?.data?.myCourses || []
-    if (!Array.isArray(courses) || courses.length === 0) {
-      // fallback to mock
-      buildMockCoursesFromClassrooms()
-    } else {
+    if (Array.isArray(courses) && courses.length > 0) {
       teacherCourses.value = courses
+    } else {
+      buildMockCoursesFromClassrooms()
     }
-  } catch (e: any) {
-    console.warn('[institution-portal] teacher courses load failed, mocking', e)
+  } catch (err) {
+    console.warn('[institutions-portal] teacher courses fallback', err)
     buildMockCoursesFromClassrooms()
   }
 }
 
 function buildMockCoursesFromClassrooms() {
-  if (!me.value) return
-  const seen = new Set<string>()
-  const mock: TeacherCourse[] = []
-  myTeacherClassrooms.value.slice(0, 6).forEach((c, idx) => {
-    const id = c.id
-    if (seen.has(id)) return
-    seen.add(id)
-    mock.push({
-      id,
-      title: c.title || `Lab ${idx + 1} (mock)`,
-      category: 'Institution-linked',
-      difficulty: idx % 2 === 0 ? 'Intermediate' : 'Beginner',
-      institutionId: c.institutionId,
-    })
-  })
-  teacherCourses.value = mock
-}
-
-/* -------- actions / helpers -------- */
-
-function emitLogin() {
-  // you can wire this to your global auth modal or router
-  message.info('Trigger login flow from institution-portal page.')
-}
-
-function refreshAll() {
-  loadOverview()
-}
-
-function persistTheme() {
-  if (typeof window === 'undefined') return
-  window.localStorage.setItem('inst-portal-theme', isDarkMode.value ? 'dark' : 'light')
+  teacherCourses.value = institutionClassrooms.value.slice(0, 4).map((c, idx) => ({
+    id: c.id,
+    title: c.title || `Course ${idx + 1}`,
+    category: deptById.value[c.departmentId || '']?.name || 'Institution-linked',
+    difficulty: idx % 2 === 0 ? 'Intermediate' : 'Beginner',
+    institutionId: c.institutionId,
+  }))
 }
 
 watch(
-  () => isDarkMode.value,
-  () => persistTheme(),
+  () => effectiveRole.value,
+  (role) => {
+    if (roleControlValue.value === 'auto') {
+      focusTab.value = defaultTabByRole[role] || 'overview'
+    }
+  },
+  { immediate: true },
 )
 
-function handleOpenInstitution(inst: Institution) {
-  selectedInstitution.value = inst
-  instDrawerOpen.value = true
-}
-
-const selectedInstDepartments = computed(() =>
-  selectedInstitution.value
-    ? departments.value.filter(
-        (d) => d.institutionId === selectedInstitution.value!.id,
-      )
-    : [],
+watch(
+  () => route.query.role,
+  (role) => {
+    if (role === 'admin' || role === 'teacher' || role === 'student') {
+      handleRoleSelect(role as RoleKey)
+    }
+  },
 )
-
-const selectedInstClassrooms = computed(() =>
-  selectedInstitution.value
-    ? classrooms.value.filter(
-        (c) => c.institutionId === selectedInstitution.value!.id,
-      )
-    : [],
-)
-
-const selectedInstMembers = computed(() =>
-  selectedInstitution.value
-    ? members.value.filter(
-        (m) => m.institutionId === selectedInstitution.value!.id,
-      )
-    : [],
-)
-
-function openCreateInstitution() {
-  instForm.value = {
-    id: '',
-    name: '',
-    slug: '',
-    type: '',
-    location: '',
-    email: '',
-    phone: '',
-    active: true,
-  }
-  instModalOpen.value = true
-}
-
-function openTeacherFocus() {
-  activeTabKey.value = 'teaching'
-}
-
-function openStudentFocus() {
-  activeTabKey.value = 'learning'
-}
-
-function mockSaveInstitution() {
-  if (!instForm.value.name?.trim()) {
-    message.error('Name is required')
-    return
-  }
-  const existing = institutions.value.find((i) => i.id === instForm.value.id)
-  if (existing) {
-    Object.assign(existing, instForm.value)
-    message.success('Updated institution (mock only)')
-  } else {
-    institutions.value.push({
-      id: `mock_${Date.now()}`,
-      name: instForm.value.name,
-      slug:
-        instForm.value.slug ||
-        instForm.value.name.toLowerCase().replace(/\s+/g, '-'),
-      type: instForm.value.type,
-      location: instForm.value.location,
-      email: instForm.value.email,
-      phone: instForm.value.phone,
-      active: instForm.value.active,
-    })
-    message.success('Created institution (mock only)')
-  }
-  instModalOpen.value = false
-}
-
-function mockJoinInstitution() {
-  if (!selectedInstitution.value || !me.value) return
-  message.success(
-    `Mock: joining institution ${selectedInstitution.value.name} as student via institutions + teach APIs`,
-  )
-}
-
-function mockArchiveInstitution() {
-  if (!selectedInstitution.value) return
-  selectedInstitution.value.active = false
-  message.success('Mock: archived institution (local state only)')
-}
-
-/* -------- dev mode defaults from query -------- */
-
-onMounted(() => {
-  if (route.query.dev === '1' || route.query.dev === 'true') {
-    devMode.value = true
-  }
-  if (route.query.role === 'admin') devRoleOverride.value = 'admin'
-  if (route.query.role === 'teacher') devRoleOverride.value = 'teacher'
-  if (route.query.role === 'student') devRoleOverride.value = 'student'
-
-  if (typeof document !== 'undefined') {
-    document.documentElement.classList.toggle('dark', isDarkMode.value)
-  }
-
-  loadOverview()
-})
 
 watch(
   () => isDarkMode.value,
   (val) => {
-    if (typeof document !== 'undefined') {
-      document.documentElement.classList.toggle('dark', val)
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('inst-portal-theme', val ? 'dark' : 'light')
     }
   },
 )
+
+watch(activeInstitution, () => {
+  selectedClassroom.value = null
+  classroomDrawerOpen.value = false
+})
+
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    isDarkMode.value = window.localStorage.getItem('inst-portal-theme') === 'dark'
+    apiAuthToken.value =
+      localStorage.getItem('token') || localStorage.getItem('access_token')
+    const routeRole = route.query.role
+    if (routeRole === 'admin' || routeRole === 'teacher' || routeRole === 'student') {
+      handleRoleSelect(routeRole as RoleKey)
+    }
+  }
+  clientReady.value = true
+  loadOverview()
+})
 </script>
 
 <style scoped>
-.inst-portal-page {
-  padding: 16px 24px 32px;
-  max-width: 1480px;
-  margin: 0 auto;
-  transition: background 0.2s ease, color 0.2s ease;
+.institution-role-portal {
+  padding: 2rem;
 }
 
-.inst-portal-page.theme-light {
-  background: #f5f7fb;
-  color: #111827;
-}
-
-.inst-portal-page.theme-dark {
-  background: #020617;
-  color: #e5e7eb;
-}
-
-.full-center {
-  min-height: 60vh;
+.portal-state {
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  min-height: 60vh;
 }
 
 .portal-shell {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 2rem;
 }
 
-/* Header */
-
-.portal-header {
-  display: grid;
-  grid-template-columns: minmax(0, 2.1fr) minmax(0, 1.7fr);
-  gap: 16px;
-  margin-bottom: 4px;
+.portal-hero {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.75rem;
+  border-radius: 1.5rem;
+  background: linear-gradient(135deg, #eef2ff, #dbeafe);
 }
 
-@media (max-width: 960px) {
-  .portal-header {
-    grid-template-columns: minmax(0, 1fr);
-  }
+.portal-hero__left {
+  flex: 1 1 320px;
 }
 
-.portal-header .left {
-  padding-right: 8px;
+.portal-hero__left h1 {
+  margin: 0.2rem 0 0.6rem;
+  font-size: 2.25rem;
 }
 
-.portal-header .right {
-  padding-left: 8px;
+.hero-subtitle {
+  margin: 0;
+  color: #475569;
+}
+
+.hero-meta {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  gap: 0.35rem;
+  color: #334155;
 }
 
-.pill-row {
+.hero-meta li {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 0.35rem;
+}
+
+.portal-hero__right {
+  flex: 1 1 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.hero-controls {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.hero-actions {
+  display: flex;
   flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
 }
 
-.role-pill {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  background: rgba(59, 130, 246, 0.1);
-  color: #1d4ed8;
-}
-
-.role-pill .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  margin-right: 6px;
-}
-
-.dot-admin {
-  background: #f97316;
-}
-
-.dot-teacher {
-  background: #22c55e;
-}
-
-.dot-student {
-  background: #6366f1;
-}
-
-.inst-pill {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 12px;
-  background: rgba(15, 23, 42, 0.06);
-  gap: 6px;
-}
-
-.inst-name {
-  font-weight: 500;
-}
-
-.title {
+.hero-updated {
   margin: 0;
-  font-size: 26px;
-  font-weight: 700;
+  color: #475569;
+  font-size: 0.9rem;
 }
 
-.subtitle {
-  margin: 4px 0 12px;
-  color: #6b7280;
+.eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.4rem;
+  color: #7c3aed;
+  font-size: 0.8rem;
 }
 
-.inst-portal-page.theme-dark .subtitle {
-  color: #9ca3af;
-}
-
-/* Quick meta */
-
-.quick-meta {
+.role-narrative {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 1.5rem;
+  border: 1px solid #e0e7ff;
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  background: #fff;
 }
 
-.meta-item {
-  padding: 6px 10px;
-  border-radius: 10px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  min-width: 110px;
+.role-narrative__copy {
+  flex: 1 1 320px;
 }
 
-.inst-portal-page.theme-dark .meta-item {
-  background: #020617;
-  border-color: #111827;
+.role-narrative__badge {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.35rem;
+  font-size: 0.75rem;
+  color: #7c3aed;
 }
 
-.meta-label {
-  font-size: 11px;
-  color: #6b7280;
+.role-narrative__helper {
+  margin: 0.5rem 0 0;
+  color: #475569;
 }
 
-.inst-portal-page.theme-dark .meta-label {
-  color: #9ca3af;
-}
-
-.meta-value {
-  font-size: 18px;
-  font-weight: 700;
-}
-
-/* Header right */
-
-.top-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 12px;
-  gap: 8px;
-}
-
-.primary-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 10px;
-  justify-content: flex-end;
-}
-
-.badge-grid {
+.role-narrative__spotlights {
+  flex: 1 1 320px;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
 }
 
-@media (max-width: 640px) {
-  .badge-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.badge {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 8px 10px;
-  border: 1px solid #e5e7eb;
-  font-size: 12px;
-}
-
-.inst-portal-page.theme-dark .badge {
-  background: #020617;
-  border-color: #111827;
-}
-
-.badge :deep(.anticon) {
-  margin-right: 6px;
-}
-
-.b-title {
-  font-weight: 600;
-  margin-top: 2px;
-}
-
-.b-sub {
-  font-size: 11px;
-  color: #6b7280;
-}
-
-/* Sections */
-
-.section {
-  margin-top: 4px;
-}
-
-.section-card {
-  border-radius: 12px;
-}
-
-.section-header {
+.spotlight-card {
   display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
+  align-items: center;
+  gap: 1rem;
+  border-radius: 1rem;
+  border: 1px solid #e0e7ff;
 }
 
-.section-header h3 {
+.spotlight-card__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 1rem;
+  background: #eef2ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4338ca;
+}
+
+.spotlight-card__title {
   margin: 0;
-  font-size: 16px;
   font-weight: 600;
 }
 
-.section-sub {
+.spotlight-card__detail {
   margin: 0;
-  font-size: 12px;
-  color: #6b7280;
+  color: #475569;
+  font-size: 0.9rem;
 }
 
-.controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.spotlight-card__metric {
+  margin-left: auto;
+  font-weight: 600;
+  color: #312e81;
 }
 
-/* Stats */
-
-.stats-section {
-  margin-top: 2px;
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
 }
 
 .stat-card {
-  border-radius: 10px;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  border-radius: 1rem;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 1rem;
+  background: #eef2ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4338ca;
+  font-size: 1.5rem;
 }
 
 .stat-label {
-  font-size: 12px;
-  color: #6b7280;
+  margin: 0;
+  color: #475569;
 }
 
 .stat-value {
-  font-size: 22px;
+  margin: 0.2rem 0;
+  font-size: 1.4rem;
   font-weight: 700;
 }
 
 .stat-hint {
-  font-size: 11px;
-  color: #9ca3af;
-  margin-top: 2px;
+  margin: 0;
+  color: #94a3b8;
 }
 
-/* Tabs */
-
-.tabs-section {
-  margin-top: 8px;
+.role-tabs .lanes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
 }
 
-/* Overview cards */
-
-.inst-card {
-  height: 100%;
+.role-lane {
+  background: #fff;
+  border-radius: 1.2rem;
+  padding: 1.25rem;
+  border: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
-  transition: box-shadow 0.2s ease, transform 0.1s ease;
+  gap: 1rem;
 }
 
-.inst-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.12);
-}
-
-.inst-card.inactive {
-  opacity: 0.65;
-}
-
-.inst-card-primary {
-  border-color: #3b82f6 !important;
-}
-
-.inst-card-head {
+.role-lane header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
 }
 
-.inst-name {
-  font-size: 15px;
-  font-weight: 600;
+.role-lane__eyebrow {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #6366f1;
+  text-transform: uppercase;
+  letter-spacing: 0.2rem;
 }
 
-.inst-location {
-  font-size: 12px;
-  color: #9ca3af;
+.role-lane__badge {
+  background: #eef2ff;
+  color: #312e81;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
 }
 
-.inst-tag-wrap {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
+.role-lane--highlight {
+  border-color: #4338ca;
+  box-shadow: 0 10px 30px rgba(67, 56, 202, 0.15);
 }
 
-.inst-grid {
+.metric-pill {
+  display: inline-flex;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  color: #111827;
+  background: #f3f4f6;
+}
+
+.metric-pill[data-status='warn'] {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.metric-pill[data-status='good'] {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.metric-pill--accent {
+  background: #e0e7ff;
+  color: #312e81;
+}
+
+.ops-grid {
   display: grid;
-  gap: 4px;
-  font-size: 12px;
-  margin-top: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
 }
 
-.inst-row {
-  display: flex;
-  justify-content: space-between;
+.membership-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
 }
 
-.inst-row span {
-  color: #9ca3af;
+.membership-label {
+  margin: 0;
+  color: #475569;
 }
 
-.inst-footer {
-  margin-top: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 11px;
-}
-
-.inst-role-hint {
-  color: #9ca3af;
-}
-
-/* Admin section */
-
-.inst-item {
-  cursor: pointer;
-}
-
-.inst-item.active {
-  background: #eff6ff;
-}
-
-.inst-portal-page.theme-dark .inst-item.active {
-  background: #0b1120;
-}
-
-/* Timeline */
-
-.inst-timeline-item .name {
-  font-weight: 600;
-}
-
-.inst-timeline-item .meta {
-  font-size: 12px;
-  color: #9ca3af;
-}
-
-/* Generic rows */
-
-.card-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.card-title {
+.membership-value {
+  margin: 0.2rem 0 0;
+  font-size: 1.6rem;
   font-weight: 700;
 }
 
-.card-sub {
-  font-size: 12px;
-  color: #9ca3af;
+.membership-helper {
+  margin: 0;
+  color: #94a3b8;
 }
 
-.row {
+.course-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
   display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  margin-top: 4px;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-/* Small cards */
-
-.card-title-sm {
-  font-size: 13px;
+.course-name {
+  margin: 0;
   font-weight: 600;
 }
 
-.card-meta-sm {
-  font-size: 11px;
-  color: #9ca3af;
+.course-meta {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
 }
 
-/* Drawer */
+.progress-grid {
+  display: flex;
+  justify-content: space-around;
+  gap: 1rem;
+}
 
-.drawer-sub {
-  font-size: 12px;
-  color: #9ca3af;
+.progress-item {
+  text-align: center;
+}
+
+.progress-label {
+  margin: 0.35rem 0 0;
+  font-weight: 600;
+}
+
+.progress-helper {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.important-dates {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.important-dates li {
+  display: flex;
+  gap: 0.6rem;
+  color: #475569;
+}
+
+.date-label {
+  margin: 0;
+  font-weight: 600;
+}
+
+.date-helper {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.timeline-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.timeline-description,
+.timeline-meta {
+  margin: 0;
+  color: #94a3b8;
+}
+
+.drawer-meta {
+  margin: 0 0 1rem;
+  color: #475569;
 }
 
 .drawer-section {
-  margin-top: 12px;
+  margin-top: 1.5rem;
 }
 
-.drawer-section h4 {
-  margin: 0 0 6px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.badge-green {
-  font-size: 11px;
-  color: #16a34a;
-}
-
-.badge-grey {
-  font-size: 11px;
-  color: #6b7280;
-}
-
-.drawer-footer {
-  margin-top: 16px;
-  display: flex;
-  gap: 8px;
-}
-
-/* JSON viewer */
-
-.json-viewer {
-  max-height: 320px;
-  overflow: auto;
-  font-size: 11px;
-  background: #020617;
-  color: #e5e7eb;
-  padding: 8px;
-  border-radius: 6px;
-}
-
-/* Utilities */
-
-.mt-1 {
-  margin-top: 4px;
-}
-
-.mt-2 {
-  margin-top: 8px;
-}
-
-.ml-2 {
-  margin-left: 8px;
-}
-
-/* Tag colors in drawer */
-
-.tag-active {
-  color: #16a34a;
-}
-
-.tag-inactive {
-  color: #ef4444;
+.drawer-section__title {
+  margin: 0 0 0.5rem;
 }
 </style>

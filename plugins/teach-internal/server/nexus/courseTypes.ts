@@ -2,12 +2,17 @@
 import { objectType, extendType, stringArg, floatArg, nonNull } from 'nexus'
 import { callGraphQL } from '../graphql/callPlugins'
 
+function getCurrentUserId(ctx: any) {
+  return ctx?.user?.userId || ctx?.user?.id || ctx?.user?.sub || null
+}
+
 export const GqlCourse = objectType({
   name: 'GqlCourse',
   definition(t) {
     t.string('id')
     t.string('teacherId')
     t.string('title')
+    t.nullable.string('institutionId')
     t.nullable.string('category')
     t.nullable.string('difficulty')
     t.nullable.string('description')
@@ -54,6 +59,27 @@ export const CourseQuery = extendType({
         return ctx.prisma.course.findUnique({
           where: { id },
           include: { modules: { include: { lessons: true } } },
+        })
+      },
+    })
+
+    t.list.field('myCourses', {
+      type: 'GqlCourse',
+      args: {
+        teacherId: stringArg(),
+        institutionId: stringArg(),
+      },
+      async resolve(_, args, ctx) {
+        const teacherId = args.teacherId || getCurrentUserId(ctx)
+        if (!teacherId) throw new Error('Not authenticated')
+
+        const where: Record<string, string> = { teacherId }
+        if (args.institutionId) where.institutionId = args.institutionId
+
+        return ctx.prisma.course.findMany({
+          where,
+          include: { modules: { include: { lessons: true } } },
+          orderBy: { updatedAt: 'desc' },
         })
       },
     })
