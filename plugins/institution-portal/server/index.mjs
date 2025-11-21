@@ -789,6 +789,398 @@ export async function register(app) {
     }
   })
 
+  router.get('/teacher-dashboard', async (req, res) => {
+    const authHeader = req.headers.authorization
+    if (!authHeader) return res.status(401).json({ error: 'Missing Authorization header' })
+    const baseUrl = normalizeBaseUrl(req)
+    if (!baseUrl) return res.status(500).json({ error: 'Unable to resolve API base URL' })
+    const fetchImpl = await ensureFetch()
+    const gql = (path, query, variables = {}) => callGraphQL(fetchImpl, `${baseUrl}${path}`, query, variables, authHeader)
+    const institutionIdParam = String(req.query.institutionId || req.query.institution_id || '').trim()
+    try {
+      const meData = await gql('/api/authentication/graphql', `
+        query Me { me { id email displayName roles firstName lastName } }
+      `)
+      const me = meData?.me
+      if (!me?.id) return res.status(401).json({ error: 'Unable to resolve current user' })
+      const instData = await gql('/api/institutions/graphql', `
+        query ($id:String!) { institution(id:$id) { id name slug type location email phone active createdAt updatedAt } }
+      `, { id: institutionIdParam })
+      const institution = instData?.institution || null
+      if (!institution?.id) return res.status(404).json({ error: 'Institution not found' })
+      const membersData = await gql('/api/institutions/graphql', `
+        query ($institutionId:String!, $role:String) { members(institutionId:$institutionId, role:$role) { id institutionId userId role status createdAt updatedAt } }
+      `, { institutionId: institution.id, role: 'teacher' })
+      const teachers = asArray(membersData?.members)
+      const classroomsData = await gql('/api/institutions/graphql', `
+        query ($institutionId:String!) { classrooms(institutionId:$institutionId) { id institutionId departmentId teacherId title code capacity status startsAt endsAt enrollments { id studentId status } } }
+      `, { institutionId: institution.id })
+      const allRooms = asArray(classroomsData?.classrooms)
+      const myRooms = allRooms.filter((r) => r.teacherId === me.id)
+      const assignmentQuery = `
+        query ($classroomId:String!) { assignmentsByClassroom(classroomId:$classroomId) { id classroomId title description dueDate createdAt updatedAt } }
+      `
+      const assignments = []
+      await Promise.allSettled(myRooms.map(async (room) => {
+        const data = await gql('/api/teach-internal/graphql', assignmentQuery, { classroomId: room.id })
+        asArray(data?.assignmentsByClassroom).forEach((a) => assignments.push({ ...a, classroomName: room.title || room.code }))
+      }))
+      const overview = [
+        { title: 'Your classrooms', meta: String(myRooms.length) },
+        { title: 'Assignments to monitor', meta: String(assignments.length) },
+      ]
+      const stats = { departments: 0, classrooms: allRooms.length, members: teachers.length }
+      return res.json({ institution, stats, classrooms: myRooms, assignments, overview })
+    } catch (err) {
+      return res.status(502).json({ error: 'Failed to load teacher dashboard' })
+    }
+  })
+
+  router.get('/admin-dashboard', async (req, res) => {
+    const authHeader = req.headers.authorization
+    if (!authHeader) return res.status(401).json({ error: 'Missing Authorization header' })
+    const baseUrl = normalizeBaseUrl(req)
+    if (!baseUrl) return res.status(500).json({ error: 'Unable to resolve API base URL' })
+    const fetchImpl = await ensureFetch()
+    const gql = (path, query, variables = {}) => callGraphQL(fetchImpl, `${baseUrl}${path}`, query, variables, authHeader)
+    const institutionIdParam = String(req.query.institutionId || req.query.institution_id || '').trim()
+    try {
+      const instData = await gql('/api/institutions/graphql', `
+        query ($id:String!) { institution(id:$id) { id name slug type location email phone active createdAt updatedAt } }
+      `, { id: institutionIdParam })
+      const institution = instData?.institution || null
+      if (!institution?.id) return res.status(404).json({ error: 'Institution not found' })
+      const statsData = await gql('/api/institutions/graphql', `
+        query ($institutionId:String!) { stats(institutionId:$institutionId) { classrooms activeClassrooms departments members students } }
+      `, { institutionId: institution.id })
+      const stats = statsData?.stats || { classrooms: 0, activeClassrooms: 0, departments: 0, members: 0, students: 0 }
+      const membersData = await gql('/api/institutions/graphql', `
+        query ($institutionId:String!) { members(institutionId:$institutionId) { id institutionId userId role status createdAt updatedAt } }
+      `, { institutionId: institution.id })
+      const members = asArray(membersData?.members)
+      const classroomsData = await gql('/api/institutions/graphql', `
+        query ($institutionId:String!) { classrooms(institutionId:$institutionId) { id institutionId departmentId teacherId title code capacity status startsAt endsAt } }
+      `, { institutionId: institution.id })
+      const classrooms = asArray(classroomsData?.classrooms)
+      const overview = [
+        { title: 'Active classrooms', meta: String(stats.activeClassrooms || 0) },
+        { title: 'Total students', meta: String(stats.students || 0) },
+      ]
+      return res.json({ institution, stats, members, classrooms, overview })
+    } catch (err) {
+      return res.status(502).json({ error: 'Failed to load admin dashboard' })
+    }
+  })
+
+  router.get('/departments/:id/overview', async (req, res) => {
+    const authHeader = req.headers.authorization
+    if (!authHeader) return res.status(401).json({ error: 'Missing Authorization header' })
+    const baseUrl = normalizeBaseUrl(req)
+    if (!baseUrl) return res.status(500).json({ error: 'Unable to resolve API base URL' })
+    const fetchImpl = await ensureFetch()
+    const gql = (path, query, variables = {}) => callGraphQL(fetchImpl, `${baseUrl}${path}`, query, variables, authHeader)
+    const id = String(req.params.id || '').trim()
+    const institutionIdParam = String(req.query.institutionId || req.query.institution_id || '').trim()
+    try {
+      const instData = await gql('/api/institutions/graphql', `
+        query ($id:String!) { institution(id:$id) { id name slug type location email phone active createdAt updatedAt } }
+      `, { id: institutionIdParam })
+      const institution = instData?.institution || null
+      if (!institution?.id) return res.status(404).json({ error: 'Institution not found' })
+      const departmentsData = await gql('/api/institutions/graphql', `
+        query ($institutionId:String!) { departments(institutionId:$institutionId) { id institutionId name slug contact head active createdAt updatedAt } }
+      `, { institutionId: institution.id })
+      const department = asArray(departmentsData?.departments).find((d) => d.id === id) || null
+      if (!department) return res.status(404).json({ error: 'Department not found' })
+      const classroomsData = await gql('/api/institutions/graphql', `
+        query ($departmentId:String) { classrooms(departmentId:$departmentId) { id institutionId departmentId teacherId title code capacity status startsAt endsAt } }
+      `, { departmentId: id })
+      const classrooms = asArray(classroomsData?.classrooms)
+      const coursesResp = await fetchImpl(`${baseUrl}/api/teach-internal/courses`, { headers: { Authorization: authHeader } }).catch(() => null)
+      const courseJson = coursesResp && (await coursesResp.json().catch(() => null))
+      const rawCourses = asArray(courseJson?.data)
+      const courses = rawCourses.filter((c) => classrooms.some((r) => String(c.title || '').toLowerCase().includes(String(r.code || r.title || '').toLowerCase()))).map((c) => ({ courseId: c.id, title: c.title, category: c.category || null, difficulty: c.difficulty || null }))
+      return res.json({ institution, department, classrooms, courses })
+    } catch (err) {
+      return res.status(502).json({ error: 'Failed to load department overview' })
+    }
+  })
+
+  router.get('/classrooms/:id/overview', async (req, res) => {
+    const authHeader = req.headers.authorization
+    if (!authHeader) return res.status(401).json({ error: 'Missing Authorization header' })
+    const baseUrl = normalizeBaseUrl(req)
+    if (!baseUrl) return res.status(500).json({ error: 'Unable to resolve API base URL' })
+    const fetchImpl = await ensureFetch()
+    const gql = (path, query, variables = {}) => callGraphQL(fetchImpl, `${baseUrl}${path}`, query, variables, authHeader)
+    const id = String(req.params.id || '').trim()
+    const institutionIdParam = String(req.query.institutionId || req.query.institution_id || '').trim()
+    try {
+      const instData = await gql('/api/institutions/graphql', `
+        query ($id:String!) { institution(id:$id) { id name slug type location email phone active createdAt updatedAt } }
+      `, { id: institutionIdParam })
+      const institution = instData?.institution || null
+      if (!institution?.id) return res.status(404).json({ error: 'Institution not found' })
+      const roomData = await gql('/api/institutions/graphql', `
+        query ($institutionId:String!) { classrooms(institutionId:$institutionId) { id institutionId departmentId teacherId title code capacity status startsAt endsAt enrollments { id studentId status } } }
+      `, { institutionId: institution.id })
+      const room = asArray(roomData?.classrooms).find((r) => r.id === id) || null
+      if (!room) return res.status(404).json({ error: 'Classroom not found' })
+      const deptData = await gql('/api/institutions/graphql', `
+        query ($institutionId:String!) { departments(institutionId:$institutionId) { id institutionId name slug contact head active createdAt updatedAt } }
+      `, { institutionId: institution.id })
+      const department = asArray(deptData?.departments).find((d) => d.id === room.departmentId) || null
+      const assignmentData = await gql('/api/teach-internal/graphql', `
+        query ($classroomId:String!) { assignmentsByClassroom(classroomId:$classroomId) { id classroomId title description dueDate createdAt updatedAt } }
+      `, { classroomId: room.id })
+      const assignments = asArray(assignmentData?.assignmentsByClassroom)
+      const coursesResp = await fetchImpl(`${baseUrl}/api/teach-internal/courses`, { headers: { Authorization: authHeader } }).catch(() => null)
+      const courseJson = coursesResp && (await coursesResp.json().catch(() => null))
+      const rawCourses = asArray(courseJson?.data)
+      const matched = rawCourses.find((c) => String(c.title || '').toLowerCase().includes(String(room.code || room.title || '').toLowerCase()))
+      const modulesResp = await fetchImpl(`${baseUrl}/api/teach-internal/modules`, { headers: { Authorization: authHeader } }).catch(() => null)
+      const modulesJson = modulesResp && (await modulesResp.json().catch(() => null))
+      const rawModules = asArray(modulesJson?.data)
+      const lessonsResp = await fetchImpl(`${baseUrl}/api/teach-internal/lessons`, { headers: { Authorization: authHeader } }).catch(() => null)
+      const lessonsJson = lessonsResp && (await lessonsResp.json().catch(() => null))
+      const rawLessons = asArray(lessonsJson?.data)
+      const modules = matched ? rawModules.filter((m) => m.courseId === matched.id) : []
+      const lessons = modules.length ? rawLessons.filter((l) => modules.some((m) => m.id === l.moduleId)).map((l) => ({ id: l.id, title: l.title, type: l.type || null, moduleTitle: modules.find((m) => m.id === l.moduleId)?.title || '' })) : []
+      const students = asArray(room.enrollments).map((e) => ({ studentId: e.studentId, displayName: e.studentId, status: e.status }))
+      return res.json({ institution, department, classroom: room, assignments, lessons, students })
+    } catch (err) {
+      return res.status(502).json({ error: 'Failed to load classroom overview' })
+    }
+  })
+
+  router.get('/catalog', async (req, res) => {
+    const authHeader = req.headers.authorization
+    if (!authHeader) return res.status(401).json({ error: 'Missing Authorization header' })
+    const baseUrl = normalizeBaseUrl(req)
+    if (!baseUrl) return res.status(500).json({ error: 'Unable to resolve API base URL' })
+    const fetchImpl = await ensureFetch()
+    try {
+      const resp = await fetchImpl(`${baseUrl}/api/teach-internal/courses`, { headers: { Authorization: authHeader } })
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+      const payload = await resp.json()
+      const courses = asArray(payload?.data).map((c) => ({ courseId: c.id, title: c.title, teacherId: c.teacherId || null, category: c.category || null, difficulty: c.difficulty || null, availability: 'available' }))
+      return res.json({ courses })
+    } catch (err) {
+      return res.status(502).json({ error: 'Failed to load catalog' })
+    }
+  })
+
+  router.get('/people', async (req, res) => {
+    const authHeader = req.headers.authorization
+    if (!authHeader) return res.status(401).json({ error: 'Missing Authorization header' })
+    const baseUrl = normalizeBaseUrl(req)
+    if (!baseUrl) return res.status(500).json({ error: 'Unable to resolve API base URL' })
+    const fetchImpl = await ensureFetch()
+    const gql = (path, query, variables = {}) => callGraphQL(fetchImpl, `${baseUrl}${path}`, query, variables, authHeader)
+    const institutionIdParam = String(req.query.institutionId || req.query.institution_id || '').trim()
+    try {
+      const membersData = await gql('/api/institutions/graphql', `
+        query ($institutionId:String!) { members(institutionId:$institutionId) { id institutionId userId role status createdAt updatedAt } }
+      `, { institutionId: institutionIdParam })
+      const members = asArray(membersData?.members)
+      const classroomsData = await gql('/api/institutions/graphql', `
+        query ($institutionId:String!) { classrooms(institutionId:$institutionId) { id institutionId departmentId teacherId title code capacity status startsAt endsAt } }
+      `, { institutionId: institutionIdParam })
+      const classrooms = asArray(classroomsData?.classrooms)
+      const classroomCountByUser = {}
+      classrooms.forEach((c) => {
+        if (!c.teacherId) return
+        classroomCountByUser[c.teacherId] = (classroomCountByUser[c.teacherId] || 0) + 1
+      })
+      const enriched = members.map((m) => ({ ...m, classroomCount: classroomCountByUser[m.userId] || 0 }))
+      return res.json({ members: enriched })
+    } catch (err) {
+      return res.status(502).json({ error: 'Failed to load people' })
+    }
+  })
+
+  router.get('/calendar', async (req, res) => {
+    const authHeader = req.headers.authorization
+    if (!authHeader) return res.status(401).json({ error: 'Missing Authorization header' })
+    const baseUrl = normalizeBaseUrl(req)
+    if (!baseUrl) return res.status(500).json({ error: 'Unable to resolve API base URL' })
+    const fetchImpl = await ensureFetch()
+    const gql = (path, query, variables = {}) => callGraphQL(fetchImpl, `${baseUrl}${path}`, query, variables, authHeader)
+    const institutionIdParam = String(req.query.institutionId || req.query.institution_id || '').trim()
+    const from = req.query.from ? new Date(String(req.query.from)) : new Date()
+    const to = req.query.to ? new Date(String(req.query.to)) : new Date(Date.now() + 30 * 86400e3)
+    try {
+      const instData = await gql('/api/institutions/graphql', `
+        query ($id:String!) { institution(id:$id) { id name } }
+      `, { id: institutionIdParam })
+      const institution = instData?.institution || null
+      if (!institution?.id) return res.status(404).json({ error: 'Institution not found' })
+      const roomsData = await gql('/api/institutions/graphql', `
+        query ($institutionId:String!) { classrooms(institutionId:$institutionId) { id title code } }
+      `, { institutionId: institution.id })
+      const rooms = asArray(roomsData?.classrooms)
+      const events = []
+      const assignmentQuery = `
+        query ($classroomId:String!) { assignmentsByClassroom(classroomId:$classroomId) { id title dueDate classroomId } }
+      `
+      await Promise.allSettled(rooms.map(async (room) => {
+        const aData = await gql('/api/teach-internal/graphql', assignmentQuery, { classroomId: room.id })
+        asArray(aData?.assignmentsByClassroom).forEach((a) => {
+          const d = a.dueDate ? new Date(a.dueDate) : null
+          if (!d) return
+          if (d >= from && d <= to) {
+            events.push({ id: a.id, kind: 'assignment', title: a.title, date: a.dueDate, classroomName: room.title || room.code })
+          }
+        })
+      }))
+      const meData = await gql('/api/authentication/graphql', `
+        query Me { me { id } }
+      `)
+      const userId = meData?.me?.id || null
+      let labsData = null
+      if (userId) {
+        labsData = await gql('/api/teacher-course-lab/graphql', `
+          query ($userId:String!) { tclab_sessionsByUser(userId:$userId) { id challengeId status lastHeartbeat } }
+        `, { userId }).catch(() => null)
+      }
+      asArray(labsData?.tclab_sessionsByUser).forEach((s) => {
+        const d = s.lastHeartbeat ? new Date(s.lastHeartbeat) : null
+        if (!d) return
+        if (d >= from && d <= to) events.push({ id: s.id, kind: 'lab', title: s.challengeId, date: s.lastHeartbeat, classroomName: null })
+      })
+      events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      return res.json({ events })
+    } catch (err) {
+      return res.status(502).json({ error: 'Failed to load calendar' })
+    }
+  })
+
+  router.get('/classrooms/:id/attendance', async (req, res) => {
+    const authHeader = req.headers.authorization
+    if (!authHeader) return res.status(401).json({ error: 'Missing Authorization header' })
+    const baseUrl = normalizeBaseUrl(req)
+    if (!baseUrl) return res.status(500).json({ error: 'Unable to resolve API base URL' })
+    const fetchImpl = await ensureFetch()
+    const gql = (path, query, variables = {}) => callGraphQL(fetchImpl, `${baseUrl}${path}`, query, variables, authHeader)
+    const id = String(req.params.id || '').trim()
+    const institutionIdParam = String(req.query.institutionId || req.query.institution_id || '').trim()
+    try {
+      const instData = await gql('/api/institutions/graphql', `
+        query ($id:String!) { institution(id:$id) { id name } }
+      `, { id: institutionIdParam })
+      const institution = instData?.institution || null
+      if (!institution?.id) return res.status(404).json({ error: 'Institution not found' })
+      const roomData = await gql('/api/institutions/graphql', `
+        query ($institutionId:String!) { classrooms(institutionId:$institutionId) { id title code enrollments { id studentId status } } }
+      `, { institutionId: institution.id })
+      const room = asArray(roomData?.classrooms).find((r) => r.id === id) || null
+      if (!room) return res.status(404).json({ error: 'Classroom not found' })
+      const assignmentData = await gql('/api/teach-internal/graphql', `
+        query ($classroomId:String!) { assignmentsByClassroom(classroomId:$classroomId) { id title } }
+      `, { classroomId: room.id })
+      const assignmentIds = asArray(assignmentData?.assignmentsByClassroom).map((a) => a.id)
+      const roster = []
+      await Promise.allSettled(asArray(room.enrollments).map(async (enr) => {
+        const subsData = await gql('/api/teach-internal/graphql', `
+          query ($studentId:String!) { mySubmissions(studentId:$studentId) { assignmentId grade } }
+        `, { studentId: enr.studentId }).catch(() => ({ mySubmissions: [] }))
+        const mySubs = asArray(subsData?.mySubmissions).filter((s) => assignmentIds.includes(s.assignmentId))
+        const avg = mySubs.length ? Math.round(mySubs.reduce((sum, s) => sum + Number(s.grade || 0), 0) / mySubs.length) : null
+        roster.push({ studentId: enr.studentId, status: enr.status, submissions: mySubs.length, avgGrade: avg })
+      }))
+      return res.json({ classroom: room, roster })
+    } catch (err) {
+      return res.status(502).json({ error: 'Failed to load attendance' })
+    }
+  })
+
+  router.get('/teacher-assignments', async (req, res) => {
+    const authHeader = req.headers.authorization
+    if (!authHeader) return res.status(401).json({ error: 'Missing Authorization header' })
+    const baseUrl = normalizeBaseUrl(req)
+    if (!baseUrl) return res.status(500).json({ error: 'Unable to resolve API base URL' })
+    const fetchImpl = await ensureFetch()
+    const gql = (path, query, variables = {}) => callGraphQL(fetchImpl, `${baseUrl}${path}`, query, variables, authHeader)
+    const institutionIdParam = String(req.query.institutionId || req.query.institution_id || '').trim()
+    try {
+      const teachersData = await gql('/api/institutions/graphql', `
+        query ($institutionId:String!, $role:String) { members(institutionId:$institutionId, role:$role) { id institutionId userId role status createdAt updatedAt } }
+      `, { institutionId: institutionIdParam, role: 'teacher' })
+      const teachers = asArray(teachersData?.members).map((t) => ({ ...t, displayName: t.userId }))
+      const classroomsData = await gql('/api/institutions/graphql', `
+        query ($institutionId:String!) { classrooms(institutionId:$institutionId) { id institutionId departmentId teacherId title code capacity status startsAt endsAt } }
+      `, { institutionId: institutionIdParam })
+      const classrooms = asArray(classroomsData?.classrooms)
+      const resp = await fetchImpl(`${baseUrl}/api/teach-internal/courses`, { headers: { Authorization: authHeader } })
+      const payload = await resp.json().catch(() => ({}))
+      const courses = asArray(payload?.data).map((c) => ({ courseId: c.id, title: c.title, teacherId: c.teacherId || null }))
+      const assignments = []
+      classrooms.forEach((c) => {
+        if (c.teacherId) assignments.push({ id: `${c.id}`, type: 'classroom', teacher: c.teacherId, target: c.title })
+      })
+      courses.forEach((c) => {
+        if (c.teacherId) assignments.push({ id: `${c.courseId}`, type: 'course', teacher: c.teacherId, target: c.title })
+      })
+      return res.json({ teachers, classrooms, courses, assignments })
+    } catch (err) {
+      return res.status(502).json({ error: 'Failed to load assignments' })
+    }
+  })
+
+  router.post('/assignments/teacher', express.json(), async (req, res) => {
+    const authHeader = req.headers.authorization
+    if (!authHeader) return res.status(401).json({ error: 'Missing Authorization header' })
+    const baseUrl = normalizeBaseUrl(req)
+    if (!baseUrl) return res.status(500).json({ error: 'Unable to resolve API base URL' })
+    const fetchImpl = await ensureFetch()
+    const scope = String(req.body?.scope || '').trim()
+    const teacherId = String(req.body?.teacherId || '').trim()
+    try {
+      if (scope === 'classroom') {
+        const classroomId = String(req.body?.classroomId || '').trim()
+        const mutation = `mutation ($id:String!, $teacherId:String) { updateClassroom(id:$id, teacherId:$teacherId) { id teacherId } }`
+        await callGraphQL(fetchImpl, `${baseUrl}/api/institutions/graphql`, mutation, { id: classroomId, teacherId }, authHeader)
+        return res.json({ ok: true })
+      }
+      if (scope === 'course') {
+        const courseId = String(req.body?.courseId || '').trim()
+        const resp = await fetchImpl(`${baseUrl}/api/teach-internal/courses/${encodeURIComponent(courseId)}`, { method: 'PUT', headers: { 'content-type': 'application/json', Authorization: authHeader }, body: JSON.stringify({ teacherId }) })
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+        return res.json({ ok: true })
+      }
+      return res.status(400).json({ error: 'Invalid scope' })
+    } catch (err) {
+      return res.status(502).json({ error: 'Failed to assign teacher' })
+    }
+  })
+
+  router.get('/students/:id/record', async (req, res) => {
+    const authHeader = req.headers.authorization
+    if (!authHeader) return res.status(401).json({ error: 'Missing Authorization header' })
+    const baseUrl = normalizeBaseUrl(req)
+    if (!baseUrl) return res.status(500).json({ error: 'Unable to resolve API base URL' })
+    const fetchImpl = await ensureFetch()
+    const gql = (path, query, variables = {}) => callGraphQL(fetchImpl, `${baseUrl}${path}`, query, variables, authHeader)
+    const studentId = String(req.params.id || '').trim()
+    try {
+      const studentData = await gql('/api/students-internal/graphql', `
+        query ($userId:String!) { studentByUserId(userId:$userId) { id userId displayName createdAt updatedAt } }
+      `, { userId: studentId })
+      const student = studentData?.studentByUserId || null
+      const myCoursesData = await gql('/api/students-internal/graphql', `
+        query ($studentId:String!) { myCourses(studentId:$studentId) { courseId progress completed course { id title category difficulty description } } }
+      `, { studentId })
+      const courses = asArray(myCoursesData?.myCourses).map((c) => ({ courseId: c.courseId, title: c.course?.title || 'Course', progressPct: Math.round(c.progress || 0), completed: !!c.completed }))
+      const gradeData = await gql('/api/students-internal/graphql', `
+        query ($courseId:ID!) { courseGradebook(courseId:$courseId) { id assignmentId studentId courseId grade feedback createdAt updatedAt } }
+      `, { courseId: courses[0]?.courseId || '' }).catch(() => ({ courseGradebook: [] }))
+      const gradebook = asArray(gradeData?.courseGradebook).filter((g) => g.studentId === student?.id)
+      return res.json({ student, courses, gradebook })
+    } catch (err) {
+      return res.status(502).json({ error: 'Failed to load student record' })
+    }
+  })
+
   app.use('/api/institution-portal', router)
 }
 
