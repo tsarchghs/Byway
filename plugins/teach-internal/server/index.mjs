@@ -7,10 +7,14 @@ import { PrismaClient } from './db/generated/client/index.js'
 import jwt from 'jsonwebtoken'
 import cors from 'cors'
 import { ensureCodeServer } from './codeServerManager.js'
-
+import fs from 'fs'
+import path from 'path'
 
 const prisma = new PrismaClient()
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret'
+const uploadsDir = path.resolve(process.cwd(), 'plugins/teach-internal/uploads')
+fs.mkdirSync(uploadsDir, { recursive: true })
+const filePromises = fs.promises
 
 
 // === Zod route validators (auto-generated) ===
@@ -60,6 +64,11 @@ export const ZLessonUpdate = z.object({
 
 export async function register(app) {
   const router = express.Router()
+  router.use('/files', express.static(uploadsDir))
+  router.use((req, res, next) => {
+    if (req.path.startsWith('/graphql') || req.path.includes('/webhook')) return next()
+    return express.json({ limit: '25mb' })(req, res, next)
+  })
 
   // ⚠️ DO NOT use express.json() here!
   // Apollo already handles parsing internally
@@ -95,6 +104,40 @@ export async function register(app) {
 
   // ✅ Simple health check
   router.get('/health', (_, res) => res.json({ ok: true, plugin: 'teach-internal' }))
+
+  router.post('/files/upload', async (req, res) => {
+    try {
+      const { fileName, data } = req.body || {}
+      if (!fileName || !data) {
+        return res.status(400).json({ ok: false, error: 'fileName and data are required' })
+      }
+      const base64Payload = typeof data === 'string' ? data.split(',').pop() : null
+      if (!base64Payload) {
+        return res.status(400).json({ ok: false, error: 'Invalid file payload' })
+      }
+      const buffer = Buffer.from(base64Payload, 'base64')
+      if (!buffer.length) {
+        return res.status(400).json({ ok: false, error: 'Empty file payload' })
+      }
+      const safeName = String(fileName).replace(/[^\w.\-]/g, '_') || 'file.bin'
+      const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${safeName}`
+      const targetPath = path.join(uploadsDir, uniqueName)
+      await filePromises.writeFile(targetPath, buffer)
+      const url = `/api/teach-internal/files/${encodeURIComponent(uniqueName)}`
+      res.json({
+        ok: true,
+        file: {
+          name: fileName,
+          filename: uniqueName,
+          size: buffer.length,
+          url,
+        },
+      })
+    } catch (err) {
+      console.error('[teach-internal] upload failed', err)
+      res.status(500).json({ ok: false, error: 'Upload failed' })
+    }
+  })
 router.get('/code-server/:teacherId/:lessonId', async (req, res) => {
   try {
     const { teacherId, lessonId } = req.params

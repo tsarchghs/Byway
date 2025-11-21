@@ -71,6 +71,7 @@ type GqlStudentCourse {
     createdAt: String
     updatedAt: String
     isEnrolled: Boolean
+  metadata: JSON
   }
 
   type GqlModule {
@@ -93,6 +94,34 @@ type GqlStudentCourse {
     metadata: JSON
     createdAt: String
   }
+
+type LessonShare {
+  id: ID!
+  courseId: String!
+  moduleId: String
+  lessonId: String
+  kind: String!
+  title: String
+  url: String!
+  size: Int
+  mimeType: String
+  metadata: JSON
+  createdAt: String!
+  updatedAt: String!
+}
+
+input LessonShareInput {
+  id: ID
+  courseId: String!
+  moduleId: String
+  lessonId: String
+  kind: String!
+  title: String
+  url: String!
+  size: Int
+  mimeType: String
+  metadata: JSON
+}
   type Query {
 myCourses(studentId: String!): [GqlStudentCourse!]!
     studentByUserId(userId: String!): GqlStudent
@@ -122,5 +151,7 @@ myCourses(studentId: String!): [GqlStudentCourse!]!
     enrollStudent(studentId: String!, courseId: String!): Enrollment!
     upsertGrade(input: GradebookInput!): GradebookEntry!
     setProgress(enrollmentId: ID!, progressPct: Int!): Enrollment!
+  upsertLessonShare(input: LessonShareInput!): LessonShare!
+  deleteLessonShare(id: ID!): Boolean!
   }
 `

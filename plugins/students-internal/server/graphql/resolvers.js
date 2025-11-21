@@ -50,6 +50,18 @@ Query: {
     });
   },
 
+  async lessonShares(_, { courseId, moduleId, lessonId }) {
+    const where = {
+      ...(courseId ? { courseId } : {}),
+      ...(moduleId ? { moduleId } : {}),
+      ...(lessonId ? { lessonId } : {}),
+    };
+    return prisma.lessonShare.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    });
+  },
+
   // 🧩 Add myProgress here
 async myProgress(_, { studentId }) {
   const filters = { studentId };
@@ -82,7 +94,7 @@ async myProgress(_, { studentId }) {
         return false
       }
     },
-  async enrollStudent(_, { studentId, courseId }) {
+    async enrollStudent(_, { studentId, courseId }) {
       const existing = await prisma.studentCourse.findFirst({ where: { studentId, courseId } })
       if (existing) return existing
 
@@ -110,8 +122,26 @@ async myProgress(_, { studentId }) {
       }
       return prisma.gradebookEntry.create({ data: input })
     },
-  async setProgress(_, { enrollmentId, progressPct }) {
-      return prisma.studentCourse.update({ where: { id: enrollmentId }, data: { progress: progressPct } })
-    }
-  }
+    async setProgress(_, { enrollmentId, progressPct }) {
+      return prisma.studentCourse.update({ where: { id: enrollmentId }, data: { progress: progressPct } });
+    },
+    async upsertLessonShare(_, { input }) {
+      const { id, ...data } = input;
+      if (id) {
+        return prisma.lessonShare.update({
+          where: { id },
+          data,
+        });
+      }
+      return prisma.lessonShare.create({ data });
+    },
+    async deleteLessonShare(_, { id }) {
+      try {
+        await prisma.lessonShare.delete({ where: { id } });
+        return true;
+      } catch {
+        return false;
+      }
+    },
+  },
 }

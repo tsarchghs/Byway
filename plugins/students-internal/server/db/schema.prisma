@@ -43,8 +43,30 @@ model Course {
   gradebookEntries GradebookEntry[]
   studentNotes     StudentNote[]
   StudentCourse    StudentCourse[]
+  lessonShares     LessonShare[]
+  metadata         Json?
 
   @@index([title])
+}
+
+model LessonShare {
+  id        String   @id @default(cuid())
+  courseId  String
+  moduleId  String?
+  lessonId  String?
+  kind      String   // resource | attachment | bookmark, etc.
+  title     String?
+  url       String
+  size      Int?
+  mimeType  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId, moduleId, lessonId])
+  @@index([lessonId])
 }
 
 model GradebookEntry {

@@ -58,6 +58,7 @@
     "GET /api/lessons/:id": true,
     "POST /api/lessons": true,
     "PUT /api/lessons/:id": true,
-    "DELETE /api/lessons/:id": true
+    "DELETE /api/lessons/:id": true,
+    "POST /api/teach-internal/files/upload": true
   }
 }

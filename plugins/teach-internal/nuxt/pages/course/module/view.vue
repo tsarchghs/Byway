@@ -1924,15 +1924,15 @@ type CourseT = {
 /** Config / GraphQL helper */
 const route = useRoute();
 const API_URL = "http://localhost:4000/api/teach-internal/graphql";
+const FILE_UPLOAD_ENDPOINT = "/api/teach-internal/files/upload";
 // rely on HttpOnly auth cookie; no /* removed_localStorage */ null token
-function getAuthHeaders() {
+function getAuthHeaders(options: { json?: boolean } = {}) {
   const token = getCookieToken();
-  return token
-    ? {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      }
-    : { "Content-Type": "application/json" };
+  const headers: Record<string, string> = {};
+  const wantsJson = options.json !== false;
+  if (wantsJson) headers["Content-Type"] = "application/json";
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  return headers;
 }
 // --- ADD: small utils for API testing ---
 const expectModeOptions = [
@@ -1976,6 +1976,64 @@ function buildQuery(list?: KV[]): string {
     );
   }
   return q.length ? `?${q.join("&")}` : "";
+}
+
+function pickLocalFile(accept = "*/*"): Promise<File | null> {
+  if (typeof window === "undefined") return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = accept;
+    input.onchange = () => resolve(input.files?.[0] || null);
+    input.click();
+  });
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(reader.error || new Error("File read failed"));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadLocalAsset(kind: "course" | "lesson" = "course") {
+  try {
+    const file = await pickLocalFile();
+    if (!file) return null;
+    if (file.size > 25 * 1024 * 1024) {
+      message.error("File too large (max 25MB)");
+      return null;
+    }
+    const payload = {
+      fileName: file.name,
+      data: await fileToBase64(file),
+      kind,
+    };
+    const resp = await fetch(FILE_UPLOAD_ENDPOINT, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      credentials: "include",
+      body: JSON.stringify(payload),
+    });
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(text || `HTTP ${resp.status}`);
+    }
+    const json = await resp.json();
+    if (!json?.ok || !json?.file?.url) {
+      throw new Error(json?.error || "Upload failed");
+    }
+    return {
+      url: json.file.url as string,
+      name: (json.file.name as string) || file.name,
+    };
+  } catch (err: any) {
+    console.warn("[asset:upload]", err);
+    message.error(err?.message || "Upload failed");
+    return null;
+  }
 }
 
 function safeJsonParse<T = unknown>(s?: string): T | undefined {
@@ -2658,11 +2716,11 @@ const GQL = {
     mutation UpdateCourse(
       $id:String!,
       $title:String, $category:String, $difficulty:String, $description:String,
-      $price:Float, $discount:Float, $coverUrl:String
+      $price:Float, $discount:Float, $coverUrl:String, $files: JSON
     ){
       updateCourse(
         id:$id, title:$title, category:$category, difficulty:$difficulty, description:$description,
-        price:$price, discount:$discount, coverUrl:$coverUrl
+        price:$price, discount:$discount, coverUrl:$coverUrl, files:$files
       ){ id }
     }
   `,
@@ -2755,7 +2813,15 @@ function normalizeCourse(src: any): CourseT {
         } as Lesson;
       }),
     })),
-    files: src.coverUrl ? [{ name: "cover", url: src.coverUrl }] : [],
+    files: (() => {
+      const fromServer = Array.isArray(src.files)
+        ? src.files
+        : Array.isArray(parseMetadata(src.metadata)?.files)
+        ? parseMetadata(src.metadata).files
+        : [];
+      if (fromServer.length) return fromServer;
+      return src.coverUrl ? [{ name: "cover", url: src.coverUrl }] : [];
+    })(),
   };
 }
 
@@ -2829,6 +2895,7 @@ async function apiUpdateCourse() {
       price: Number(course.price ?? 0),
       discount: Number(course.discount ?? 0),
       coverUrl: coverUrl.value || "",
+      files: course.files || [],
     });
   } catch (e: any) {
     message.error("Update course failed: " + e.message);
@@ -3118,13 +3185,20 @@ function applyUnlock() {
 /** Resources / Attachments */
 const resTitle = ref("");
 const resUrl = ref("");
-function addResource() {
+async function addResource() {
   if (!currentLesson.value) return;
-  if (!resUrl.value.trim()) return message.error("Resource URL required");
+  let url = resUrl.value.trim();
+  let title = resTitle.value || "";
+  if (!url) {
+    const uploaded = await uploadLocalAsset("lesson");
+    if (!uploaded) return;
+    url = uploaded.url;
+    if (!title) title = uploaded.name || "";
+  }
   currentLesson.value.resources = currentLesson.value.resources || [];
   currentLesson.value.resources.push({
-    title: resTitle.value || undefined,
-    url: resUrl.value.trim(),
+    title: title || undefined,
+    url,
   });
   resTitle.value = "";
   resUrl.value = "";
@@ -3137,13 +3211,20 @@ function removeResource(i: number) {
 
 const attName = ref("");
 const attUrl = ref("");
-function addAttachment() {
+async function addAttachment() {
   if (!currentLesson.value) return;
-  if (!attUrl.value.trim()) return message.error("Attachment URL required");
+  let url = attUrl.value.trim();
+  let name = attName.value || "";
+  if (!url) {
+    const uploaded = await uploadLocalAsset("lesson");
+    if (!uploaded) return;
+    url = uploaded.url;
+    if (!name) name = uploaded.name || "";
+  }
   currentLesson.value.attachments = currentLesson.value.attachments || [];
   currentLesson.value.attachments.push({
-    name: attName.value || undefined,
-    url: attUrl.value.trim(),
+    name: name || undefined,
+    url,
   });
   attName.value = "";
   attUrl.value = "";
@@ -3158,15 +3239,21 @@ function removeAttachment(i: number) {
 const coverInput = ref("");
 const fileName = ref("");
 const fileUrl = ref("");
-function setCover() {
-  const u = coverInput.value.trim();
-  if (!u) return;
-  if (!course.files.length) course.files.push({ name: "cover", url: u });
+async function setCover() {
+  let url = coverInput.value.trim();
+  if (!url) {
+    const uploaded = await uploadLocalAsset("course");
+    if (!uploaded) return;
+    url = uploaded.url;
+    coverInput.value = url;
+    if (!fileName.value) fileName.value = uploaded.name || "";
+  }
+  if (!course.files.length) course.files.push({ name: "cover", url });
   else
     course.files[0] = {
       ...(course.files[0] || {}),
       name: course.files[0]?.name || "cover",
-      url: u,
+      url,
     };
   if (course.id) apiUpdateCourse();
 }
@@ -3176,11 +3263,18 @@ function clearCover() {
   }
   if (course.id) apiUpdateCourse();
 }
-function addCourseFile() {
-  if (!fileUrl.value.trim()) return message.error("File URL required");
+async function addCourseFile() {
+  let url = fileUrl.value.trim();
+  let name = fileName.value.trim();
+  if (!url) {
+    const uploaded = await uploadLocalAsset("course");
+    if (!uploaded) return;
+    url = uploaded.url;
+    if (!name) name = uploaded.name || "";
+  }
   course.files.push({
-    name: fileName.value || "Asset",
-    url: fileUrl.value.trim(),
+    name: name || "Asset",
+    url,
   });
   fileName.value = "";
   fileUrl.value = "";

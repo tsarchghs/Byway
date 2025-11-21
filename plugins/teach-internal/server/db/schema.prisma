@@ -19,6 +19,7 @@ model Course {
   price       Float    @default(0)
   discount    Float    @default(0)
   coverUrl    String?
+  metadata    Json?
   modules     Module[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

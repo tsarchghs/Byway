@@ -1,9 +1,30 @@
 // src/graphql/courseTypes.ts
-import { objectType, extendType, stringArg, floatArg, nonNull } from 'nexus'
+import { objectType, extendType, stringArg, floatArg, nonNull, arg } from 'nexus'
 import { callGraphQL } from '../graphql/callPlugins'
 
 function getCurrentUserId(ctx: any) {
   return ctx?.user?.userId || ctx?.user?.id || ctx?.user?.sub || null
+}
+
+function asRecord(value: unknown) {
+  return value && typeof value === 'object' ? (value as Record<string, any>) : {}
+}
+
+async function fetchCourseMetadata(prisma: any, id: string) {
+  const existing = await prisma.course.findUnique({
+    where: { id },
+    select: { metadata: true },
+  })
+  return asRecord(existing?.metadata)
+}
+
+function mergeCourseMetadata(base: Record<string, any>, patch: Record<string, any>) {
+  const next = { ...asRecord(base) }
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === undefined) continue
+    next[key] = value
+  }
+  return Object.keys(next).length ? next : undefined
 }
 
 export const GqlCourse = objectType({
@@ -22,6 +43,13 @@ export const GqlCourse = objectType({
     t.list.field('modules', { type: 'GqlModule' })
     t.field('createdAt', { type: 'DateTime' })
     t.field('updatedAt', { type: 'DateTime' })
+    t.field('files', {
+      type: 'JSON',
+      resolve: (parent) => {
+        const meta = asRecord((parent as any)?.metadata)
+        return meta?.files || []
+      },
+    })
     // Enrollment flag: resolved via students-internal when JWT is present
     t.boolean('isEnrolled', {
       resolve: async (parent, _args, ctx) => {
@@ -100,6 +128,7 @@ export const CourseMutation = extendType({
         price: floatArg(),
         discount: floatArg(),
         coverUrl: stringArg(),
+        files: arg({ type: 'JSON' }),
       },
       resolve: async (_, args, ctx) => {
           // require authenticated user and ensure they own the teacher profile
@@ -123,7 +152,14 @@ export const CourseMutation = extendType({
               console.warn('[teach-internal] teacher profile lookup failed, allowing createCourse anyway:', (err as any)?.message || err)
             }
 
-            return ctx.prisma.course.create({ data: args })
+            const { files, ...courseData } = args
+            const metadata = files !== undefined ? mergeCourseMetadata({}, { files }) : undefined
+            return ctx.prisma.course.create({
+              data: {
+                ...courseData,
+                ...(metadata ? { metadata } : {}),
+              },
+            })
           } catch (e) {
             throw new Error((e as any)?.message || 'Failed to create course')
           }
@@ -141,9 +177,23 @@ export const CourseMutation = extendType({
         price: floatArg(),
         discount: floatArg(),
         coverUrl: stringArg(),
+        files: arg({ type: 'JSON' }),
       },
-      resolve: async (_, { id, ...data }, ctx) =>
-        ctx.prisma.course.update({ where: { id }, data }),
+      resolve: async (_, args, ctx) => {
+        const { id, files, ...data } = args
+        let metadataPatch
+        if (files !== undefined) {
+          const current = await fetchCourseMetadata(ctx.prisma, id)
+          metadataPatch = mergeCourseMetadata(current, { files })
+        }
+        return ctx.prisma.course.update({
+          where: { id },
+          data: {
+            ...data,
+            ...(metadataPatch ? { metadata: metadataPatch } : {}),
+          },
+        })
+      },
     })
 
     t.field('deleteCourse', {

@@ -4,10 +4,18 @@ import { ApolloServer } from 'apollo-server-express';
 import { typeDefs } from './graphql/typeDefs.js';
 import { resolvers } from './graphql/resolvers.js';
 import { prisma } from './db/client.js';
+import fs from 'fs';
+import path from 'path';
+
+const uploadsDir = path.resolve(process.cwd(), 'plugins/students-internal/uploads');
+fs.mkdirSync(uploadsDir, { recursive: true });
+const filePromises = fs.promises;
 
 export async function register(app) {
   const router = express.Router();
   router.use(cors({ origin: ['http://localhost:3000'], credentials: true }));
+  router.use('/files', express.static(uploadsDir));
+  router.use(express.json({ limit: '25mb' }));
 
   const server = new ApolloServer({
     typeDefs,
@@ -49,6 +57,62 @@ export async function register(app) {
       res.json({ success: true, data: student });
     } catch (e) {
       res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  router.post('/files/upload', async (req, res) => {
+    try {
+      const { fileName, data, courseId, moduleId, lessonId, kind } = req.body || {};
+      if (!fileName || !data) {
+        return res.status(400).json({ ok: false, error: 'fileName and data are required' });
+      }
+      const base64Payload = typeof data === 'string' ? data.split(',').pop() : null;
+      if (!base64Payload) {
+        return res.status(400).json({ ok: false, error: 'Invalid payload' });
+      }
+      const buffer = Buffer.from(base64Payload, 'base64');
+      if (!buffer.length) {
+        return res.status(400).json({ ok: false, error: 'Empty file' });
+      }
+      const safeName = String(fileName).replace(/[^\w.\-]/g, '_') || 'file.bin';
+      const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${safeName}`;
+      const targetPath = path.join(uploadsDir, uniqueName);
+      await filePromises.writeFile(targetPath, buffer);
+      const url = `/api/students-internal/files/${encodeURIComponent(uniqueName)}`;
+
+      let shareRecord = null;
+      if (courseId) {
+        shareRecord = await prisma.lessonShare.create({
+          data: {
+            courseId: String(courseId),
+            moduleId: moduleId ? String(moduleId) : null,
+            lessonId: lessonId ? String(lessonId) : null,
+            kind: kind || 'resource',
+            title: fileName,
+            url,
+            size: buffer.length,
+            mimeType: req.body?.mimeType || null,
+            metadata: {
+              originalName: fileName,
+              uploadedAt: new Date().toISOString(),
+            },
+          },
+        });
+      }
+
+      res.json({
+        ok: true,
+        file: {
+          name: fileName,
+          filename: uniqueName,
+          size: buffer.length,
+          url,
+          shareId: shareRecord?.id || null,
+        },
+      });
+    } catch (err) {
+      console.error('[students-internal] upload failed', err);
+      res.status(500).json({ ok: false, error: 'Upload failed' });
     }
   });
 

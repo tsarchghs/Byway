@@ -1344,10 +1344,11 @@ async function loadOverview() {
     initialLoading.value = false
     return
   }
+  const url = `${apiBase}/api/institution-portal/overview`
   initialLoading.value = true
   loadError.value = null
   try {
-    const resp = await fetch(`${apiBase}/api/institution-portal/overview`, {
+    const resp = await fetch(url, {
       method: 'GET',
       headers: {
         'content-type': 'application/json',
@@ -1400,26 +1401,12 @@ async function loadTeacherCourses() {
     })
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
     const json = await resp.json()
-    const courses = json?.data?.myCourses || []
-    if (Array.isArray(courses) && courses.length > 0) {
-      teacherCourses.value = courses
-    } else {
-      buildMockCoursesFromClassrooms()
-    }
+    const courses = json?.data?.myCourses
+    teacherCourses.value = Array.isArray(courses) ? courses : []
   } catch (err) {
     console.warn('[institutions-portal] teacher courses fallback', err)
-    buildMockCoursesFromClassrooms()
+    teacherCourses.value = []
   }
-}
-
-function buildMockCoursesFromClassrooms() {
-  teacherCourses.value = institutionClassrooms.value.slice(0, 4).map((c, idx) => ({
-    id: c.id,
-    title: c.title || `Course ${idx + 1}`,
-    category: deptById.value[c.departmentId || '']?.name || 'Institution-linked',
-    difficulty: idx % 2 === 0 ? 'Intermediate' : 'Beginner',
-    institutionId: c.institutionId,
-  }))
 }
 
 watch(

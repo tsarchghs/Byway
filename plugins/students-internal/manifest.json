@@ -65,5 +65,14 @@
       "path": "/students/labs",
       "file": "nuxt/pages/labs/index.vue"
     }
-  ]
+  ],
+  "server": {
+    "index": "server/index.mjs",
+    "routes": [
+      {
+        "method": "POST",
+        "path": "/api/students-internal/files/upload"
+      }
+    ]
+  }
 }

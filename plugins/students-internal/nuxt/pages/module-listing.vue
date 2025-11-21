@@ -632,21 +632,31 @@
 
               <a-tab-pane key="resources" :tab="t('Resources')">
                 <a-breadcrumb class='mb-3'><a-breadcrumb-item to='/students'>Students</a-breadcrumb-item><a-breadcrumb-item>Modules</a-breadcrumb-item></a-breadcrumb>
-  <a-card v-if="currentLesson" size="small" :title="t('Resources')" class="mt-2">
-                  <a-empty v-if="!currentLesson.resources?.length" :description="t('No resources')" />
-                  <a-list v-else size="small" :data-source="currentLesson.resources">
+<a-card v-if="currentLesson" size="small" :title="t('Resources')" class="mt-2">
+                  <div class="mb-1" v-if="isEnrolledCourse">
+                    <a-button size="small" type="primary" @click="addLessonShare('resource')" :loading="shareUploading.resource">
+                      {{ t('Add resource') }}
+                    </a-button>
+                  </div>
+                  <a-empty v-if="!combinedResources.length" :description="t('No resources')" />
+                  <a-list v-else size="small" :data-source="combinedResources">
                     <template #renderItem="{ item }">
                       <a-list-item>
-                        <a :href="item.url" target="_blank" @click="trackResource(item)">{{ item.title || item.name || t('Resource') }}</a>
+                        <a :href="item.url" target="_blank">{{ item.title || item.name || t('Resource') }}</a>
                       </a-list-item>
                     </template>
                   </a-list>
                 </a-card>
 
                 <a-breadcrumb class='mb-3'><a-breadcrumb-item to='/students'>Students</a-breadcrumb-item><a-breadcrumb-item>Modules</a-breadcrumb-item></a-breadcrumb>
-  <a-card v-if="currentLesson" size="small" class="mt-2" :title="t('Attachments')">
-                  <a-empty v-if="!currentLesson.attachments?.length" :description="t('No attachments')" />
-                  <a-list v-else size="small" :data-source="currentLesson.attachments">
+<a-card v-if="currentLesson" size="small" class="mt-2" :title="t('Attachments')">
+                  <div class="mb-1" v-if="isEnrolledCourse">
+                    <a-button size="small" type="primary" @click="addLessonShare('attachment')" :loading="shareUploading.attachment">
+                      {{ t('Add attachment') }}
+                    </a-button>
+                  </div>
+                  <a-empty v-if="!combinedAttachments.length" :description="t('No attachments')" />
+                  <a-list v-else size="small" :data-source="combinedAttachments">
                     <template #renderItem="{ item }">
                       <a-list-item>
                         <a :href="item.url" target="_blank">{{ item.name || t('Attachment') }}</a>
@@ -1075,6 +1085,23 @@ type CourseT = {
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced' | string
   coverUrl?: string
 }
+type LessonShareRecord = {
+  id: string
+  kind: 'resource' | 'attachment' | string
+  title?: string
+  url: string
+  size?: number
+  mimeType?: string
+  metadata?: Record<string, any>
+}
+type UploadResponseFile = {
+  url: string
+  name?: string
+  filename?: string
+  size?: number
+  mimeType?: string
+  shareId?: string
+}
 
 const parseMetadata = (md: any) => {
   if (!md) return {}
@@ -1198,6 +1225,11 @@ const labSessionStarting = reactive<Record<string, boolean>>({})
 const labSubmitting = reactive<Record<string, boolean>>({})
 const labRestarting = reactive<Record<string, boolean>>({})
 const labRefreshing = reactive<Record<string, boolean>>({})
+const lessonShares = reactive<Record<string, LessonShareRecord[]>>({})
+const shareUploading = reactive<{ resource: boolean; attachment: boolean }>({
+  resource: false,
+  attachment: false,
+})
 
 const selectedModuleId = computed(() => String(route?.params?.module_id || ''))
 const selectedCourseId = computed(() => String(route?.params?.course_id || route?.params?.courseId || ''))
@@ -1223,6 +1255,26 @@ const progressPercent = computed(() =>
 const coverStyle = computed(() => ({
   backgroundImage: course.coverUrl ? `url('${course.coverUrl}')` : 'linear-gradient(135deg,#111,#334155)'
 }))
+const combinedResources = computed(() => {
+  const lesson = currentLesson.value
+  if (!lesson) return []
+  const fromMetadata = lesson.resources || []
+  const extras = (lessonShares[lesson.id] || []).filter((item) => item.kind === 'resource')
+  return [
+    ...fromMetadata,
+    ...extras.map((r) => ({ title: r.title, url: r.url, name: r.title })),
+  ]
+})
+const combinedAttachments = computed(() => {
+  const lesson = currentLesson.value
+  if (!lesson) return []
+  const fromMetadata = lesson.attachments || []
+  const extras = (lessonShares[lesson.id] || []).filter((item) => item.kind === 'attachment')
+  return [
+    ...fromMetadata,
+    ...extras.map((r) => ({ name: r.title, url: r.url })),
+  ]
+})
 
 const filteredLessons = computed(() => {
   let arr = lessons.value.slice()
@@ -1310,6 +1362,77 @@ async function fetchGraphQL<T = any>(
   }
 }
 
+async function uploadStudentFile(payload: {
+  fileName: string
+  base64: string
+  courseId: string
+  moduleId?: string | null
+  lessonId?: string | null
+  kind: 'resource' | 'attachment'
+}) {
+  const token = typeof window !== 'undefined' ? window.localStorage?.getItem('token') : null
+  if (!token) throw new Error('Authentication required: No token found in localStorage.')
+  const resp = await fetch('/api/students-internal/files/upload', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    credentials: 'include',
+    body: JSON.stringify({
+      fileName: payload.fileName,
+      data: payload.base64,
+      courseId: payload.courseId,
+      moduleId: payload.moduleId,
+      lessonId: payload.lessonId,
+      kind: payload.kind,
+    }),
+  })
+  if (!resp.ok) {
+    const text = await resp.text()
+    throw new Error(text || `HTTP ${resp.status}`)
+  }
+  return resp.json()
+}
+
+async function pickAndUpload(kind: 'resource' | 'attachment'): Promise<UploadResponseFile | null> {
+  if (typeof window === 'undefined') return null
+  return new Promise<{ url: string; title: string } | null>((resolve) => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.onchange = async () => {
+      const file = input.files?.[0]
+      if (!file) return resolve(null)
+      const reader = new FileReader()
+      reader.onload = async () => {
+        try {
+          const result = reader.result as string
+          const courseId = selectedCourseId.value
+          const moduleId = moduleT.value?.id || null
+          const lessonId = currentLesson.value?.id || null
+          if (!courseId) throw new Error('Missing courseId in route')
+          const uploadResp = await uploadStudentFile({
+            fileName: file.name,
+            base64: String(result),
+            courseId,
+            moduleId,
+            lessonId,
+            kind,
+          })
+          resolve(uploadResp?.file || null)
+        } catch (err) {
+          console.error('[students-internal] file upload failed', err)
+          message.error((err as Error)?.message || 'Upload failed')
+          resolve(null)
+        }
+      }
+      reader.onerror = () => resolve(null)
+      reader.readAsDataURL(file)
+    }
+    input.click()
+  })
+}
+
 const GQL = {
   myCourses: `
     query MyCourses($studentId:String!) {
@@ -1348,6 +1471,19 @@ const GQL = {
         id
         title
         lessons { id duration title type content videoUrl rubric metadata moduleId }
+      }
+    }
+  `,
+  lessonShares: `
+    query LessonShares($courseId:String!, $moduleId:String, $lessonId:String) {
+      lessonShares(courseId:$courseId, moduleId:$moduleId, lessonId:$lessonId) {
+        id
+        kind
+        title
+        url
+        size
+        mimeType
+        metadata
       }
     }
   `,
@@ -1423,8 +1559,10 @@ async function loadCourseAndModules() {
     lessons.value = initialModule?.lessons || []
     currentIndex.value = 0
 
-    // 3️⃣ Load lab data for lab lessons
     await loadLabDataForModule()
+    if (currentLesson.value?.id) {
+      await loadLessonSharesForLesson(currentLesson.value.id)
+    }
   } catch (err: any) {
     console.warn('[Course] Falling back to mocks:', err?.message || err)
     usingMocks.value = true
@@ -1517,7 +1655,7 @@ onMounted(() => {
   // Watch for current lesson changes and load lab data if needed
   watch(
     () => currentLesson.value?.id,
-    (lessonId) => {
+    async (lessonId) => {
       if (lessonId && currentLesson.value?.type === 'lab') {
         // Load lab challenge and session for this lesson
         fetchLabChallenge(lessonId).then((challenge) => {
@@ -1525,6 +1663,9 @@ onMounted(() => {
             fetchLabSession(challenge.id, lessonId)
           }
         })
+      }
+      if (lessonId) {
+        await loadLessonSharesForLesson(lessonId)
       }
     },
     { immediate: true }
@@ -2240,6 +2381,52 @@ async function loadLabDataForModule() {
       // Fetch session
       await fetchLabSession(challenge.id, lesson.id)
     }
+  }
+}
+
+async function loadLessonSharesForLesson(lessonId: string) {
+  if (!lessonId || !selectedCourseId.value) return
+  try {
+    const { lessonShares: rows } = await fetchGraphQL<{ lessonShares: LessonShareRecord[] }>(
+      GQL.lessonShares,
+      {
+        courseId: selectedCourseId.value,
+        moduleId: moduleT.value?.id || null,
+        lessonId,
+      },
+      STUDENTS_API,
+    )
+    lessonShares[lessonId] = rows || []
+  } catch (err) {
+    console.warn('[LessonShares] fallback to metadata', err)
+  }
+}
+
+async function addLessonShare(kind: 'resource' | 'attachment') {
+  if (!currentLesson.value) return
+  if (!selectedCourseId.value) return
+  try {
+    shareUploading[kind] = true
+    const uploaded = await pickAndUpload(kind)
+    if (!uploaded) return
+    const lessonId = currentLesson.value.id
+    lessonShares[lessonId] = [
+      {
+        id: uploaded.shareId || uploaded.filename || `local-${Date.now()}`,
+        kind,
+        title: uploaded.name || currentLesson.value.title,
+        url: uploaded.url,
+        size: uploaded.size,
+        mimeType: uploaded.mimeType,
+      },
+      ...(lessonShares[lessonId] || []),
+    ]
+    message.success(t(kind === 'resource' ? 'Resource added' : 'Attachment added'))
+  } catch (err) {
+    console.error('[LessonShare] add failed', err)
+    message.error((err as Error)?.message || 'Upload failed')
+  } finally {
+    shareUploading[kind] = false
   }
 }
 </script>
