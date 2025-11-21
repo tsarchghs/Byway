@@ -5,8 +5,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./students.db"
+  provider = "mysql" // can be Postgres too
+  url      = "mysql://root:gjergji21@localhost:3306/byway_students" // e.g., file:./auth.db
 }
 
 // Minimal Student model to store auth linkage

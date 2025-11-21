@@ -1011,7 +1011,7 @@ export async function register(app) {
     const to = req.query.to ? new Date(String(req.query.to)) : new Date(Date.now() + 30 * 86400e3)
     try {
       const instData = await gql('/api/institutions/graphql', `
-        query ($id:String!) { institution(id:$id) { id name } }
+        query ($id:String!) { institution(id:$id) { id name slug } }
       `, { id: institutionIdParam })
       const institution = instData?.institution || null
       if (!institution?.id) return res.status(404).json({ error: 'Institution not found' })
@@ -1029,7 +1029,7 @@ export async function register(app) {
           const d = a.dueDate ? new Date(a.dueDate) : null
           if (!d) return
           if (d >= from && d <= to) {
-            events.push({ id: a.id, kind: 'assignment', title: a.title, date: a.dueDate, classroomName: room.title || room.code })
+            events.push({ id: a.id, assignmentId: a.id, institutionSlug: institution.slug, kind: 'assignment', title: a.title, date: a.dueDate, classroomName: room.title || room.code })
           }
         })
       }))
@@ -1091,6 +1091,68 @@ export async function register(app) {
       return res.json({ classroom: room, roster })
     } catch (err) {
       return res.status(502).json({ error: 'Failed to load attendance' })
+    }
+  })
+
+  router.post('/institutions/:id/join', express.json(), async (req, res) => {
+    const authHeader = req.headers.authorization
+    if (!authHeader) return res.status(401).json({ error: 'Missing Authorization header' })
+    const baseUrl = normalizeBaseUrl(req)
+    if (!baseUrl) return res.status(500).json({ error: 'Unable to resolve API base URL' })
+    const fetchImpl = await ensureFetch()
+    const gql = (path, query, variables = {}) => callGraphQL(fetchImpl, `${baseUrl}${path}`, query, variables, authHeader)
+    const institutionId = String(req.params.id || '').trim()
+    try {
+      const meData = await gql('/api/authentication/graphql', `
+        query Me { me { id email } }
+      `)
+      const me = meData?.me
+      if (!me?.id) return res.status(401).json({ error: 'Unable to resolve current user' })
+      const instCheck = await gql('/api/institutions/graphql', `
+        query ($id:String!){ institution(id:$id){ id slug name } }
+      `, { id: institutionId })
+      if (!instCheck?.institution?.id) return res.status(404).json({ error: 'Institution not found' })
+      const existing = await gql('/api/institutions/graphql', `
+        query ($institutionId:String!) { members(institutionId:$institutionId) { id userId role status } }
+      `, { institutionId })
+      const found = asArray(existing?.members).find((m) => m.userId === me.id)
+      if (found) return res.json({ ok: true, membership: found })
+      const member = await gql('/api/institutions/graphql', `
+        mutation ($institutionId:String!, $userId:String!, $role:String!, $status:String) {
+          addMember(institutionId:$institutionId, userId:$userId, role:$role, status:$status) { id institutionId userId role status }
+        }
+      `, { institutionId, userId: me.id, role: 'student', status: 'ACTIVE' })
+      return res.json({ ok: true, membership: member?.addMember || null })
+    } catch (err) {
+      return res.status(502).json({ error: 'Failed to join institution', details: err?.message || null })
+    }
+  })
+
+  router.post('/institutions/:id/leave', express.json(), async (req, res) => {
+    const authHeader = req.headers.authorization
+    if (!authHeader) return res.status(401).json({ error: 'Missing Authorization header' })
+    const baseUrl = normalizeBaseUrl(req)
+    if (!baseUrl) return res.status(500).json({ error: 'Unable to resolve API base URL' })
+    const fetchImpl = await ensureFetch()
+    const gql = (path, query, variables = {}) => callGraphQL(fetchImpl, `${baseUrl}${path}`, query, variables, authHeader)
+    const institutionId = String(req.params.id || '').trim()
+    try {
+      const meData = await gql('/api/authentication/graphql', `
+        query Me { me { id } }
+      `)
+      const me = meData?.me
+      if (!me?.id) return res.status(401).json({ error: 'Unable to resolve current user' })
+      const membersData = await gql('/api/institutions/graphql', `
+        query ($institutionId:String!) { members(institutionId:$institutionId) { id institutionId userId role status } }
+      `, { institutionId })
+      const membership = asArray(membersData?.members).find((m) => m.userId === me.id)
+      if (!membership?.id) return res.status(404).json({ error: 'Membership not found' })
+      await gql('/api/institutions/graphql', `
+        mutation ($id:String!) { removeMember(id:$id) }
+      `, { id: membership.id })
+      return res.json({ ok: true })
+    } catch (err) {
+      return res.status(502).json({ error: 'Failed to leave institution' })
     }
   })
 

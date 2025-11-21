@@ -5,8 +5,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./teach_internal.db"
+  provider = "mysql" // can be Postgres too
+  url      = "mysql://root:gjergji21@localhost:3306/byway_teach_internal" // e.g., file:./auth.db
 }
 
 model Course {
@@ -19,6 +19,7 @@ model Course {
   price         Float    @default(0)
   discount      Float    @default(0)
   coverUrl      String?
+  metadata      Json?
   modules       Module[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

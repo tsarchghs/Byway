@@ -21,7 +21,7 @@ export type TeacherProfile = $Result.DefaultSelection<Prisma.$TeacherProfilePayl
 
 /**
  * ##  Prisma Client ʲˢ
- *
+ * 
  * Type-safe database client for TypeScript & Node.js
  * @example
  * ```
@@ -30,19 +30,19 @@ export type TeacherProfile = $Result.DefaultSelection<Prisma.$TeacherProfilePayl
  * const teacherProfiles = await prisma.teacherProfile.findMany()
  * ```
  *
- *
+ * 
  * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
  */
 export class PrismaClient<
-  ClientOptions extends Prisma.PrismaClientOptions = Prisma.PrismaClientOptions,
-  const U = 'log' extends keyof ClientOptions ? ClientOptions['log'] extends Array<Prisma.LogLevel | Prisma.LogDefinition> ? Prisma.GetEvents<ClientOptions['log']> : never : never,
+  T extends Prisma.PrismaClientOptions = Prisma.PrismaClientOptions,
+  U = 'log' extends keyof T ? T['log'] extends Array<Prisma.LogLevel | Prisma.LogDefinition> ? Prisma.GetEvents<T['log']> : never : never,
   ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs
 > {
   [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['other'] }
 
     /**
    * ##  Prisma Client ʲˢ
-   *
+   * 
    * Type-safe database client for TypeScript & Node.js
    * @example
    * ```
@@ -51,12 +51,12 @@ export class PrismaClient<
    * const teacherProfiles = await prisma.teacherProfile.findMany()
    * ```
    *
-   *
+   * 
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
    */
 
-  constructor(optionsArg ?: Prisma.Subset<ClientOptions, Prisma.PrismaClientOptions>);
-  $on<V extends U>(eventType: V, callback: (event: V extends 'query' ? Prisma.QueryEvent : Prisma.LogEvent) => void): PrismaClient;
+  constructor(optionsArg ?: Prisma.Subset<T, Prisma.PrismaClientOptions>);
+  $on<V extends U>(eventType: V, callback: (event: V extends 'query' ? Prisma.QueryEvent : Prisma.LogEvent) => void): void;
 
   /**
    * Connect with the database
@@ -68,13 +68,20 @@ export class PrismaClient<
    */
   $disconnect(): $Utils.JsPromise<void>;
 
+  /**
+   * Add a middleware
+   * @deprecated since 4.16.0. For new code, prefer client extensions instead.
+   * @see https://pris.ly/d/extensions
+   */
+  $use(cb: Prisma.Middleware): void
+
 /**
    * Executes a prepared raw query and returns the number of affected rows.
    * @example
    * ```
    * const result = await prisma.$executeRaw`UPDATE User SET cool = ${true} WHERE email = ${'user@email.com'};`
    * ```
-   *
+   * 
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
    */
   $executeRaw<T = unknown>(query: TemplateStringsArray | Prisma.Sql, ...values: any[]): Prisma.PrismaPromise<number>;
@@ -86,7 +93,7 @@ export class PrismaClient<
    * ```
    * const result = await prisma.$executeRawUnsafe('UPDATE User SET cool = $1 WHERE email = $2 ;', true, 'user@email.com')
    * ```
-   *
+   * 
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
    */
   $executeRawUnsafe<T = unknown>(query: string, ...values: any[]): Prisma.PrismaPromise<number>;
@@ -97,7 +104,7 @@ export class PrismaClient<
    * ```
    * const result = await prisma.$queryRaw`SELECT * FROM User WHERE id = ${1} OR email = ${'user@email.com'};`
    * ```
-   *
+   * 
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
    */
   $queryRaw<T = unknown>(query: TemplateStringsArray | Prisma.Sql, ...values: any[]): Prisma.PrismaPromise<T>;
@@ -109,11 +116,10 @@ export class PrismaClient<
    * ```
    * const result = await prisma.$queryRawUnsafe('SELECT * FROM User WHERE id = $1 OR email = $2;', 1, 'user@email.com')
    * ```
-   *
+   * 
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
    */
   $queryRawUnsafe<T = unknown>(query: string, ...values: any[]): Prisma.PrismaPromise<T>;
-
 
   /**
    * Allows the running of a sequence of read/write operations that are guaranteed to either succeed or fail as a whole.
@@ -133,9 +139,7 @@ export class PrismaClient<
   $transaction<R>(fn: (prisma: Omit<PrismaClient, runtime.ITXClientDenyList>) => $Utils.JsPromise<R>, options?: { maxWait?: number, timeout?: number, isolationLevel?: Prisma.TransactionIsolationLevel }): $Utils.JsPromise<R>
 
 
-  $extends: $Extensions.ExtendsHook<"extends", Prisma.TypeMapCb<ClientOptions>, ExtArgs, $Utils.Call<Prisma.TypeMapCb<ClientOptions>, {
-    extArgs: ExtArgs
-  }>>
+  $extends: $Extensions.ExtendsHook<'extends', Prisma.TypeMapCb, ExtArgs>
 
       /**
    * `prisma.teacherProfile`: Exposes CRUD operations for the **TeacherProfile** model.
@@ -145,7 +149,7 @@ export class PrismaClient<
     * const teacherProfiles = await prisma.teacherProfile.findMany()
     * ```
     */
-  get teacherProfile(): Prisma.TeacherProfileDelegate<ExtArgs, ClientOptions>;
+  get teacherProfile(): Prisma.TeacherProfileDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -166,6 +170,7 @@ export namespace Prisma {
   export import PrismaClientRustPanicError = runtime.PrismaClientRustPanicError
   export import PrismaClientInitializationError = runtime.PrismaClientInitializationError
   export import PrismaClientValidationError = runtime.PrismaClientValidationError
+  export import NotFoundError = runtime.NotFoundError
 
   /**
    * Re-export of sql-template-tag
@@ -176,8 +181,6 @@ export namespace Prisma {
   export import raw = runtime.raw
   export import Sql = runtime.Sql
 
-
-
   /**
    * Decimal.js
    */
@@ -186,7 +189,7 @@ export namespace Prisma {
   export type DecimalJsLike = runtime.DecimalJsLike
 
   /**
-   * Metrics
+   * Metrics 
    */
   export type Metrics = runtime.Metrics
   export type Metric<T> = runtime.Metric<T>
@@ -204,39 +207,76 @@ export namespace Prisma {
   export import Exact = $Public.Exact
 
   /**
-   * Prisma Client JS version: 6.18.0
-   * Query Engine version: 34b5a692b7bd79939a9a2c3ef97d816e749cda2f
+   * Prisma Client JS version: 5.15.0
+   * Query Engine version: 12e25d8d06f6ea5a0252864dd9a03b1bb51f3022
    */
   export type PrismaVersion = {
     client: string
   }
 
-  export const prismaVersion: PrismaVersion
+  export const prismaVersion: PrismaVersion 
 
   /**
    * Utility Types
    */
 
+  /**
+   * From https://github.com/sindresorhus/type-fest/
+   * Matches a JSON object.
+   * This type can be useful to enforce some input to be JSON-compatible or as a super-type to be extended from. 
+   */
+  export type JsonObject = {[Key in string]?: JsonValue}
 
-  export import Bytes = runtime.Bytes
-  export import JsonObject = runtime.JsonObject
-  export import JsonArray = runtime.JsonArray
-  export import JsonValue = runtime.JsonValue
-  export import InputJsonObject = runtime.InputJsonObject
-  export import InputJsonArray = runtime.InputJsonArray
-  export import InputJsonValue = runtime.InputJsonValue
+  /**
+   * From https://github.com/sindresorhus/type-fest/
+   * Matches a JSON array.
+   */
+  export interface JsonArray extends Array<JsonValue> {}
+
+  /**
+   * From https://github.com/sindresorhus/type-fest/
+   * Matches any valid JSON value.
+   */
+  export type JsonValue = string | number | boolean | JsonObject | JsonArray | null
+
+  /**
+   * Matches a JSON object.
+   * Unlike `JsonObject`, this type allows undefined and read-only properties.
+   */
+  export type InputJsonObject = {readonly [Key in string]?: InputJsonValue | null}
+
+  /**
+   * Matches a JSON array.
+   * Unlike `JsonArray`, readonly arrays are assignable to this type.
+   */
+  export interface InputJsonArray extends ReadonlyArray<InputJsonValue | null> {}
+
+  /**
+   * Matches any valid value that can be used as an input for operations like
+   * create and update as the value of a JSON field. Unlike `JsonValue`, this
+   * type allows read-only arrays and read-only object properties and disallows
+   * `null` at the top level.
+   *
+   * `null` cannot be used as the value of a JSON field because its meaning
+   * would be ambiguous. Use `Prisma.JsonNull` to store the JSON null value or
+   * `Prisma.DbNull` to clear the JSON value and set the field to the database
+   * NULL value instead.
+   *
+   * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-by-null-values
+   */
+  export type InputJsonValue = string | number | boolean | InputJsonObject | InputJsonArray | { toJSON(): unknown }
 
   /**
    * Types of the values used to represent different kinds of `null` values when working with JSON fields.
-   *
+   * 
    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
    */
   namespace NullTypes {
     /**
     * Type of `Prisma.DbNull`.
-    *
+    * 
     * You cannot use other instances of this class. Please use the `Prisma.DbNull` value.
-    *
+    * 
     * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
     */
     class DbNull {
@@ -246,9 +286,9 @@ export namespace Prisma {
 
     /**
     * Type of `Prisma.JsonNull`.
-    *
+    * 
     * You cannot use other instances of this class. Please use the `Prisma.JsonNull` value.
-    *
+    * 
     * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
     */
     class JsonNull {
@@ -258,9 +298,9 @@ export namespace Prisma {
 
     /**
     * Type of `Prisma.AnyNull`.
-    *
+    * 
     * You cannot use other instances of this class. Please use the `Prisma.AnyNull` value.
-    *
+    * 
     * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
     */
     class AnyNull {
@@ -271,21 +311,21 @@ export namespace Prisma {
 
   /**
    * Helper for filtering JSON entries that have `null` on the database (empty on the db)
-   *
+   * 
    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
    */
   export const DbNull: NullTypes.DbNull
 
   /**
    * Helper for filtering JSON entries that have JSON `null` values (not empty on the db)
-   *
+   * 
    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
    */
   export const JsonNull: NullTypes.JsonNull
 
   /**
    * Helper for filtering JSON entries that are `Prisma.DbNull` or `Prisma.JsonNull`
-   *
+   * 
    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
    */
   export const AnyNull: NullTypes.AnyNull
@@ -473,7 +513,7 @@ export namespace Prisma {
   type AtLeast<O extends object, K extends string> = NoExpand<
     O extends unknown
     ? | (K extends keyof O ? { [P in K]: O[P] } & O : O)
-      | {[P in keyof O as P extends K ? P : never]-?: O[P]} & O
+      | {[P in keyof O as P extends K ? K : never]-?: O[P]} & O
     : never>;
 
   type _Strict<U, _U = U> = U extends unknown ? U & OptionalFlat<_Record<Exclude<Keys<_U>, keyof U>, never>> : never;
@@ -597,89 +637,83 @@ export namespace Prisma {
     db?: Datasource
   }
 
-  interface TypeMapCb<ClientOptions = {}> extends $Utils.Fn<{extArgs: $Extensions.InternalArgs }, $Utils.Record<string, any>> {
-    returns: Prisma.TypeMap<this['params']['extArgs'], ClientOptions extends { omit: infer OmitOptions } ? OmitOptions : {}>
+
+  interface TypeMapCb extends $Utils.Fn<{extArgs: $Extensions.InternalArgs}, $Utils.Record<string, any>> {
+    returns: Prisma.TypeMap<this['params']['extArgs']>
   }
 
-  export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> = {
-    globalOmitOptions: {
-      omit: GlobalOmitOptions
-    }
+  export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     meta: {
-      modelProps: "teacherProfile"
+      modelProps: 'teacherProfile'
       txIsolationLevel: Prisma.TransactionIsolationLevel
-    }
+    },
     model: {
       TeacherProfile: {
         payload: Prisma.$TeacherProfilePayload<ExtArgs>
         fields: Prisma.TeacherProfileFieldRefs
         operations: {
           findUnique: {
-            args: Prisma.TeacherProfileFindUniqueArgs<ExtArgs>
+            args: Prisma.TeacherProfileFindUniqueArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$TeacherProfilePayload> | null
           }
           findUniqueOrThrow: {
-            args: Prisma.TeacherProfileFindUniqueOrThrowArgs<ExtArgs>
+            args: Prisma.TeacherProfileFindUniqueOrThrowArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$TeacherProfilePayload>
           }
           findFirst: {
-            args: Prisma.TeacherProfileFindFirstArgs<ExtArgs>
+            args: Prisma.TeacherProfileFindFirstArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$TeacherProfilePayload> | null
           }
           findFirstOrThrow: {
-            args: Prisma.TeacherProfileFindFirstOrThrowArgs<ExtArgs>
+            args: Prisma.TeacherProfileFindFirstOrThrowArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$TeacherProfilePayload>
           }
           findMany: {
-            args: Prisma.TeacherProfileFindManyArgs<ExtArgs>
+            args: Prisma.TeacherProfileFindManyArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$TeacherProfilePayload>[]
           }
           create: {
-            args: Prisma.TeacherProfileCreateArgs<ExtArgs>
+            args: Prisma.TeacherProfileCreateArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$TeacherProfilePayload>
           }
           createMany: {
-            args: Prisma.TeacherProfileCreateManyArgs<ExtArgs>
-            result: BatchPayload
+            args: Prisma.TeacherProfileCreateManyArgs<ExtArgs>,
+            result: Prisma.BatchPayload
           }
           createManyAndReturn: {
-            args: Prisma.TeacherProfileCreateManyAndReturnArgs<ExtArgs>
+            args: Prisma.TeacherProfileCreateManyAndReturnArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$TeacherProfilePayload>[]
           }
           delete: {
-            args: Prisma.TeacherProfileDeleteArgs<ExtArgs>
+            args: Prisma.TeacherProfileDeleteArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$TeacherProfilePayload>
           }
           update: {
-            args: Prisma.TeacherProfileUpdateArgs<ExtArgs>
+            args: Prisma.TeacherProfileUpdateArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$TeacherProfilePayload>
           }
           deleteMany: {
-            args: Prisma.TeacherProfileDeleteManyArgs<ExtArgs>
-            result: BatchPayload
+            args: Prisma.TeacherProfileDeleteManyArgs<ExtArgs>,
+            result: Prisma.BatchPayload
           }
           updateMany: {
-            args: Prisma.TeacherProfileUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateManyAndReturn: {
-            args: Prisma.TeacherProfileUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$TeacherProfilePayload>[]
+            args: Prisma.TeacherProfileUpdateManyArgs<ExtArgs>,
+            result: Prisma.BatchPayload
           }
           upsert: {
-            args: Prisma.TeacherProfileUpsertArgs<ExtArgs>
+            args: Prisma.TeacherProfileUpsertArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$TeacherProfilePayload>
           }
           aggregate: {
-            args: Prisma.TeacherProfileAggregateArgs<ExtArgs>
+            args: Prisma.TeacherProfileAggregateArgs<ExtArgs>,
             result: $Utils.Optional<AggregateTeacherProfile>
           }
           groupBy: {
-            args: Prisma.TeacherProfileGroupByArgs<ExtArgs>
+            args: Prisma.TeacherProfileGroupByArgs<ExtArgs>,
             result: $Utils.Optional<TeacherProfileGroupByOutputType>[]
           }
           count: {
-            args: Prisma.TeacherProfileCountArgs<ExtArgs>
+            args: Prisma.TeacherProfileCountArgs<ExtArgs>,
             result: $Utils.Optional<TeacherProfileCountAggregateOutputType> | number
           }
         }
@@ -689,15 +723,11 @@ export namespace Prisma {
     other: {
       payload: any
       operations: {
-        $executeRaw: {
-          args: [query: TemplateStringsArray | Prisma.Sql, ...values: any[]],
-          result: any
-        }
         $executeRawUnsafe: {
           args: [query: string, ...values: any[]],
           result: any
         }
-        $queryRaw: {
+        $executeRaw: {
           args: [query: TemplateStringsArray | Prisma.Sql, ...values: any[]],
           result: any
         }
@@ -705,10 +735,14 @@ export namespace Prisma {
           args: [query: string, ...values: any[]],
           result: any
         }
+        $queryRaw: {
+          args: [query: TemplateStringsArray | Prisma.Sql, ...values: any[]],
+          result: any
+        }
       }
     }
   }
-  export const defineExtension: $Extensions.ExtendsHook<"define", Prisma.TypeMapCb, $Extensions.DefaultArgs>
+  export const defineExtension: $Extensions.ExtendsHook<'define', Prisma.TypeMapCb, $Extensions.DefaultArgs>
   export type DefaultPrismaClient = PrismaClient
   export type ErrorFormat = 'pretty' | 'colorless' | 'minimal'
   export interface PrismaClientOptions {
@@ -727,24 +761,16 @@ export namespace Prisma {
     /**
      * @example
      * ```
-     * // Shorthand for `emit: 'stdout'`
+     * // Defaults to stdout
      * log: ['query', 'info', 'warn', 'error']
      * 
-     * // Emit as events only
+     * // Emit as events
      * log: [
-     *   { emit: 'event', level: 'query' },
-     *   { emit: 'event', level: 'info' },
-     *   { emit: 'event', level: 'warn' }
-     *   { emit: 'event', level: 'error' }
+     *   { emit: 'stdout', level: 'query' },
+     *   { emit: 'stdout', level: 'info' },
+     *   { emit: 'stdout', level: 'warn' }
+     *   { emit: 'stdout', level: 'error' }
      * ]
-     * 
-     * / Emit as events and log to stdout
-     * og: [
-     *  { emit: 'stdout', level: 'query' },
-     *  { emit: 'stdout', level: 'info' },
-     *  { emit: 'stdout', level: 'warn' }
-     *  { emit: 'stdout', level: 'error' }
-     * 
      * ```
      * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/logging#the-log-option).
      */
@@ -759,28 +785,6 @@ export namespace Prisma {
       timeout?: number
       isolationLevel?: Prisma.TransactionIsolationLevel
     }
-    /**
-     * Instance of a Driver Adapter, e.g., like one provided by `@prisma/adapter-planetscale`
-     */
-    adapter?: runtime.SqlDriverAdapterFactory | null
-    /**
-     * Global configuration for omitting model fields by default.
-     * 
-     * @example
-     * ```
-     * const prisma = new PrismaClient({
-     *   omit: {
-     *     user: {
-     *       password: true
-     *     }
-     *   }
-     * })
-     * ```
-     */
-    omit?: Prisma.GlobalOmitConfig
-  }
-  export type GlobalOmitConfig = {
-    teacherProfile?: TeacherProfileOmit
   }
 
   /* Types for Logging */
@@ -790,15 +794,10 @@ export namespace Prisma {
     emit: 'stdout' | 'event'
   }
 
-  export type CheckIsLogLevel<T> = T extends LogLevel ? T : never;
-
-  export type GetLogType<T> = CheckIsLogLevel<
-    T extends LogDefinition ? T['level'] : T
-  >;
-
-  export type GetEvents<T extends any[]> = T extends Array<LogLevel | LogDefinition>
-    ? GetLogType<T[number]>
-    : never;
+  export type GetLogType<T extends LogLevel | LogDefinition> = T extends LogDefinition ? T['emit'] extends 'event' ? T['level'] : never : never
+  export type GetEvents<T extends any> = T extends Array<LogLevel | LogDefinition> ?
+    GetLogType<T[0]> | GetLogType<T[1]> | GetLogType<T[2]> | GetLogType<T[3]>
+    : never
 
   export type QueryEvent = {
     timestamp: Date
@@ -827,7 +826,6 @@ export namespace Prisma {
     | 'createManyAndReturn'
     | 'update'
     | 'updateMany'
-    | 'updateManyAndReturn'
     | 'upsert'
     | 'delete'
     | 'deleteMany'
@@ -838,6 +836,25 @@ export namespace Prisma {
     | 'runCommandRaw'
     | 'findRaw'
     | 'groupBy'
+
+  /**
+   * These options are being passed into the middleware as "params"
+   */
+  export type MiddlewareParams = {
+    model?: ModelName
+    action: PrismaAction
+    args: any
+    dataPath: string[]
+    runInTransaction: boolean
+  }
+
+  /**
+   * The `T` type makes sure, that the `return proceed` is not forgotten in the middleware implementation
+   */
+  export type Middleware<T = any> = (
+    params: MiddlewareParams,
+    next: (params: MiddlewareParams) => $Utils.JsPromise<T>,
+  ) => $Utils.JsPromise<T>
 
   // tested in getLogLevel.test.ts
   export function getLogLevel(log: Array<LogLevel | LogDefinition>): LogLevel | undefined;
@@ -1053,16 +1070,6 @@ export namespace Prisma {
     createdAt?: boolean
   }, ExtArgs["result"]["teacherProfile"]>
 
-  export type TeacherProfileSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    bio?: boolean
-    subjects?: boolean
-    avatarUrl?: boolean
-    verified?: boolean
-    payoutEmail?: boolean
-    createdAt?: boolean
-  }, ExtArgs["result"]["teacherProfile"]>
-
   export type TeacherProfileSelectScalar = {
     id?: boolean
     bio?: boolean
@@ -1073,7 +1080,6 @@ export namespace Prisma {
     createdAt?: boolean
   }
 
-  export type TeacherProfileOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "bio" | "subjects" | "avatarUrl" | "verified" | "payoutEmail" | "createdAt", ExtArgs["result"]["teacherProfile"]>
 
   export type $TeacherProfilePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "TeacherProfile"
@@ -1092,12 +1098,12 @@ export namespace Prisma {
 
   type TeacherProfileGetPayload<S extends boolean | null | undefined | TeacherProfileDefaultArgs> = $Result.GetResult<Prisma.$TeacherProfilePayload, S>
 
-  type TeacherProfileCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
-    Omit<TeacherProfileFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+  type TeacherProfileCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<TeacherProfileFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: TeacherProfileCountAggregateInputType | true
     }
 
-  export interface TeacherProfileDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+  export interface TeacherProfileDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
     [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['TeacherProfile'], meta: { name: 'TeacherProfile' } }
     /**
      * Find zero or one TeacherProfile that matches the filter.
@@ -1109,11 +1115,13 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findUnique<T extends TeacherProfileFindUniqueArgs>(args: SelectSubset<T, TeacherProfileFindUniqueArgs<ExtArgs>>): Prisma__TeacherProfileClient<$Result.GetResult<Prisma.$TeacherProfilePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    **/
+    findUnique<T extends TeacherProfileFindUniqueArgs<ExtArgs>>(
+      args: SelectSubset<T, TeacherProfileFindUniqueArgs<ExtArgs>>
+    ): Prisma__TeacherProfileClient<$Result.GetResult<Prisma.$TeacherProfilePayload<ExtArgs>, T, 'findUnique'> | null, null, ExtArgs>
 
     /**
-     * Find one TeacherProfile that matches the filter or throw an error with `error.code='P2025'`
+     * Find one TeacherProfile that matches the filter or throw an error with `error.code='P2025'` 
      * if no matches were found.
      * @param {TeacherProfileFindUniqueOrThrowArgs} args - Arguments to find a TeacherProfile
      * @example
@@ -1123,8 +1131,10 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findUniqueOrThrow<T extends TeacherProfileFindUniqueOrThrowArgs>(args: SelectSubset<T, TeacherProfileFindUniqueOrThrowArgs<ExtArgs>>): Prisma__TeacherProfileClient<$Result.GetResult<Prisma.$TeacherProfilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    findUniqueOrThrow<T extends TeacherProfileFindUniqueOrThrowArgs<ExtArgs>>(
+      args?: SelectSubset<T, TeacherProfileFindUniqueOrThrowArgs<ExtArgs>>
+    ): Prisma__TeacherProfileClient<$Result.GetResult<Prisma.$TeacherProfilePayload<ExtArgs>, T, 'findUniqueOrThrow'>, never, ExtArgs>
 
     /**
      * Find the first TeacherProfile that matches the filter.
@@ -1138,8 +1148,10 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findFirst<T extends TeacherProfileFindFirstArgs>(args?: SelectSubset<T, TeacherProfileFindFirstArgs<ExtArgs>>): Prisma__TeacherProfileClient<$Result.GetResult<Prisma.$TeacherProfilePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    **/
+    findFirst<T extends TeacherProfileFindFirstArgs<ExtArgs>>(
+      args?: SelectSubset<T, TeacherProfileFindFirstArgs<ExtArgs>>
+    ): Prisma__TeacherProfileClient<$Result.GetResult<Prisma.$TeacherProfilePayload<ExtArgs>, T, 'findFirst'> | null, null, ExtArgs>
 
     /**
      * Find the first TeacherProfile that matches the filter or
@@ -1154,8 +1166,10 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findFirstOrThrow<T extends TeacherProfileFindFirstOrThrowArgs>(args?: SelectSubset<T, TeacherProfileFindFirstOrThrowArgs<ExtArgs>>): Prisma__TeacherProfileClient<$Result.GetResult<Prisma.$TeacherProfilePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    findFirstOrThrow<T extends TeacherProfileFindFirstOrThrowArgs<ExtArgs>>(
+      args?: SelectSubset<T, TeacherProfileFindFirstOrThrowArgs<ExtArgs>>
+    ): Prisma__TeacherProfileClient<$Result.GetResult<Prisma.$TeacherProfilePayload<ExtArgs>, T, 'findFirstOrThrow'>, never, ExtArgs>
 
     /**
      * Find zero or more TeacherProfiles that matches the filter.
@@ -1172,8 +1186,10 @@ export namespace Prisma {
      * // Only select the `id`
      * const teacherProfileWithIdOnly = await prisma.teacherProfile.findMany({ select: { id: true } })
      * 
-     */
-    findMany<T extends TeacherProfileFindManyArgs>(args?: SelectSubset<T, TeacherProfileFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TeacherProfilePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+    **/
+    findMany<T extends TeacherProfileFindManyArgs<ExtArgs>>(
+      args?: SelectSubset<T, TeacherProfileFindManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TeacherProfilePayload<ExtArgs>, T, 'findMany'>>
 
     /**
      * Create a TeacherProfile.
@@ -1186,8 +1202,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    create<T extends TeacherProfileCreateArgs>(args: SelectSubset<T, TeacherProfileCreateArgs<ExtArgs>>): Prisma__TeacherProfileClient<$Result.GetResult<Prisma.$TeacherProfilePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    create<T extends TeacherProfileCreateArgs<ExtArgs>>(
+      args: SelectSubset<T, TeacherProfileCreateArgs<ExtArgs>>
+    ): Prisma__TeacherProfileClient<$Result.GetResult<Prisma.$TeacherProfilePayload<ExtArgs>, T, 'create'>, never, ExtArgs>
 
     /**
      * Create many TeacherProfiles.
@@ -1200,8 +1218,10 @@ export namespace Prisma {
      *   ]
      * })
      *     
-     */
-    createMany<T extends TeacherProfileCreateManyArgs>(args?: SelectSubset<T, TeacherProfileCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    **/
+    createMany<T extends TeacherProfileCreateManyArgs<ExtArgs>>(
+      args?: SelectSubset<T, TeacherProfileCreateManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Create many TeacherProfiles and returns the data saved in the database.
@@ -1215,7 +1235,7 @@ export namespace Prisma {
      * })
      * 
      * // Create many TeacherProfiles and only return the `id`
-     * const teacherProfileWithIdOnly = await prisma.teacherProfile.createManyAndReturn({
+     * const teacherProfileWithIdOnly = await prisma.teacherProfile.createManyAndReturn({ 
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -1224,8 +1244,10 @@ export namespace Prisma {
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
      * 
-     */
-    createManyAndReturn<T extends TeacherProfileCreateManyAndReturnArgs>(args?: SelectSubset<T, TeacherProfileCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TeacherProfilePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+    **/
+    createManyAndReturn<T extends TeacherProfileCreateManyAndReturnArgs<ExtArgs>>(
+      args?: SelectSubset<T, TeacherProfileCreateManyAndReturnArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TeacherProfilePayload<ExtArgs>, T, 'createManyAndReturn'>>
 
     /**
      * Delete a TeacherProfile.
@@ -1238,8 +1260,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    delete<T extends TeacherProfileDeleteArgs>(args: SelectSubset<T, TeacherProfileDeleteArgs<ExtArgs>>): Prisma__TeacherProfileClient<$Result.GetResult<Prisma.$TeacherProfilePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    delete<T extends TeacherProfileDeleteArgs<ExtArgs>>(
+      args: SelectSubset<T, TeacherProfileDeleteArgs<ExtArgs>>
+    ): Prisma__TeacherProfileClient<$Result.GetResult<Prisma.$TeacherProfilePayload<ExtArgs>, T, 'delete'>, never, ExtArgs>
 
     /**
      * Update one TeacherProfile.
@@ -1255,8 +1279,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    update<T extends TeacherProfileUpdateArgs>(args: SelectSubset<T, TeacherProfileUpdateArgs<ExtArgs>>): Prisma__TeacherProfileClient<$Result.GetResult<Prisma.$TeacherProfilePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    update<T extends TeacherProfileUpdateArgs<ExtArgs>>(
+      args: SelectSubset<T, TeacherProfileUpdateArgs<ExtArgs>>
+    ): Prisma__TeacherProfileClient<$Result.GetResult<Prisma.$TeacherProfilePayload<ExtArgs>, T, 'update'>, never, ExtArgs>
 
     /**
      * Delete zero or more TeacherProfiles.
@@ -1269,8 +1295,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    deleteMany<T extends TeacherProfileDeleteManyArgs>(args?: SelectSubset<T, TeacherProfileDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    **/
+    deleteMany<T extends TeacherProfileDeleteManyArgs<ExtArgs>>(
+      args?: SelectSubset<T, TeacherProfileDeleteManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Update zero or more TeacherProfiles.
@@ -1288,38 +1316,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    updateMany<T extends TeacherProfileUpdateManyArgs>(args: SelectSubset<T, TeacherProfileUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more TeacherProfiles and returns the data updated in the database.
-     * @param {TeacherProfileUpdateManyAndReturnArgs} args - Arguments to update many TeacherProfiles.
-     * @example
-     * // Update many TeacherProfiles
-     * const teacherProfile = await prisma.teacherProfile.updateManyAndReturn({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Update zero or more TeacherProfiles and only return the `id`
-     * const teacherProfileWithIdOnly = await prisma.teacherProfile.updateManyAndReturn({
-     *   select: { id: true },
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    updateManyAndReturn<T extends TeacherProfileUpdateManyAndReturnArgs>(args: SelectSubset<T, TeacherProfileUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TeacherProfilePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+    **/
+    updateMany<T extends TeacherProfileUpdateManyArgs<ExtArgs>>(
+      args: SelectSubset<T, TeacherProfileUpdateManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Create or update one TeacherProfile.
@@ -1337,9 +1337,10 @@ export namespace Prisma {
      *     // ... the filter for the TeacherProfile we want to update
      *   }
      * })
-     */
-    upsert<T extends TeacherProfileUpsertArgs>(args: SelectSubset<T, TeacherProfileUpsertArgs<ExtArgs>>): Prisma__TeacherProfileClient<$Result.GetResult<Prisma.$TeacherProfilePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
+    **/
+    upsert<T extends TeacherProfileUpsertArgs<ExtArgs>>(
+      args: SelectSubset<T, TeacherProfileUpsertArgs<ExtArgs>>
+    ): Prisma__TeacherProfileClient<$Result.GetResult<Prisma.$TeacherProfilePayload<ExtArgs>, T, 'upsert'>, never, ExtArgs>
 
     /**
      * Count the number of TeacherProfiles.
@@ -1478,36 +1479,37 @@ export namespace Prisma {
    * Because we want to prevent naming conflicts as mentioned in
    * https://github.com/prisma/prisma-client-js/issues/707
    */
-  export interface Prisma__TeacherProfileClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
+  export interface Prisma__TeacherProfileClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: 'PrismaPromise';
+
+
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
      * @param onrejected The callback to execute when the Promise is rejected.
      * @returns A Promise for the completion of which ever callback is executed.
      */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>;
     /**
      * Attaches a callback for only the rejection of the Promise.
      * @param onrejected The callback to execute when the Promise is rejected.
      * @returns A Promise for the completion of the callback.
      */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>;
     /**
      * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
      * resolved value cannot be modified from the callback.
      * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
      * @returns A Promise for the completion of the callback.
      */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>;
   }
-
 
 
 
   /**
    * Fields of the TeacherProfile model
-   */
+   */ 
   interface TeacherProfileFieldRefs {
     readonly id: FieldRef<"TeacherProfile", 'String'>
     readonly bio: FieldRef<"TeacherProfile", 'String'>
@@ -1529,10 +1531,6 @@ export namespace Prisma {
      */
     select?: TeacherProfileSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the TeacherProfile
-     */
-    omit?: TeacherProfileOmit<ExtArgs> | null
-    /**
      * Filter, which TeacherProfile to fetch.
      */
     where: TeacherProfileWhereUniqueInput
@@ -1547,10 +1545,6 @@ export namespace Prisma {
      */
     select?: TeacherProfileSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the TeacherProfile
-     */
-    omit?: TeacherProfileOmit<ExtArgs> | null
-    /**
      * Filter, which TeacherProfile to fetch.
      */
     where: TeacherProfileWhereUniqueInput
@@ -1564,10 +1558,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the TeacherProfile
      */
     select?: TeacherProfileSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the TeacherProfile
-     */
-    omit?: TeacherProfileOmit<ExtArgs> | null
     /**
      * Filter, which TeacherProfile to fetch.
      */
@@ -1613,10 +1603,6 @@ export namespace Prisma {
      */
     select?: TeacherProfileSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the TeacherProfile
-     */
-    omit?: TeacherProfileOmit<ExtArgs> | null
-    /**
      * Filter, which TeacherProfile to fetch.
      */
     where?: TeacherProfileWhereInput
@@ -1661,10 +1647,6 @@ export namespace Prisma {
      */
     select?: TeacherProfileSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the TeacherProfile
-     */
-    omit?: TeacherProfileOmit<ExtArgs> | null
-    /**
      * Filter, which TeacherProfiles to fetch.
      */
     where?: TeacherProfileWhereInput
@@ -1704,10 +1686,6 @@ export namespace Prisma {
      */
     select?: TeacherProfileSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the TeacherProfile
-     */
-    omit?: TeacherProfileOmit<ExtArgs> | null
-    /**
      * The data needed to create a TeacherProfile.
      */
     data: XOR<TeacherProfileCreateInput, TeacherProfileUncheckedCreateInput>
@@ -1732,10 +1710,6 @@ export namespace Prisma {
      */
     select?: TeacherProfileSelectCreateManyAndReturn<ExtArgs> | null
     /**
-     * Omit specific fields from the TeacherProfile
-     */
-    omit?: TeacherProfileOmit<ExtArgs> | null
-    /**
      * The data used to create many TeacherProfiles.
      */
     data: TeacherProfileCreateManyInput | TeacherProfileCreateManyInput[]
@@ -1749,10 +1723,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the TeacherProfile
      */
     select?: TeacherProfileSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the TeacherProfile
-     */
-    omit?: TeacherProfileOmit<ExtArgs> | null
     /**
      * The data needed to update a TeacherProfile.
      */
@@ -1775,36 +1745,6 @@ export namespace Prisma {
      * Filter which TeacherProfiles to update
      */
     where?: TeacherProfileWhereInput
-    /**
-     * Limit how many TeacherProfiles to update.
-     */
-    limit?: number
-  }
-
-  /**
-   * TeacherProfile updateManyAndReturn
-   */
-  export type TeacherProfileUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the TeacherProfile
-     */
-    select?: TeacherProfileSelectUpdateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the TeacherProfile
-     */
-    omit?: TeacherProfileOmit<ExtArgs> | null
-    /**
-     * The data used to update TeacherProfiles.
-     */
-    data: XOR<TeacherProfileUpdateManyMutationInput, TeacherProfileUncheckedUpdateManyInput>
-    /**
-     * Filter which TeacherProfiles to update
-     */
-    where?: TeacherProfileWhereInput
-    /**
-     * Limit how many TeacherProfiles to update.
-     */
-    limit?: number
   }
 
   /**
@@ -1815,10 +1755,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the TeacherProfile
      */
     select?: TeacherProfileSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the TeacherProfile
-     */
-    omit?: TeacherProfileOmit<ExtArgs> | null
     /**
      * The filter to search for the TeacherProfile to update in case it exists.
      */
@@ -1842,10 +1778,6 @@ export namespace Prisma {
      */
     select?: TeacherProfileSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the TeacherProfile
-     */
-    omit?: TeacherProfileOmit<ExtArgs> | null
-    /**
      * Filter which TeacherProfile to delete.
      */
     where: TeacherProfileWhereUniqueInput
@@ -1859,10 +1791,6 @@ export namespace Prisma {
      * Filter which TeacherProfiles to delete
      */
     where?: TeacherProfileWhereInput
-    /**
-     * Limit how many TeacherProfiles to delete.
-     */
-    limit?: number
   }
 
   /**
@@ -1873,10 +1801,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the TeacherProfile
      */
     select?: TeacherProfileSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the TeacherProfile
-     */
-    omit?: TeacherProfileOmit<ExtArgs> | null
   }
 
 
@@ -1921,7 +1845,7 @@ export namespace Prisma {
 
 
   /**
-   * Field references
+   * Field references 
    */
 
 
@@ -2362,6 +2286,14 @@ export namespace Prisma {
   }
 
 
+
+  /**
+   * Aliases for legacy arg types
+   */
+    /**
+     * @deprecated Use TeacherProfileDefaultArgs instead
+     */
+    export type TeacherProfileArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = TeacherProfileDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

@@ -36,7 +36,7 @@ export type Submission = $Result.DefaultSelection<Prisma.$SubmissionPayload>
 
 /**
  * ##  Prisma Client ʲˢ
- *
+ * 
  * Type-safe database client for TypeScript & Node.js
  * @example
  * ```
@@ -45,19 +45,19 @@ export type Submission = $Result.DefaultSelection<Prisma.$SubmissionPayload>
  * const labChallenges = await prisma.labChallenge.findMany()
  * ```
  *
- *
+ * 
  * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
  */
 export class PrismaClient<
-  ClientOptions extends Prisma.PrismaClientOptions = Prisma.PrismaClientOptions,
-  const U = 'log' extends keyof ClientOptions ? ClientOptions['log'] extends Array<Prisma.LogLevel | Prisma.LogDefinition> ? Prisma.GetEvents<ClientOptions['log']> : never : never,
+  T extends Prisma.PrismaClientOptions = Prisma.PrismaClientOptions,
+  U = 'log' extends keyof T ? T['log'] extends Array<Prisma.LogLevel | Prisma.LogDefinition> ? Prisma.GetEvents<T['log']> : never : never,
   ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs
 > {
   [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['other'] }
 
     /**
    * ##  Prisma Client ʲˢ
-   *
+   * 
    * Type-safe database client for TypeScript & Node.js
    * @example
    * ```
@@ -66,12 +66,12 @@ export class PrismaClient<
    * const labChallenges = await prisma.labChallenge.findMany()
    * ```
    *
-   *
+   * 
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
    */
 
-  constructor(optionsArg ?: Prisma.Subset<ClientOptions, Prisma.PrismaClientOptions>);
-  $on<V extends U>(eventType: V, callback: (event: V extends 'query' ? Prisma.QueryEvent : Prisma.LogEvent) => void): PrismaClient;
+  constructor(optionsArg ?: Prisma.Subset<T, Prisma.PrismaClientOptions>);
+  $on<V extends U>(eventType: V, callback: (event: V extends 'query' ? Prisma.QueryEvent : Prisma.LogEvent) => void): void;
 
   /**
    * Connect with the database
@@ -83,13 +83,20 @@ export class PrismaClient<
    */
   $disconnect(): $Utils.JsPromise<void>;
 
+  /**
+   * Add a middleware
+   * @deprecated since 4.16.0. For new code, prefer client extensions instead.
+   * @see https://pris.ly/d/extensions
+   */
+  $use(cb: Prisma.Middleware): void
+
 /**
    * Executes a prepared raw query and returns the number of affected rows.
    * @example
    * ```
    * const result = await prisma.$executeRaw`UPDATE User SET cool = ${true} WHERE email = ${'user@email.com'};`
    * ```
-   *
+   * 
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
    */
   $executeRaw<T = unknown>(query: TemplateStringsArray | Prisma.Sql, ...values: any[]): Prisma.PrismaPromise<number>;
@@ -101,7 +108,7 @@ export class PrismaClient<
    * ```
    * const result = await prisma.$executeRawUnsafe('UPDATE User SET cool = $1 WHERE email = $2 ;', true, 'user@email.com')
    * ```
-   *
+   * 
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
    */
   $executeRawUnsafe<T = unknown>(query: string, ...values: any[]): Prisma.PrismaPromise<number>;
@@ -112,7 +119,7 @@ export class PrismaClient<
    * ```
    * const result = await prisma.$queryRaw`SELECT * FROM User WHERE id = ${1} OR email = ${'user@email.com'};`
    * ```
-   *
+   * 
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
    */
   $queryRaw<T = unknown>(query: TemplateStringsArray | Prisma.Sql, ...values: any[]): Prisma.PrismaPromise<T>;
@@ -124,11 +131,10 @@ export class PrismaClient<
    * ```
    * const result = await prisma.$queryRawUnsafe('SELECT * FROM User WHERE id = $1 OR email = $2;', 1, 'user@email.com')
    * ```
-   *
+   * 
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
    */
   $queryRawUnsafe<T = unknown>(query: string, ...values: any[]): Prisma.PrismaPromise<T>;
-
 
   /**
    * Allows the running of a sequence of read/write operations that are guaranteed to either succeed or fail as a whole.
@@ -148,9 +154,7 @@ export class PrismaClient<
   $transaction<R>(fn: (prisma: Omit<PrismaClient, runtime.ITXClientDenyList>) => $Utils.JsPromise<R>, options?: { maxWait?: number, timeout?: number, isolationLevel?: Prisma.TransactionIsolationLevel }): $Utils.JsPromise<R>
 
 
-  $extends: $Extensions.ExtendsHook<"extends", Prisma.TypeMapCb<ClientOptions>, ExtArgs, $Utils.Call<Prisma.TypeMapCb<ClientOptions>, {
-    extArgs: ExtArgs
-  }>>
+  $extends: $Extensions.ExtendsHook<'extends', Prisma.TypeMapCb, ExtArgs>
 
       /**
    * `prisma.labChallenge`: Exposes CRUD operations for the **LabChallenge** model.
@@ -160,7 +164,7 @@ export class PrismaClient<
     * const labChallenges = await prisma.labChallenge.findMany()
     * ```
     */
-  get labChallenge(): Prisma.LabChallengeDelegate<ExtArgs, ClientOptions>;
+  get labChallenge(): Prisma.LabChallengeDelegate<ExtArgs>;
 
   /**
    * `prisma.labSession`: Exposes CRUD operations for the **LabSession** model.
@@ -170,7 +174,7 @@ export class PrismaClient<
     * const labSessions = await prisma.labSession.findMany()
     * ```
     */
-  get labSession(): Prisma.LabSessionDelegate<ExtArgs, ClientOptions>;
+  get labSession(): Prisma.LabSessionDelegate<ExtArgs>;
 
   /**
    * `prisma.labWorkspace`: Exposes CRUD operations for the **LabWorkspace** model.
@@ -180,7 +184,7 @@ export class PrismaClient<
     * const labWorkspaces = await prisma.labWorkspace.findMany()
     * ```
     */
-  get labWorkspace(): Prisma.LabWorkspaceDelegate<ExtArgs, ClientOptions>;
+  get labWorkspace(): Prisma.LabWorkspaceDelegate<ExtArgs>;
 
   /**
    * `prisma.submission`: Exposes CRUD operations for the **Submission** model.
@@ -190,7 +194,7 @@ export class PrismaClient<
     * const submissions = await prisma.submission.findMany()
     * ```
     */
-  get submission(): Prisma.SubmissionDelegate<ExtArgs, ClientOptions>;
+  get submission(): Prisma.SubmissionDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -211,6 +215,7 @@ export namespace Prisma {
   export import PrismaClientRustPanicError = runtime.PrismaClientRustPanicError
   export import PrismaClientInitializationError = runtime.PrismaClientInitializationError
   export import PrismaClientValidationError = runtime.PrismaClientValidationError
+  export import NotFoundError = runtime.NotFoundError
 
   /**
    * Re-export of sql-template-tag
@@ -221,8 +226,6 @@ export namespace Prisma {
   export import raw = runtime.raw
   export import Sql = runtime.Sql
 
-
-
   /**
    * Decimal.js
    */
@@ -231,7 +234,7 @@ export namespace Prisma {
   export type DecimalJsLike = runtime.DecimalJsLike
 
   /**
-   * Metrics
+   * Metrics 
    */
   export type Metrics = runtime.Metrics
   export type Metric<T> = runtime.Metric<T>
@@ -249,39 +252,76 @@ export namespace Prisma {
   export import Exact = $Public.Exact
 
   /**
-   * Prisma Client JS version: 6.18.0
-   * Query Engine version: 34b5a692b7bd79939a9a2c3ef97d816e749cda2f
+   * Prisma Client JS version: 5.15.0
+   * Query Engine version: 12e25d8d06f6ea5a0252864dd9a03b1bb51f3022
    */
   export type PrismaVersion = {
     client: string
   }
 
-  export const prismaVersion: PrismaVersion
+  export const prismaVersion: PrismaVersion 
 
   /**
    * Utility Types
    */
 
+  /**
+   * From https://github.com/sindresorhus/type-fest/
+   * Matches a JSON object.
+   * This type can be useful to enforce some input to be JSON-compatible or as a super-type to be extended from. 
+   */
+  export type JsonObject = {[Key in string]?: JsonValue}
 
-  export import Bytes = runtime.Bytes
-  export import JsonObject = runtime.JsonObject
-  export import JsonArray = runtime.JsonArray
-  export import JsonValue = runtime.JsonValue
-  export import InputJsonObject = runtime.InputJsonObject
-  export import InputJsonArray = runtime.InputJsonArray
-  export import InputJsonValue = runtime.InputJsonValue
+  /**
+   * From https://github.com/sindresorhus/type-fest/
+   * Matches a JSON array.
+   */
+  export interface JsonArray extends Array<JsonValue> {}
+
+  /**
+   * From https://github.com/sindresorhus/type-fest/
+   * Matches any valid JSON value.
+   */
+  export type JsonValue = string | number | boolean | JsonObject | JsonArray | null
+
+  /**
+   * Matches a JSON object.
+   * Unlike `JsonObject`, this type allows undefined and read-only properties.
+   */
+  export type InputJsonObject = {readonly [Key in string]?: InputJsonValue | null}
+
+  /**
+   * Matches a JSON array.
+   * Unlike `JsonArray`, readonly arrays are assignable to this type.
+   */
+  export interface InputJsonArray extends ReadonlyArray<InputJsonValue | null> {}
+
+  /**
+   * Matches any valid value that can be used as an input for operations like
+   * create and update as the value of a JSON field. Unlike `JsonValue`, this
+   * type allows read-only arrays and read-only object properties and disallows
+   * `null` at the top level.
+   *
+   * `null` cannot be used as the value of a JSON field because its meaning
+   * would be ambiguous. Use `Prisma.JsonNull` to store the JSON null value or
+   * `Prisma.DbNull` to clear the JSON value and set the field to the database
+   * NULL value instead.
+   *
+   * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-by-null-values
+   */
+  export type InputJsonValue = string | number | boolean | InputJsonObject | InputJsonArray | { toJSON(): unknown }
 
   /**
    * Types of the values used to represent different kinds of `null` values when working with JSON fields.
-   *
+   * 
    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
    */
   namespace NullTypes {
     /**
     * Type of `Prisma.DbNull`.
-    *
+    * 
     * You cannot use other instances of this class. Please use the `Prisma.DbNull` value.
-    *
+    * 
     * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
     */
     class DbNull {
@@ -291,9 +331,9 @@ export namespace Prisma {
 
     /**
     * Type of `Prisma.JsonNull`.
-    *
+    * 
     * You cannot use other instances of this class. Please use the `Prisma.JsonNull` value.
-    *
+    * 
     * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
     */
     class JsonNull {
@@ -303,9 +343,9 @@ export namespace Prisma {
 
     /**
     * Type of `Prisma.AnyNull`.
-    *
+    * 
     * You cannot use other instances of this class. Please use the `Prisma.AnyNull` value.
-    *
+    * 
     * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
     */
     class AnyNull {
@@ -316,21 +356,21 @@ export namespace Prisma {
 
   /**
    * Helper for filtering JSON entries that have `null` on the database (empty on the db)
-   *
+   * 
    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
    */
   export const DbNull: NullTypes.DbNull
 
   /**
    * Helper for filtering JSON entries that have JSON `null` values (not empty on the db)
-   *
+   * 
    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
    */
   export const JsonNull: NullTypes.JsonNull
 
   /**
    * Helper for filtering JSON entries that are `Prisma.DbNull` or `Prisma.JsonNull`
-   *
+   * 
    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
    */
   export const AnyNull: NullTypes.AnyNull
@@ -518,7 +558,7 @@ export namespace Prisma {
   type AtLeast<O extends object, K extends string> = NoExpand<
     O extends unknown
     ? | (K extends keyof O ? { [P in K]: O[P] } & O : O)
-      | {[P in keyof O as P extends K ? P : never]-?: O[P]} & O
+      | {[P in keyof O as P extends K ? K : never]-?: O[P]} & O
     : never>;
 
   type _Strict<U, _U = U> = U extends unknown ? U & OptionalFlat<_Record<Exclude<Keys<_U>, keyof U>, never>> : never;
@@ -645,89 +685,83 @@ export namespace Prisma {
     db?: Datasource
   }
 
-  interface TypeMapCb<ClientOptions = {}> extends $Utils.Fn<{extArgs: $Extensions.InternalArgs }, $Utils.Record<string, any>> {
-    returns: Prisma.TypeMap<this['params']['extArgs'], ClientOptions extends { omit: infer OmitOptions } ? OmitOptions : {}>
+
+  interface TypeMapCb extends $Utils.Fn<{extArgs: $Extensions.InternalArgs}, $Utils.Record<string, any>> {
+    returns: Prisma.TypeMap<this['params']['extArgs']>
   }
 
-  export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> = {
-    globalOmitOptions: {
-      omit: GlobalOmitOptions
-    }
+  export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     meta: {
-      modelProps: "labChallenge" | "labSession" | "labWorkspace" | "submission"
+      modelProps: 'labChallenge' | 'labSession' | 'labWorkspace' | 'submission'
       txIsolationLevel: Prisma.TransactionIsolationLevel
-    }
+    },
     model: {
       LabChallenge: {
         payload: Prisma.$LabChallengePayload<ExtArgs>
         fields: Prisma.LabChallengeFieldRefs
         operations: {
           findUnique: {
-            args: Prisma.LabChallengeFindUniqueArgs<ExtArgs>
+            args: Prisma.LabChallengeFindUniqueArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabChallengePayload> | null
           }
           findUniqueOrThrow: {
-            args: Prisma.LabChallengeFindUniqueOrThrowArgs<ExtArgs>
+            args: Prisma.LabChallengeFindUniqueOrThrowArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabChallengePayload>
           }
           findFirst: {
-            args: Prisma.LabChallengeFindFirstArgs<ExtArgs>
+            args: Prisma.LabChallengeFindFirstArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabChallengePayload> | null
           }
           findFirstOrThrow: {
-            args: Prisma.LabChallengeFindFirstOrThrowArgs<ExtArgs>
+            args: Prisma.LabChallengeFindFirstOrThrowArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabChallengePayload>
           }
           findMany: {
-            args: Prisma.LabChallengeFindManyArgs<ExtArgs>
+            args: Prisma.LabChallengeFindManyArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabChallengePayload>[]
           }
           create: {
-            args: Prisma.LabChallengeCreateArgs<ExtArgs>
+            args: Prisma.LabChallengeCreateArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabChallengePayload>
           }
           createMany: {
-            args: Prisma.LabChallengeCreateManyArgs<ExtArgs>
-            result: BatchPayload
+            args: Prisma.LabChallengeCreateManyArgs<ExtArgs>,
+            result: Prisma.BatchPayload
           }
           createManyAndReturn: {
-            args: Prisma.LabChallengeCreateManyAndReturnArgs<ExtArgs>
+            args: Prisma.LabChallengeCreateManyAndReturnArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabChallengePayload>[]
           }
           delete: {
-            args: Prisma.LabChallengeDeleteArgs<ExtArgs>
+            args: Prisma.LabChallengeDeleteArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabChallengePayload>
           }
           update: {
-            args: Prisma.LabChallengeUpdateArgs<ExtArgs>
+            args: Prisma.LabChallengeUpdateArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabChallengePayload>
           }
           deleteMany: {
-            args: Prisma.LabChallengeDeleteManyArgs<ExtArgs>
-            result: BatchPayload
+            args: Prisma.LabChallengeDeleteManyArgs<ExtArgs>,
+            result: Prisma.BatchPayload
           }
           updateMany: {
-            args: Prisma.LabChallengeUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateManyAndReturn: {
-            args: Prisma.LabChallengeUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$LabChallengePayload>[]
+            args: Prisma.LabChallengeUpdateManyArgs<ExtArgs>,
+            result: Prisma.BatchPayload
           }
           upsert: {
-            args: Prisma.LabChallengeUpsertArgs<ExtArgs>
+            args: Prisma.LabChallengeUpsertArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabChallengePayload>
           }
           aggregate: {
-            args: Prisma.LabChallengeAggregateArgs<ExtArgs>
+            args: Prisma.LabChallengeAggregateArgs<ExtArgs>,
             result: $Utils.Optional<AggregateLabChallenge>
           }
           groupBy: {
-            args: Prisma.LabChallengeGroupByArgs<ExtArgs>
+            args: Prisma.LabChallengeGroupByArgs<ExtArgs>,
             result: $Utils.Optional<LabChallengeGroupByOutputType>[]
           }
           count: {
-            args: Prisma.LabChallengeCountArgs<ExtArgs>
+            args: Prisma.LabChallengeCountArgs<ExtArgs>,
             result: $Utils.Optional<LabChallengeCountAggregateOutputType> | number
           }
         }
@@ -737,71 +771,67 @@ export namespace Prisma {
         fields: Prisma.LabSessionFieldRefs
         operations: {
           findUnique: {
-            args: Prisma.LabSessionFindUniqueArgs<ExtArgs>
+            args: Prisma.LabSessionFindUniqueArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabSessionPayload> | null
           }
           findUniqueOrThrow: {
-            args: Prisma.LabSessionFindUniqueOrThrowArgs<ExtArgs>
+            args: Prisma.LabSessionFindUniqueOrThrowArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabSessionPayload>
           }
           findFirst: {
-            args: Prisma.LabSessionFindFirstArgs<ExtArgs>
+            args: Prisma.LabSessionFindFirstArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabSessionPayload> | null
           }
           findFirstOrThrow: {
-            args: Prisma.LabSessionFindFirstOrThrowArgs<ExtArgs>
+            args: Prisma.LabSessionFindFirstOrThrowArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabSessionPayload>
           }
           findMany: {
-            args: Prisma.LabSessionFindManyArgs<ExtArgs>
+            args: Prisma.LabSessionFindManyArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabSessionPayload>[]
           }
           create: {
-            args: Prisma.LabSessionCreateArgs<ExtArgs>
+            args: Prisma.LabSessionCreateArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabSessionPayload>
           }
           createMany: {
-            args: Prisma.LabSessionCreateManyArgs<ExtArgs>
-            result: BatchPayload
+            args: Prisma.LabSessionCreateManyArgs<ExtArgs>,
+            result: Prisma.BatchPayload
           }
           createManyAndReturn: {
-            args: Prisma.LabSessionCreateManyAndReturnArgs<ExtArgs>
+            args: Prisma.LabSessionCreateManyAndReturnArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabSessionPayload>[]
           }
           delete: {
-            args: Prisma.LabSessionDeleteArgs<ExtArgs>
+            args: Prisma.LabSessionDeleteArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabSessionPayload>
           }
           update: {
-            args: Prisma.LabSessionUpdateArgs<ExtArgs>
+            args: Prisma.LabSessionUpdateArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabSessionPayload>
           }
           deleteMany: {
-            args: Prisma.LabSessionDeleteManyArgs<ExtArgs>
-            result: BatchPayload
+            args: Prisma.LabSessionDeleteManyArgs<ExtArgs>,
+            result: Prisma.BatchPayload
           }
           updateMany: {
-            args: Prisma.LabSessionUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateManyAndReturn: {
-            args: Prisma.LabSessionUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$LabSessionPayload>[]
+            args: Prisma.LabSessionUpdateManyArgs<ExtArgs>,
+            result: Prisma.BatchPayload
           }
           upsert: {
-            args: Prisma.LabSessionUpsertArgs<ExtArgs>
+            args: Prisma.LabSessionUpsertArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabSessionPayload>
           }
           aggregate: {
-            args: Prisma.LabSessionAggregateArgs<ExtArgs>
+            args: Prisma.LabSessionAggregateArgs<ExtArgs>,
             result: $Utils.Optional<AggregateLabSession>
           }
           groupBy: {
-            args: Prisma.LabSessionGroupByArgs<ExtArgs>
+            args: Prisma.LabSessionGroupByArgs<ExtArgs>,
             result: $Utils.Optional<LabSessionGroupByOutputType>[]
           }
           count: {
-            args: Prisma.LabSessionCountArgs<ExtArgs>
+            args: Prisma.LabSessionCountArgs<ExtArgs>,
             result: $Utils.Optional<LabSessionCountAggregateOutputType> | number
           }
         }
@@ -811,71 +841,67 @@ export namespace Prisma {
         fields: Prisma.LabWorkspaceFieldRefs
         operations: {
           findUnique: {
-            args: Prisma.LabWorkspaceFindUniqueArgs<ExtArgs>
+            args: Prisma.LabWorkspaceFindUniqueArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabWorkspacePayload> | null
           }
           findUniqueOrThrow: {
-            args: Prisma.LabWorkspaceFindUniqueOrThrowArgs<ExtArgs>
+            args: Prisma.LabWorkspaceFindUniqueOrThrowArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabWorkspacePayload>
           }
           findFirst: {
-            args: Prisma.LabWorkspaceFindFirstArgs<ExtArgs>
+            args: Prisma.LabWorkspaceFindFirstArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabWorkspacePayload> | null
           }
           findFirstOrThrow: {
-            args: Prisma.LabWorkspaceFindFirstOrThrowArgs<ExtArgs>
+            args: Prisma.LabWorkspaceFindFirstOrThrowArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabWorkspacePayload>
           }
           findMany: {
-            args: Prisma.LabWorkspaceFindManyArgs<ExtArgs>
+            args: Prisma.LabWorkspaceFindManyArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabWorkspacePayload>[]
           }
           create: {
-            args: Prisma.LabWorkspaceCreateArgs<ExtArgs>
+            args: Prisma.LabWorkspaceCreateArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabWorkspacePayload>
           }
           createMany: {
-            args: Prisma.LabWorkspaceCreateManyArgs<ExtArgs>
-            result: BatchPayload
+            args: Prisma.LabWorkspaceCreateManyArgs<ExtArgs>,
+            result: Prisma.BatchPayload
           }
           createManyAndReturn: {
-            args: Prisma.LabWorkspaceCreateManyAndReturnArgs<ExtArgs>
+            args: Prisma.LabWorkspaceCreateManyAndReturnArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabWorkspacePayload>[]
           }
           delete: {
-            args: Prisma.LabWorkspaceDeleteArgs<ExtArgs>
+            args: Prisma.LabWorkspaceDeleteArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabWorkspacePayload>
           }
           update: {
-            args: Prisma.LabWorkspaceUpdateArgs<ExtArgs>
+            args: Prisma.LabWorkspaceUpdateArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabWorkspacePayload>
           }
           deleteMany: {
-            args: Prisma.LabWorkspaceDeleteManyArgs<ExtArgs>
-            result: BatchPayload
+            args: Prisma.LabWorkspaceDeleteManyArgs<ExtArgs>,
+            result: Prisma.BatchPayload
           }
           updateMany: {
-            args: Prisma.LabWorkspaceUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateManyAndReturn: {
-            args: Prisma.LabWorkspaceUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$LabWorkspacePayload>[]
+            args: Prisma.LabWorkspaceUpdateManyArgs<ExtArgs>,
+            result: Prisma.BatchPayload
           }
           upsert: {
-            args: Prisma.LabWorkspaceUpsertArgs<ExtArgs>
+            args: Prisma.LabWorkspaceUpsertArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$LabWorkspacePayload>
           }
           aggregate: {
-            args: Prisma.LabWorkspaceAggregateArgs<ExtArgs>
+            args: Prisma.LabWorkspaceAggregateArgs<ExtArgs>,
             result: $Utils.Optional<AggregateLabWorkspace>
           }
           groupBy: {
-            args: Prisma.LabWorkspaceGroupByArgs<ExtArgs>
+            args: Prisma.LabWorkspaceGroupByArgs<ExtArgs>,
             result: $Utils.Optional<LabWorkspaceGroupByOutputType>[]
           }
           count: {
-            args: Prisma.LabWorkspaceCountArgs<ExtArgs>
+            args: Prisma.LabWorkspaceCountArgs<ExtArgs>,
             result: $Utils.Optional<LabWorkspaceCountAggregateOutputType> | number
           }
         }
@@ -885,71 +911,67 @@ export namespace Prisma {
         fields: Prisma.SubmissionFieldRefs
         operations: {
           findUnique: {
-            args: Prisma.SubmissionFindUniqueArgs<ExtArgs>
+            args: Prisma.SubmissionFindUniqueArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$SubmissionPayload> | null
           }
           findUniqueOrThrow: {
-            args: Prisma.SubmissionFindUniqueOrThrowArgs<ExtArgs>
+            args: Prisma.SubmissionFindUniqueOrThrowArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$SubmissionPayload>
           }
           findFirst: {
-            args: Prisma.SubmissionFindFirstArgs<ExtArgs>
+            args: Prisma.SubmissionFindFirstArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$SubmissionPayload> | null
           }
           findFirstOrThrow: {
-            args: Prisma.SubmissionFindFirstOrThrowArgs<ExtArgs>
+            args: Prisma.SubmissionFindFirstOrThrowArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$SubmissionPayload>
           }
           findMany: {
-            args: Prisma.SubmissionFindManyArgs<ExtArgs>
+            args: Prisma.SubmissionFindManyArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$SubmissionPayload>[]
           }
           create: {
-            args: Prisma.SubmissionCreateArgs<ExtArgs>
+            args: Prisma.SubmissionCreateArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$SubmissionPayload>
           }
           createMany: {
-            args: Prisma.SubmissionCreateManyArgs<ExtArgs>
-            result: BatchPayload
+            args: Prisma.SubmissionCreateManyArgs<ExtArgs>,
+            result: Prisma.BatchPayload
           }
           createManyAndReturn: {
-            args: Prisma.SubmissionCreateManyAndReturnArgs<ExtArgs>
+            args: Prisma.SubmissionCreateManyAndReturnArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$SubmissionPayload>[]
           }
           delete: {
-            args: Prisma.SubmissionDeleteArgs<ExtArgs>
+            args: Prisma.SubmissionDeleteArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$SubmissionPayload>
           }
           update: {
-            args: Prisma.SubmissionUpdateArgs<ExtArgs>
+            args: Prisma.SubmissionUpdateArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$SubmissionPayload>
           }
           deleteMany: {
-            args: Prisma.SubmissionDeleteManyArgs<ExtArgs>
-            result: BatchPayload
+            args: Prisma.SubmissionDeleteManyArgs<ExtArgs>,
+            result: Prisma.BatchPayload
           }
           updateMany: {
-            args: Prisma.SubmissionUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateManyAndReturn: {
-            args: Prisma.SubmissionUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$SubmissionPayload>[]
+            args: Prisma.SubmissionUpdateManyArgs<ExtArgs>,
+            result: Prisma.BatchPayload
           }
           upsert: {
-            args: Prisma.SubmissionUpsertArgs<ExtArgs>
+            args: Prisma.SubmissionUpsertArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$SubmissionPayload>
           }
           aggregate: {
-            args: Prisma.SubmissionAggregateArgs<ExtArgs>
+            args: Prisma.SubmissionAggregateArgs<ExtArgs>,
             result: $Utils.Optional<AggregateSubmission>
           }
           groupBy: {
-            args: Prisma.SubmissionGroupByArgs<ExtArgs>
+            args: Prisma.SubmissionGroupByArgs<ExtArgs>,
             result: $Utils.Optional<SubmissionGroupByOutputType>[]
           }
           count: {
-            args: Prisma.SubmissionCountArgs<ExtArgs>
+            args: Prisma.SubmissionCountArgs<ExtArgs>,
             result: $Utils.Optional<SubmissionCountAggregateOutputType> | number
           }
         }
@@ -959,15 +981,11 @@ export namespace Prisma {
     other: {
       payload: any
       operations: {
-        $executeRaw: {
-          args: [query: TemplateStringsArray | Prisma.Sql, ...values: any[]],
-          result: any
-        }
         $executeRawUnsafe: {
           args: [query: string, ...values: any[]],
           result: any
         }
-        $queryRaw: {
+        $executeRaw: {
           args: [query: TemplateStringsArray | Prisma.Sql, ...values: any[]],
           result: any
         }
@@ -975,10 +993,14 @@ export namespace Prisma {
           args: [query: string, ...values: any[]],
           result: any
         }
+        $queryRaw: {
+          args: [query: TemplateStringsArray | Prisma.Sql, ...values: any[]],
+          result: any
+        }
       }
     }
   }
-  export const defineExtension: $Extensions.ExtendsHook<"define", Prisma.TypeMapCb, $Extensions.DefaultArgs>
+  export const defineExtension: $Extensions.ExtendsHook<'define', Prisma.TypeMapCb, $Extensions.DefaultArgs>
   export type DefaultPrismaClient = PrismaClient
   export type ErrorFormat = 'pretty' | 'colorless' | 'minimal'
   export interface PrismaClientOptions {
@@ -997,24 +1019,16 @@ export namespace Prisma {
     /**
      * @example
      * ```
-     * // Shorthand for `emit: 'stdout'`
+     * // Defaults to stdout
      * log: ['query', 'info', 'warn', 'error']
      * 
-     * // Emit as events only
+     * // Emit as events
      * log: [
-     *   { emit: 'event', level: 'query' },
-     *   { emit: 'event', level: 'info' },
-     *   { emit: 'event', level: 'warn' }
-     *   { emit: 'event', level: 'error' }
+     *   { emit: 'stdout', level: 'query' },
+     *   { emit: 'stdout', level: 'info' },
+     *   { emit: 'stdout', level: 'warn' }
+     *   { emit: 'stdout', level: 'error' }
      * ]
-     * 
-     * / Emit as events and log to stdout
-     * og: [
-     *  { emit: 'stdout', level: 'query' },
-     *  { emit: 'stdout', level: 'info' },
-     *  { emit: 'stdout', level: 'warn' }
-     *  { emit: 'stdout', level: 'error' }
-     * 
      * ```
      * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/logging#the-log-option).
      */
@@ -1029,31 +1043,6 @@ export namespace Prisma {
       timeout?: number
       isolationLevel?: Prisma.TransactionIsolationLevel
     }
-    /**
-     * Instance of a Driver Adapter, e.g., like one provided by `@prisma/adapter-planetscale`
-     */
-    adapter?: runtime.SqlDriverAdapterFactory | null
-    /**
-     * Global configuration for omitting model fields by default.
-     * 
-     * @example
-     * ```
-     * const prisma = new PrismaClient({
-     *   omit: {
-     *     user: {
-     *       password: true
-     *     }
-     *   }
-     * })
-     * ```
-     */
-    omit?: Prisma.GlobalOmitConfig
-  }
-  export type GlobalOmitConfig = {
-    labChallenge?: LabChallengeOmit
-    labSession?: LabSessionOmit
-    labWorkspace?: LabWorkspaceOmit
-    submission?: SubmissionOmit
   }
 
   /* Types for Logging */
@@ -1063,15 +1052,10 @@ export namespace Prisma {
     emit: 'stdout' | 'event'
   }
 
-  export type CheckIsLogLevel<T> = T extends LogLevel ? T : never;
-
-  export type GetLogType<T> = CheckIsLogLevel<
-    T extends LogDefinition ? T['level'] : T
-  >;
-
-  export type GetEvents<T extends any[]> = T extends Array<LogLevel | LogDefinition>
-    ? GetLogType<T[number]>
-    : never;
+  export type GetLogType<T extends LogLevel | LogDefinition> = T extends LogDefinition ? T['emit'] extends 'event' ? T['level'] : never : never
+  export type GetEvents<T extends any> = T extends Array<LogLevel | LogDefinition> ?
+    GetLogType<T[0]> | GetLogType<T[1]> | GetLogType<T[2]> | GetLogType<T[3]>
+    : never
 
   export type QueryEvent = {
     timestamp: Date
@@ -1100,7 +1084,6 @@ export namespace Prisma {
     | 'createManyAndReturn'
     | 'update'
     | 'updateMany'
-    | 'updateManyAndReturn'
     | 'upsert'
     | 'delete'
     | 'deleteMany'
@@ -1111,6 +1094,25 @@ export namespace Prisma {
     | 'runCommandRaw'
     | 'findRaw'
     | 'groupBy'
+
+  /**
+   * These options are being passed into the middleware as "params"
+   */
+  export type MiddlewareParams = {
+    model?: ModelName
+    action: PrismaAction
+    args: any
+    dataPath: string[]
+    runInTransaction: boolean
+  }
+
+  /**
+   * The `T` type makes sure, that the `return proceed` is not forgotten in the middleware implementation
+   */
+  export type Middleware<T = any> = (
+    params: MiddlewareParams,
+    next: (params: MiddlewareParams) => $Utils.JsPromise<T>,
+  ) => $Utils.JsPromise<T>
 
   // tested in getLogLevel.test.ts
   export function getLogLevel(log: Array<LogLevel | LogDefinition>): LogLevel | undefined;
@@ -1470,24 +1472,6 @@ export namespace Prisma {
     updatedAt?: boolean
   }, ExtArgs["result"]["labChallenge"]>
 
-  export type LabChallengeSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    courseId?: boolean
-    moduleId?: boolean
-    lessonId?: boolean
-    id?: boolean
-    title?: boolean
-    slug?: boolean
-    description?: boolean
-    difficulty?: boolean
-    starterRepoUrl?: boolean
-    testsRepoUrl?: boolean
-    runtime?: boolean
-    createdByUserId?: boolean
-    visibility?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-  }, ExtArgs["result"]["labChallenge"]>
-
   export type LabChallengeSelectScalar = {
     courseId?: boolean
     moduleId?: boolean
@@ -1506,13 +1490,11 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type LabChallengeOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"courseId" | "moduleId" | "lessonId" | "id" | "title" | "slug" | "description" | "difficulty" | "starterRepoUrl" | "testsRepoUrl" | "runtime" | "createdByUserId" | "visibility" | "createdAt" | "updatedAt", ExtArgs["result"]["labChallenge"]>
   export type LabChallengeInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     sessions?: boolean | LabChallenge$sessionsArgs<ExtArgs>
     _count?: boolean | LabChallengeCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type LabChallengeIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
-  export type LabChallengeIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
 
   export type $LabChallengePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "LabChallenge"
@@ -1541,12 +1523,12 @@ export namespace Prisma {
 
   type LabChallengeGetPayload<S extends boolean | null | undefined | LabChallengeDefaultArgs> = $Result.GetResult<Prisma.$LabChallengePayload, S>
 
-  type LabChallengeCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
-    Omit<LabChallengeFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+  type LabChallengeCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<LabChallengeFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: LabChallengeCountAggregateInputType | true
     }
 
-  export interface LabChallengeDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+  export interface LabChallengeDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
     [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['LabChallenge'], meta: { name: 'LabChallenge' } }
     /**
      * Find zero or one LabChallenge that matches the filter.
@@ -1558,11 +1540,13 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findUnique<T extends LabChallengeFindUniqueArgs>(args: SelectSubset<T, LabChallengeFindUniqueArgs<ExtArgs>>): Prisma__LabChallengeClient<$Result.GetResult<Prisma.$LabChallengePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    **/
+    findUnique<T extends LabChallengeFindUniqueArgs<ExtArgs>>(
+      args: SelectSubset<T, LabChallengeFindUniqueArgs<ExtArgs>>
+    ): Prisma__LabChallengeClient<$Result.GetResult<Prisma.$LabChallengePayload<ExtArgs>, T, 'findUnique'> | null, null, ExtArgs>
 
     /**
-     * Find one LabChallenge that matches the filter or throw an error with `error.code='P2025'`
+     * Find one LabChallenge that matches the filter or throw an error with `error.code='P2025'` 
      * if no matches were found.
      * @param {LabChallengeFindUniqueOrThrowArgs} args - Arguments to find a LabChallenge
      * @example
@@ -1572,8 +1556,10 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findUniqueOrThrow<T extends LabChallengeFindUniqueOrThrowArgs>(args: SelectSubset<T, LabChallengeFindUniqueOrThrowArgs<ExtArgs>>): Prisma__LabChallengeClient<$Result.GetResult<Prisma.$LabChallengePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    findUniqueOrThrow<T extends LabChallengeFindUniqueOrThrowArgs<ExtArgs>>(
+      args?: SelectSubset<T, LabChallengeFindUniqueOrThrowArgs<ExtArgs>>
+    ): Prisma__LabChallengeClient<$Result.GetResult<Prisma.$LabChallengePayload<ExtArgs>, T, 'findUniqueOrThrow'>, never, ExtArgs>
 
     /**
      * Find the first LabChallenge that matches the filter.
@@ -1587,8 +1573,10 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findFirst<T extends LabChallengeFindFirstArgs>(args?: SelectSubset<T, LabChallengeFindFirstArgs<ExtArgs>>): Prisma__LabChallengeClient<$Result.GetResult<Prisma.$LabChallengePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    **/
+    findFirst<T extends LabChallengeFindFirstArgs<ExtArgs>>(
+      args?: SelectSubset<T, LabChallengeFindFirstArgs<ExtArgs>>
+    ): Prisma__LabChallengeClient<$Result.GetResult<Prisma.$LabChallengePayload<ExtArgs>, T, 'findFirst'> | null, null, ExtArgs>
 
     /**
      * Find the first LabChallenge that matches the filter or
@@ -1603,8 +1591,10 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findFirstOrThrow<T extends LabChallengeFindFirstOrThrowArgs>(args?: SelectSubset<T, LabChallengeFindFirstOrThrowArgs<ExtArgs>>): Prisma__LabChallengeClient<$Result.GetResult<Prisma.$LabChallengePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    findFirstOrThrow<T extends LabChallengeFindFirstOrThrowArgs<ExtArgs>>(
+      args?: SelectSubset<T, LabChallengeFindFirstOrThrowArgs<ExtArgs>>
+    ): Prisma__LabChallengeClient<$Result.GetResult<Prisma.$LabChallengePayload<ExtArgs>, T, 'findFirstOrThrow'>, never, ExtArgs>
 
     /**
      * Find zero or more LabChallenges that matches the filter.
@@ -1621,8 +1611,10 @@ export namespace Prisma {
      * // Only select the `courseId`
      * const labChallengeWithCourseIdOnly = await prisma.labChallenge.findMany({ select: { courseId: true } })
      * 
-     */
-    findMany<T extends LabChallengeFindManyArgs>(args?: SelectSubset<T, LabChallengeFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LabChallengePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+    **/
+    findMany<T extends LabChallengeFindManyArgs<ExtArgs>>(
+      args?: SelectSubset<T, LabChallengeFindManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LabChallengePayload<ExtArgs>, T, 'findMany'>>
 
     /**
      * Create a LabChallenge.
@@ -1635,8 +1627,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    create<T extends LabChallengeCreateArgs>(args: SelectSubset<T, LabChallengeCreateArgs<ExtArgs>>): Prisma__LabChallengeClient<$Result.GetResult<Prisma.$LabChallengePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    create<T extends LabChallengeCreateArgs<ExtArgs>>(
+      args: SelectSubset<T, LabChallengeCreateArgs<ExtArgs>>
+    ): Prisma__LabChallengeClient<$Result.GetResult<Prisma.$LabChallengePayload<ExtArgs>, T, 'create'>, never, ExtArgs>
 
     /**
      * Create many LabChallenges.
@@ -1649,8 +1643,10 @@ export namespace Prisma {
      *   ]
      * })
      *     
-     */
-    createMany<T extends LabChallengeCreateManyArgs>(args?: SelectSubset<T, LabChallengeCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    **/
+    createMany<T extends LabChallengeCreateManyArgs<ExtArgs>>(
+      args?: SelectSubset<T, LabChallengeCreateManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Create many LabChallenges and returns the data saved in the database.
@@ -1664,7 +1660,7 @@ export namespace Prisma {
      * })
      * 
      * // Create many LabChallenges and only return the `courseId`
-     * const labChallengeWithCourseIdOnly = await prisma.labChallenge.createManyAndReturn({
+     * const labChallengeWithCourseIdOnly = await prisma.labChallenge.createManyAndReturn({ 
      *   select: { courseId: true },
      *   data: [
      *     // ... provide data here
@@ -1673,8 +1669,10 @@ export namespace Prisma {
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
      * 
-     */
-    createManyAndReturn<T extends LabChallengeCreateManyAndReturnArgs>(args?: SelectSubset<T, LabChallengeCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LabChallengePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+    **/
+    createManyAndReturn<T extends LabChallengeCreateManyAndReturnArgs<ExtArgs>>(
+      args?: SelectSubset<T, LabChallengeCreateManyAndReturnArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LabChallengePayload<ExtArgs>, T, 'createManyAndReturn'>>
 
     /**
      * Delete a LabChallenge.
@@ -1687,8 +1685,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    delete<T extends LabChallengeDeleteArgs>(args: SelectSubset<T, LabChallengeDeleteArgs<ExtArgs>>): Prisma__LabChallengeClient<$Result.GetResult<Prisma.$LabChallengePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    delete<T extends LabChallengeDeleteArgs<ExtArgs>>(
+      args: SelectSubset<T, LabChallengeDeleteArgs<ExtArgs>>
+    ): Prisma__LabChallengeClient<$Result.GetResult<Prisma.$LabChallengePayload<ExtArgs>, T, 'delete'>, never, ExtArgs>
 
     /**
      * Update one LabChallenge.
@@ -1704,8 +1704,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    update<T extends LabChallengeUpdateArgs>(args: SelectSubset<T, LabChallengeUpdateArgs<ExtArgs>>): Prisma__LabChallengeClient<$Result.GetResult<Prisma.$LabChallengePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    update<T extends LabChallengeUpdateArgs<ExtArgs>>(
+      args: SelectSubset<T, LabChallengeUpdateArgs<ExtArgs>>
+    ): Prisma__LabChallengeClient<$Result.GetResult<Prisma.$LabChallengePayload<ExtArgs>, T, 'update'>, never, ExtArgs>
 
     /**
      * Delete zero or more LabChallenges.
@@ -1718,8 +1720,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    deleteMany<T extends LabChallengeDeleteManyArgs>(args?: SelectSubset<T, LabChallengeDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    **/
+    deleteMany<T extends LabChallengeDeleteManyArgs<ExtArgs>>(
+      args?: SelectSubset<T, LabChallengeDeleteManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Update zero or more LabChallenges.
@@ -1737,38 +1741,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    updateMany<T extends LabChallengeUpdateManyArgs>(args: SelectSubset<T, LabChallengeUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more LabChallenges and returns the data updated in the database.
-     * @param {LabChallengeUpdateManyAndReturnArgs} args - Arguments to update many LabChallenges.
-     * @example
-     * // Update many LabChallenges
-     * const labChallenge = await prisma.labChallenge.updateManyAndReturn({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Update zero or more LabChallenges and only return the `courseId`
-     * const labChallengeWithCourseIdOnly = await prisma.labChallenge.updateManyAndReturn({
-     *   select: { courseId: true },
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    updateManyAndReturn<T extends LabChallengeUpdateManyAndReturnArgs>(args: SelectSubset<T, LabChallengeUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LabChallengePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+    **/
+    updateMany<T extends LabChallengeUpdateManyArgs<ExtArgs>>(
+      args: SelectSubset<T, LabChallengeUpdateManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Create or update one LabChallenge.
@@ -1786,9 +1762,10 @@ export namespace Prisma {
      *     // ... the filter for the LabChallenge we want to update
      *   }
      * })
-     */
-    upsert<T extends LabChallengeUpsertArgs>(args: SelectSubset<T, LabChallengeUpsertArgs<ExtArgs>>): Prisma__LabChallengeClient<$Result.GetResult<Prisma.$LabChallengePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
+    **/
+    upsert<T extends LabChallengeUpsertArgs<ExtArgs>>(
+      args: SelectSubset<T, LabChallengeUpsertArgs<ExtArgs>>
+    ): Prisma__LabChallengeClient<$Result.GetResult<Prisma.$LabChallengePayload<ExtArgs>, T, 'upsert'>, never, ExtArgs>
 
     /**
      * Count the number of LabChallenges.
@@ -1927,37 +1904,38 @@ export namespace Prisma {
    * Because we want to prevent naming conflicts as mentioned in
    * https://github.com/prisma/prisma-client-js/issues/707
    */
-  export interface Prisma__LabChallengeClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
-    sessions<T extends LabChallenge$sessionsArgs<ExtArgs> = {}>(args?: Subset<T, LabChallenge$sessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  export interface Prisma__LabChallengeClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: 'PrismaPromise';
+
+    sessions<T extends LabChallenge$sessionsArgs<ExtArgs> = {}>(args?: Subset<T, LabChallenge$sessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, 'findMany'> | Null>;
+
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
      * @param onrejected The callback to execute when the Promise is rejected.
      * @returns A Promise for the completion of which ever callback is executed.
      */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>;
     /**
      * Attaches a callback for only the rejection of the Promise.
      * @param onrejected The callback to execute when the Promise is rejected.
      * @returns A Promise for the completion of the callback.
      */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>;
     /**
      * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
      * resolved value cannot be modified from the callback.
      * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
      * @returns A Promise for the completion of the callback.
      */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>;
   }
-
 
 
 
   /**
    * Fields of the LabChallenge model
-   */
+   */ 
   interface LabChallengeFieldRefs {
     readonly courseId: FieldRef<"LabChallenge", 'String'>
     readonly moduleId: FieldRef<"LabChallenge", 'String'>
@@ -1987,10 +1965,6 @@ export namespace Prisma {
      */
     select?: LabChallengeSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the LabChallenge
-     */
-    omit?: LabChallengeOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: LabChallengeInclude<ExtArgs> | null
@@ -2009,10 +1983,6 @@ export namespace Prisma {
      */
     select?: LabChallengeSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the LabChallenge
-     */
-    omit?: LabChallengeOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: LabChallengeInclude<ExtArgs> | null
@@ -2030,10 +2000,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the LabChallenge
      */
     select?: LabChallengeSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the LabChallenge
-     */
-    omit?: LabChallengeOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -2083,10 +2049,6 @@ export namespace Prisma {
      */
     select?: LabChallengeSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the LabChallenge
-     */
-    omit?: LabChallengeOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: LabChallengeInclude<ExtArgs> | null
@@ -2135,10 +2097,6 @@ export namespace Prisma {
      */
     select?: LabChallengeSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the LabChallenge
-     */
-    omit?: LabChallengeOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: LabChallengeInclude<ExtArgs> | null
@@ -2182,10 +2140,6 @@ export namespace Prisma {
      */
     select?: LabChallengeSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the LabChallenge
-     */
-    omit?: LabChallengeOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: LabChallengeInclude<ExtArgs> | null
@@ -2214,10 +2168,6 @@ export namespace Prisma {
      */
     select?: LabChallengeSelectCreateManyAndReturn<ExtArgs> | null
     /**
-     * Omit specific fields from the LabChallenge
-     */
-    omit?: LabChallengeOmit<ExtArgs> | null
-    /**
      * The data used to create many LabChallenges.
      */
     data: LabChallengeCreateManyInput | LabChallengeCreateManyInput[]
@@ -2231,10 +2181,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the LabChallenge
      */
     select?: LabChallengeSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the LabChallenge
-     */
-    omit?: LabChallengeOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -2261,36 +2207,6 @@ export namespace Prisma {
      * Filter which LabChallenges to update
      */
     where?: LabChallengeWhereInput
-    /**
-     * Limit how many LabChallenges to update.
-     */
-    limit?: number
-  }
-
-  /**
-   * LabChallenge updateManyAndReturn
-   */
-  export type LabChallengeUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the LabChallenge
-     */
-    select?: LabChallengeSelectUpdateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the LabChallenge
-     */
-    omit?: LabChallengeOmit<ExtArgs> | null
-    /**
-     * The data used to update LabChallenges.
-     */
-    data: XOR<LabChallengeUpdateManyMutationInput, LabChallengeUncheckedUpdateManyInput>
-    /**
-     * Filter which LabChallenges to update
-     */
-    where?: LabChallengeWhereInput
-    /**
-     * Limit how many LabChallenges to update.
-     */
-    limit?: number
   }
 
   /**
@@ -2301,10 +2217,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the LabChallenge
      */
     select?: LabChallengeSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the LabChallenge
-     */
-    omit?: LabChallengeOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -2332,10 +2244,6 @@ export namespace Prisma {
      */
     select?: LabChallengeSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the LabChallenge
-     */
-    omit?: LabChallengeOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: LabChallengeInclude<ExtArgs> | null
@@ -2353,10 +2261,6 @@ export namespace Prisma {
      * Filter which LabChallenges to delete
      */
     where?: LabChallengeWhereInput
-    /**
-     * Limit how many LabChallenges to delete.
-     */
-    limit?: number
   }
 
   /**
@@ -2367,10 +2271,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the LabSession
      */
     select?: LabSessionSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the LabSession
-     */
-    omit?: LabSessionOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -2391,10 +2291,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the LabChallenge
      */
     select?: LabChallengeSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the LabChallenge
-     */
-    omit?: LabChallengeOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -2635,21 +2531,6 @@ export namespace Prisma {
     challenge?: boolean | LabChallengeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["labSession"]>
 
-  export type LabSessionSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    userId?: boolean
-    challengeId?: boolean
-    status?: boolean
-    codeServerUrl?: boolean
-    codeServerToken?: boolean
-    appUrl?: boolean
-    containerId?: boolean
-    lastHeartbeat?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    challenge?: boolean | LabChallengeDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["labSession"]>
-
   export type LabSessionSelectScalar = {
     id?: boolean
     userId?: boolean
@@ -2664,7 +2545,6 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type LabSessionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "challengeId" | "status" | "codeServerUrl" | "codeServerToken" | "appUrl" | "containerId" | "lastHeartbeat" | "createdAt" | "updatedAt", ExtArgs["result"]["labSession"]>
   export type LabSessionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     challenge?: boolean | LabChallengeDefaultArgs<ExtArgs>
     submissions?: boolean | LabSession$submissionsArgs<ExtArgs>
@@ -2672,9 +2552,6 @@ export namespace Prisma {
     _count?: boolean | LabSessionCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type LabSessionIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    challenge?: boolean | LabChallengeDefaultArgs<ExtArgs>
-  }
-  export type LabSessionIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     challenge?: boolean | LabChallengeDefaultArgs<ExtArgs>
   }
 
@@ -2703,12 +2580,12 @@ export namespace Prisma {
 
   type LabSessionGetPayload<S extends boolean | null | undefined | LabSessionDefaultArgs> = $Result.GetResult<Prisma.$LabSessionPayload, S>
 
-  type LabSessionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
-    Omit<LabSessionFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+  type LabSessionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<LabSessionFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: LabSessionCountAggregateInputType | true
     }
 
-  export interface LabSessionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+  export interface LabSessionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
     [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['LabSession'], meta: { name: 'LabSession' } }
     /**
      * Find zero or one LabSession that matches the filter.
@@ -2720,11 +2597,13 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findUnique<T extends LabSessionFindUniqueArgs>(args: SelectSubset<T, LabSessionFindUniqueArgs<ExtArgs>>): Prisma__LabSessionClient<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    **/
+    findUnique<T extends LabSessionFindUniqueArgs<ExtArgs>>(
+      args: SelectSubset<T, LabSessionFindUniqueArgs<ExtArgs>>
+    ): Prisma__LabSessionClient<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, 'findUnique'> | null, null, ExtArgs>
 
     /**
-     * Find one LabSession that matches the filter or throw an error with `error.code='P2025'`
+     * Find one LabSession that matches the filter or throw an error with `error.code='P2025'` 
      * if no matches were found.
      * @param {LabSessionFindUniqueOrThrowArgs} args - Arguments to find a LabSession
      * @example
@@ -2734,8 +2613,10 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findUniqueOrThrow<T extends LabSessionFindUniqueOrThrowArgs>(args: SelectSubset<T, LabSessionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__LabSessionClient<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    findUniqueOrThrow<T extends LabSessionFindUniqueOrThrowArgs<ExtArgs>>(
+      args?: SelectSubset<T, LabSessionFindUniqueOrThrowArgs<ExtArgs>>
+    ): Prisma__LabSessionClient<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, 'findUniqueOrThrow'>, never, ExtArgs>
 
     /**
      * Find the first LabSession that matches the filter.
@@ -2749,8 +2630,10 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findFirst<T extends LabSessionFindFirstArgs>(args?: SelectSubset<T, LabSessionFindFirstArgs<ExtArgs>>): Prisma__LabSessionClient<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    **/
+    findFirst<T extends LabSessionFindFirstArgs<ExtArgs>>(
+      args?: SelectSubset<T, LabSessionFindFirstArgs<ExtArgs>>
+    ): Prisma__LabSessionClient<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, 'findFirst'> | null, null, ExtArgs>
 
     /**
      * Find the first LabSession that matches the filter or
@@ -2765,8 +2648,10 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findFirstOrThrow<T extends LabSessionFindFirstOrThrowArgs>(args?: SelectSubset<T, LabSessionFindFirstOrThrowArgs<ExtArgs>>): Prisma__LabSessionClient<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    findFirstOrThrow<T extends LabSessionFindFirstOrThrowArgs<ExtArgs>>(
+      args?: SelectSubset<T, LabSessionFindFirstOrThrowArgs<ExtArgs>>
+    ): Prisma__LabSessionClient<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, 'findFirstOrThrow'>, never, ExtArgs>
 
     /**
      * Find zero or more LabSessions that matches the filter.
@@ -2783,8 +2668,10 @@ export namespace Prisma {
      * // Only select the `id`
      * const labSessionWithIdOnly = await prisma.labSession.findMany({ select: { id: true } })
      * 
-     */
-    findMany<T extends LabSessionFindManyArgs>(args?: SelectSubset<T, LabSessionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+    **/
+    findMany<T extends LabSessionFindManyArgs<ExtArgs>>(
+      args?: SelectSubset<T, LabSessionFindManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, 'findMany'>>
 
     /**
      * Create a LabSession.
@@ -2797,8 +2684,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    create<T extends LabSessionCreateArgs>(args: SelectSubset<T, LabSessionCreateArgs<ExtArgs>>): Prisma__LabSessionClient<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    create<T extends LabSessionCreateArgs<ExtArgs>>(
+      args: SelectSubset<T, LabSessionCreateArgs<ExtArgs>>
+    ): Prisma__LabSessionClient<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, 'create'>, never, ExtArgs>
 
     /**
      * Create many LabSessions.
@@ -2811,8 +2700,10 @@ export namespace Prisma {
      *   ]
      * })
      *     
-     */
-    createMany<T extends LabSessionCreateManyArgs>(args?: SelectSubset<T, LabSessionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    **/
+    createMany<T extends LabSessionCreateManyArgs<ExtArgs>>(
+      args?: SelectSubset<T, LabSessionCreateManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Create many LabSessions and returns the data saved in the database.
@@ -2826,7 +2717,7 @@ export namespace Prisma {
      * })
      * 
      * // Create many LabSessions and only return the `id`
-     * const labSessionWithIdOnly = await prisma.labSession.createManyAndReturn({
+     * const labSessionWithIdOnly = await prisma.labSession.createManyAndReturn({ 
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -2835,8 +2726,10 @@ export namespace Prisma {
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
      * 
-     */
-    createManyAndReturn<T extends LabSessionCreateManyAndReturnArgs>(args?: SelectSubset<T, LabSessionCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+    **/
+    createManyAndReturn<T extends LabSessionCreateManyAndReturnArgs<ExtArgs>>(
+      args?: SelectSubset<T, LabSessionCreateManyAndReturnArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, 'createManyAndReturn'>>
 
     /**
      * Delete a LabSession.
@@ -2849,8 +2742,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    delete<T extends LabSessionDeleteArgs>(args: SelectSubset<T, LabSessionDeleteArgs<ExtArgs>>): Prisma__LabSessionClient<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    delete<T extends LabSessionDeleteArgs<ExtArgs>>(
+      args: SelectSubset<T, LabSessionDeleteArgs<ExtArgs>>
+    ): Prisma__LabSessionClient<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, 'delete'>, never, ExtArgs>
 
     /**
      * Update one LabSession.
@@ -2866,8 +2761,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    update<T extends LabSessionUpdateArgs>(args: SelectSubset<T, LabSessionUpdateArgs<ExtArgs>>): Prisma__LabSessionClient<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    update<T extends LabSessionUpdateArgs<ExtArgs>>(
+      args: SelectSubset<T, LabSessionUpdateArgs<ExtArgs>>
+    ): Prisma__LabSessionClient<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, 'update'>, never, ExtArgs>
 
     /**
      * Delete zero or more LabSessions.
@@ -2880,8 +2777,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    deleteMany<T extends LabSessionDeleteManyArgs>(args?: SelectSubset<T, LabSessionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    **/
+    deleteMany<T extends LabSessionDeleteManyArgs<ExtArgs>>(
+      args?: SelectSubset<T, LabSessionDeleteManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Update zero or more LabSessions.
@@ -2899,38 +2798,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    updateMany<T extends LabSessionUpdateManyArgs>(args: SelectSubset<T, LabSessionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more LabSessions and returns the data updated in the database.
-     * @param {LabSessionUpdateManyAndReturnArgs} args - Arguments to update many LabSessions.
-     * @example
-     * // Update many LabSessions
-     * const labSession = await prisma.labSession.updateManyAndReturn({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Update zero or more LabSessions and only return the `id`
-     * const labSessionWithIdOnly = await prisma.labSession.updateManyAndReturn({
-     *   select: { id: true },
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    updateManyAndReturn<T extends LabSessionUpdateManyAndReturnArgs>(args: SelectSubset<T, LabSessionUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+    **/
+    updateMany<T extends LabSessionUpdateManyArgs<ExtArgs>>(
+      args: SelectSubset<T, LabSessionUpdateManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Create or update one LabSession.
@@ -2948,9 +2819,10 @@ export namespace Prisma {
      *     // ... the filter for the LabSession we want to update
      *   }
      * })
-     */
-    upsert<T extends LabSessionUpsertArgs>(args: SelectSubset<T, LabSessionUpsertArgs<ExtArgs>>): Prisma__LabSessionClient<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
+    **/
+    upsert<T extends LabSessionUpsertArgs<ExtArgs>>(
+      args: SelectSubset<T, LabSessionUpsertArgs<ExtArgs>>
+    ): Prisma__LabSessionClient<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, 'upsert'>, never, ExtArgs>
 
     /**
      * Count the number of LabSessions.
@@ -3089,39 +2961,42 @@ export namespace Prisma {
    * Because we want to prevent naming conflicts as mentioned in
    * https://github.com/prisma/prisma-client-js/issues/707
    */
-  export interface Prisma__LabSessionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
-    challenge<T extends LabChallengeDefaultArgs<ExtArgs> = {}>(args?: Subset<T, LabChallengeDefaultArgs<ExtArgs>>): Prisma__LabChallengeClient<$Result.GetResult<Prisma.$LabChallengePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-    submissions<T extends LabSession$submissionsArgs<ExtArgs> = {}>(args?: Subset<T, LabSession$submissionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SubmissionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    workspaces<T extends LabSession$workspacesArgs<ExtArgs> = {}>(args?: Subset<T, LabSession$workspacesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LabWorkspacePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  export interface Prisma__LabSessionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: 'PrismaPromise';
+
+    challenge<T extends LabChallengeDefaultArgs<ExtArgs> = {}>(args?: Subset<T, LabChallengeDefaultArgs<ExtArgs>>): Prisma__LabChallengeClient<$Result.GetResult<Prisma.$LabChallengePayload<ExtArgs>, T, 'findUniqueOrThrow'> | Null, Null, ExtArgs>;
+
+    submissions<T extends LabSession$submissionsArgs<ExtArgs> = {}>(args?: Subset<T, LabSession$submissionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SubmissionPayload<ExtArgs>, T, 'findMany'> | Null>;
+
+    workspaces<T extends LabSession$workspacesArgs<ExtArgs> = {}>(args?: Subset<T, LabSession$workspacesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LabWorkspacePayload<ExtArgs>, T, 'findMany'> | Null>;
+
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
      * @param onrejected The callback to execute when the Promise is rejected.
      * @returns A Promise for the completion of which ever callback is executed.
      */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>;
     /**
      * Attaches a callback for only the rejection of the Promise.
      * @param onrejected The callback to execute when the Promise is rejected.
      * @returns A Promise for the completion of the callback.
      */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>;
     /**
      * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
      * resolved value cannot be modified from the callback.
      * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
      * @returns A Promise for the completion of the callback.
      */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>;
   }
-
 
 
 
   /**
    * Fields of the LabSession model
-   */
+   */ 
   interface LabSessionFieldRefs {
     readonly id: FieldRef<"LabSession", 'String'>
     readonly userId: FieldRef<"LabSession", 'String'>
@@ -3147,10 +3022,6 @@ export namespace Prisma {
      */
     select?: LabSessionSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the LabSession
-     */
-    omit?: LabSessionOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: LabSessionInclude<ExtArgs> | null
@@ -3169,10 +3040,6 @@ export namespace Prisma {
      */
     select?: LabSessionSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the LabSession
-     */
-    omit?: LabSessionOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: LabSessionInclude<ExtArgs> | null
@@ -3190,10 +3057,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the LabSession
      */
     select?: LabSessionSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the LabSession
-     */
-    omit?: LabSessionOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -3243,10 +3106,6 @@ export namespace Prisma {
      */
     select?: LabSessionSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the LabSession
-     */
-    omit?: LabSessionOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: LabSessionInclude<ExtArgs> | null
@@ -3295,10 +3154,6 @@ export namespace Prisma {
      */
     select?: LabSessionSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the LabSession
-     */
-    omit?: LabSessionOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: LabSessionInclude<ExtArgs> | null
@@ -3342,10 +3197,6 @@ export namespace Prisma {
      */
     select?: LabSessionSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the LabSession
-     */
-    omit?: LabSessionOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: LabSessionInclude<ExtArgs> | null
@@ -3374,10 +3225,6 @@ export namespace Prisma {
      */
     select?: LabSessionSelectCreateManyAndReturn<ExtArgs> | null
     /**
-     * Omit specific fields from the LabSession
-     */
-    omit?: LabSessionOmit<ExtArgs> | null
-    /**
      * The data used to create many LabSessions.
      */
     data: LabSessionCreateManyInput | LabSessionCreateManyInput[]
@@ -3395,10 +3242,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the LabSession
      */
     select?: LabSessionSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the LabSession
-     */
-    omit?: LabSessionOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -3425,40 +3268,6 @@ export namespace Prisma {
      * Filter which LabSessions to update
      */
     where?: LabSessionWhereInput
-    /**
-     * Limit how many LabSessions to update.
-     */
-    limit?: number
-  }
-
-  /**
-   * LabSession updateManyAndReturn
-   */
-  export type LabSessionUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the LabSession
-     */
-    select?: LabSessionSelectUpdateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the LabSession
-     */
-    omit?: LabSessionOmit<ExtArgs> | null
-    /**
-     * The data used to update LabSessions.
-     */
-    data: XOR<LabSessionUpdateManyMutationInput, LabSessionUncheckedUpdateManyInput>
-    /**
-     * Filter which LabSessions to update
-     */
-    where?: LabSessionWhereInput
-    /**
-     * Limit how many LabSessions to update.
-     */
-    limit?: number
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: LabSessionIncludeUpdateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -3469,10 +3278,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the LabSession
      */
     select?: LabSessionSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the LabSession
-     */
-    omit?: LabSessionOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -3500,10 +3305,6 @@ export namespace Prisma {
      */
     select?: LabSessionSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the LabSession
-     */
-    omit?: LabSessionOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: LabSessionInclude<ExtArgs> | null
@@ -3521,10 +3322,6 @@ export namespace Prisma {
      * Filter which LabSessions to delete
      */
     where?: LabSessionWhereInput
-    /**
-     * Limit how many LabSessions to delete.
-     */
-    limit?: number
   }
 
   /**
@@ -3535,10 +3332,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the Submission
      */
     select?: SubmissionSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Submission
-     */
-    omit?: SubmissionOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -3560,10 +3353,6 @@ export namespace Prisma {
      */
     select?: LabWorkspaceSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the LabWorkspace
-     */
-    omit?: LabWorkspaceOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: LabWorkspaceInclude<ExtArgs> | null
@@ -3583,10 +3372,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the LabSession
      */
     select?: LabSessionSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the LabSession
-     */
-    omit?: LabSessionOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -3770,15 +3555,6 @@ export namespace Prisma {
     session?: boolean | LabSessionDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["labWorkspace"]>
 
-  export type LabWorkspaceSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    sessionId?: boolean
-    path?: boolean
-    repoUrl?: boolean
-    branch?: boolean
-    session?: boolean | LabSessionDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["labWorkspace"]>
-
   export type LabWorkspaceSelectScalar = {
     id?: boolean
     sessionId?: boolean
@@ -3787,14 +3563,10 @@ export namespace Prisma {
     branch?: boolean
   }
 
-  export type LabWorkspaceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "sessionId" | "path" | "repoUrl" | "branch", ExtArgs["result"]["labWorkspace"]>
   export type LabWorkspaceInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     session?: boolean | LabSessionDefaultArgs<ExtArgs>
   }
   export type LabWorkspaceIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    session?: boolean | LabSessionDefaultArgs<ExtArgs>
-  }
-  export type LabWorkspaceIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     session?: boolean | LabSessionDefaultArgs<ExtArgs>
   }
 
@@ -3815,12 +3587,12 @@ export namespace Prisma {
 
   type LabWorkspaceGetPayload<S extends boolean | null | undefined | LabWorkspaceDefaultArgs> = $Result.GetResult<Prisma.$LabWorkspacePayload, S>
 
-  type LabWorkspaceCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
-    Omit<LabWorkspaceFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+  type LabWorkspaceCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<LabWorkspaceFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: LabWorkspaceCountAggregateInputType | true
     }
 
-  export interface LabWorkspaceDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+  export interface LabWorkspaceDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
     [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['LabWorkspace'], meta: { name: 'LabWorkspace' } }
     /**
      * Find zero or one LabWorkspace that matches the filter.
@@ -3832,11 +3604,13 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findUnique<T extends LabWorkspaceFindUniqueArgs>(args: SelectSubset<T, LabWorkspaceFindUniqueArgs<ExtArgs>>): Prisma__LabWorkspaceClient<$Result.GetResult<Prisma.$LabWorkspacePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    **/
+    findUnique<T extends LabWorkspaceFindUniqueArgs<ExtArgs>>(
+      args: SelectSubset<T, LabWorkspaceFindUniqueArgs<ExtArgs>>
+    ): Prisma__LabWorkspaceClient<$Result.GetResult<Prisma.$LabWorkspacePayload<ExtArgs>, T, 'findUnique'> | null, null, ExtArgs>
 
     /**
-     * Find one LabWorkspace that matches the filter or throw an error with `error.code='P2025'`
+     * Find one LabWorkspace that matches the filter or throw an error with `error.code='P2025'` 
      * if no matches were found.
      * @param {LabWorkspaceFindUniqueOrThrowArgs} args - Arguments to find a LabWorkspace
      * @example
@@ -3846,8 +3620,10 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findUniqueOrThrow<T extends LabWorkspaceFindUniqueOrThrowArgs>(args: SelectSubset<T, LabWorkspaceFindUniqueOrThrowArgs<ExtArgs>>): Prisma__LabWorkspaceClient<$Result.GetResult<Prisma.$LabWorkspacePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    findUniqueOrThrow<T extends LabWorkspaceFindUniqueOrThrowArgs<ExtArgs>>(
+      args?: SelectSubset<T, LabWorkspaceFindUniqueOrThrowArgs<ExtArgs>>
+    ): Prisma__LabWorkspaceClient<$Result.GetResult<Prisma.$LabWorkspacePayload<ExtArgs>, T, 'findUniqueOrThrow'>, never, ExtArgs>
 
     /**
      * Find the first LabWorkspace that matches the filter.
@@ -3861,8 +3637,10 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findFirst<T extends LabWorkspaceFindFirstArgs>(args?: SelectSubset<T, LabWorkspaceFindFirstArgs<ExtArgs>>): Prisma__LabWorkspaceClient<$Result.GetResult<Prisma.$LabWorkspacePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    **/
+    findFirst<T extends LabWorkspaceFindFirstArgs<ExtArgs>>(
+      args?: SelectSubset<T, LabWorkspaceFindFirstArgs<ExtArgs>>
+    ): Prisma__LabWorkspaceClient<$Result.GetResult<Prisma.$LabWorkspacePayload<ExtArgs>, T, 'findFirst'> | null, null, ExtArgs>
 
     /**
      * Find the first LabWorkspace that matches the filter or
@@ -3877,8 +3655,10 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findFirstOrThrow<T extends LabWorkspaceFindFirstOrThrowArgs>(args?: SelectSubset<T, LabWorkspaceFindFirstOrThrowArgs<ExtArgs>>): Prisma__LabWorkspaceClient<$Result.GetResult<Prisma.$LabWorkspacePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    findFirstOrThrow<T extends LabWorkspaceFindFirstOrThrowArgs<ExtArgs>>(
+      args?: SelectSubset<T, LabWorkspaceFindFirstOrThrowArgs<ExtArgs>>
+    ): Prisma__LabWorkspaceClient<$Result.GetResult<Prisma.$LabWorkspacePayload<ExtArgs>, T, 'findFirstOrThrow'>, never, ExtArgs>
 
     /**
      * Find zero or more LabWorkspaces that matches the filter.
@@ -3895,8 +3675,10 @@ export namespace Prisma {
      * // Only select the `id`
      * const labWorkspaceWithIdOnly = await prisma.labWorkspace.findMany({ select: { id: true } })
      * 
-     */
-    findMany<T extends LabWorkspaceFindManyArgs>(args?: SelectSubset<T, LabWorkspaceFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LabWorkspacePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+    **/
+    findMany<T extends LabWorkspaceFindManyArgs<ExtArgs>>(
+      args?: SelectSubset<T, LabWorkspaceFindManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LabWorkspacePayload<ExtArgs>, T, 'findMany'>>
 
     /**
      * Create a LabWorkspace.
@@ -3909,8 +3691,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    create<T extends LabWorkspaceCreateArgs>(args: SelectSubset<T, LabWorkspaceCreateArgs<ExtArgs>>): Prisma__LabWorkspaceClient<$Result.GetResult<Prisma.$LabWorkspacePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    create<T extends LabWorkspaceCreateArgs<ExtArgs>>(
+      args: SelectSubset<T, LabWorkspaceCreateArgs<ExtArgs>>
+    ): Prisma__LabWorkspaceClient<$Result.GetResult<Prisma.$LabWorkspacePayload<ExtArgs>, T, 'create'>, never, ExtArgs>
 
     /**
      * Create many LabWorkspaces.
@@ -3923,8 +3707,10 @@ export namespace Prisma {
      *   ]
      * })
      *     
-     */
-    createMany<T extends LabWorkspaceCreateManyArgs>(args?: SelectSubset<T, LabWorkspaceCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    **/
+    createMany<T extends LabWorkspaceCreateManyArgs<ExtArgs>>(
+      args?: SelectSubset<T, LabWorkspaceCreateManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Create many LabWorkspaces and returns the data saved in the database.
@@ -3938,7 +3724,7 @@ export namespace Prisma {
      * })
      * 
      * // Create many LabWorkspaces and only return the `id`
-     * const labWorkspaceWithIdOnly = await prisma.labWorkspace.createManyAndReturn({
+     * const labWorkspaceWithIdOnly = await prisma.labWorkspace.createManyAndReturn({ 
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -3947,8 +3733,10 @@ export namespace Prisma {
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
      * 
-     */
-    createManyAndReturn<T extends LabWorkspaceCreateManyAndReturnArgs>(args?: SelectSubset<T, LabWorkspaceCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LabWorkspacePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+    **/
+    createManyAndReturn<T extends LabWorkspaceCreateManyAndReturnArgs<ExtArgs>>(
+      args?: SelectSubset<T, LabWorkspaceCreateManyAndReturnArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LabWorkspacePayload<ExtArgs>, T, 'createManyAndReturn'>>
 
     /**
      * Delete a LabWorkspace.
@@ -3961,8 +3749,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    delete<T extends LabWorkspaceDeleteArgs>(args: SelectSubset<T, LabWorkspaceDeleteArgs<ExtArgs>>): Prisma__LabWorkspaceClient<$Result.GetResult<Prisma.$LabWorkspacePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    delete<T extends LabWorkspaceDeleteArgs<ExtArgs>>(
+      args: SelectSubset<T, LabWorkspaceDeleteArgs<ExtArgs>>
+    ): Prisma__LabWorkspaceClient<$Result.GetResult<Prisma.$LabWorkspacePayload<ExtArgs>, T, 'delete'>, never, ExtArgs>
 
     /**
      * Update one LabWorkspace.
@@ -3978,8 +3768,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    update<T extends LabWorkspaceUpdateArgs>(args: SelectSubset<T, LabWorkspaceUpdateArgs<ExtArgs>>): Prisma__LabWorkspaceClient<$Result.GetResult<Prisma.$LabWorkspacePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    update<T extends LabWorkspaceUpdateArgs<ExtArgs>>(
+      args: SelectSubset<T, LabWorkspaceUpdateArgs<ExtArgs>>
+    ): Prisma__LabWorkspaceClient<$Result.GetResult<Prisma.$LabWorkspacePayload<ExtArgs>, T, 'update'>, never, ExtArgs>
 
     /**
      * Delete zero or more LabWorkspaces.
@@ -3992,8 +3784,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    deleteMany<T extends LabWorkspaceDeleteManyArgs>(args?: SelectSubset<T, LabWorkspaceDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    **/
+    deleteMany<T extends LabWorkspaceDeleteManyArgs<ExtArgs>>(
+      args?: SelectSubset<T, LabWorkspaceDeleteManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Update zero or more LabWorkspaces.
@@ -4011,38 +3805,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    updateMany<T extends LabWorkspaceUpdateManyArgs>(args: SelectSubset<T, LabWorkspaceUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more LabWorkspaces and returns the data updated in the database.
-     * @param {LabWorkspaceUpdateManyAndReturnArgs} args - Arguments to update many LabWorkspaces.
-     * @example
-     * // Update many LabWorkspaces
-     * const labWorkspace = await prisma.labWorkspace.updateManyAndReturn({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Update zero or more LabWorkspaces and only return the `id`
-     * const labWorkspaceWithIdOnly = await prisma.labWorkspace.updateManyAndReturn({
-     *   select: { id: true },
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    updateManyAndReturn<T extends LabWorkspaceUpdateManyAndReturnArgs>(args: SelectSubset<T, LabWorkspaceUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LabWorkspacePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+    **/
+    updateMany<T extends LabWorkspaceUpdateManyArgs<ExtArgs>>(
+      args: SelectSubset<T, LabWorkspaceUpdateManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Create or update one LabWorkspace.
@@ -4060,9 +3826,10 @@ export namespace Prisma {
      *     // ... the filter for the LabWorkspace we want to update
      *   }
      * })
-     */
-    upsert<T extends LabWorkspaceUpsertArgs>(args: SelectSubset<T, LabWorkspaceUpsertArgs<ExtArgs>>): Prisma__LabWorkspaceClient<$Result.GetResult<Prisma.$LabWorkspacePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
+    **/
+    upsert<T extends LabWorkspaceUpsertArgs<ExtArgs>>(
+      args: SelectSubset<T, LabWorkspaceUpsertArgs<ExtArgs>>
+    ): Prisma__LabWorkspaceClient<$Result.GetResult<Prisma.$LabWorkspacePayload<ExtArgs>, T, 'upsert'>, never, ExtArgs>
 
     /**
      * Count the number of LabWorkspaces.
@@ -4201,37 +3968,38 @@ export namespace Prisma {
    * Because we want to prevent naming conflicts as mentioned in
    * https://github.com/prisma/prisma-client-js/issues/707
    */
-  export interface Prisma__LabWorkspaceClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
-    session<T extends LabSessionDefaultArgs<ExtArgs> = {}>(args?: Subset<T, LabSessionDefaultArgs<ExtArgs>>): Prisma__LabSessionClient<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  export interface Prisma__LabWorkspaceClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: 'PrismaPromise';
+
+    session<T extends LabSessionDefaultArgs<ExtArgs> = {}>(args?: Subset<T, LabSessionDefaultArgs<ExtArgs>>): Prisma__LabSessionClient<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, 'findUniqueOrThrow'> | Null, Null, ExtArgs>;
+
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
      * @param onrejected The callback to execute when the Promise is rejected.
      * @returns A Promise for the completion of which ever callback is executed.
      */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>;
     /**
      * Attaches a callback for only the rejection of the Promise.
      * @param onrejected The callback to execute when the Promise is rejected.
      * @returns A Promise for the completion of the callback.
      */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>;
     /**
      * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
      * resolved value cannot be modified from the callback.
      * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
      * @returns A Promise for the completion of the callback.
      */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>;
   }
-
 
 
 
   /**
    * Fields of the LabWorkspace model
-   */
+   */ 
   interface LabWorkspaceFieldRefs {
     readonly id: FieldRef<"LabWorkspace", 'String'>
     readonly sessionId: FieldRef<"LabWorkspace", 'String'>
@@ -4251,10 +4019,6 @@ export namespace Prisma {
      */
     select?: LabWorkspaceSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the LabWorkspace
-     */
-    omit?: LabWorkspaceOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: LabWorkspaceInclude<ExtArgs> | null
@@ -4273,10 +4037,6 @@ export namespace Prisma {
      */
     select?: LabWorkspaceSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the LabWorkspace
-     */
-    omit?: LabWorkspaceOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: LabWorkspaceInclude<ExtArgs> | null
@@ -4294,10 +4054,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the LabWorkspace
      */
     select?: LabWorkspaceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the LabWorkspace
-     */
-    omit?: LabWorkspaceOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -4347,10 +4103,6 @@ export namespace Prisma {
      */
     select?: LabWorkspaceSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the LabWorkspace
-     */
-    omit?: LabWorkspaceOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: LabWorkspaceInclude<ExtArgs> | null
@@ -4399,10 +4151,6 @@ export namespace Prisma {
      */
     select?: LabWorkspaceSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the LabWorkspace
-     */
-    omit?: LabWorkspaceOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: LabWorkspaceInclude<ExtArgs> | null
@@ -4446,10 +4194,6 @@ export namespace Prisma {
      */
     select?: LabWorkspaceSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the LabWorkspace
-     */
-    omit?: LabWorkspaceOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: LabWorkspaceInclude<ExtArgs> | null
@@ -4478,10 +4222,6 @@ export namespace Prisma {
      */
     select?: LabWorkspaceSelectCreateManyAndReturn<ExtArgs> | null
     /**
-     * Omit specific fields from the LabWorkspace
-     */
-    omit?: LabWorkspaceOmit<ExtArgs> | null
-    /**
      * The data used to create many LabWorkspaces.
      */
     data: LabWorkspaceCreateManyInput | LabWorkspaceCreateManyInput[]
@@ -4499,10 +4239,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the LabWorkspace
      */
     select?: LabWorkspaceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the LabWorkspace
-     */
-    omit?: LabWorkspaceOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -4529,40 +4265,6 @@ export namespace Prisma {
      * Filter which LabWorkspaces to update
      */
     where?: LabWorkspaceWhereInput
-    /**
-     * Limit how many LabWorkspaces to update.
-     */
-    limit?: number
-  }
-
-  /**
-   * LabWorkspace updateManyAndReturn
-   */
-  export type LabWorkspaceUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the LabWorkspace
-     */
-    select?: LabWorkspaceSelectUpdateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the LabWorkspace
-     */
-    omit?: LabWorkspaceOmit<ExtArgs> | null
-    /**
-     * The data used to update LabWorkspaces.
-     */
-    data: XOR<LabWorkspaceUpdateManyMutationInput, LabWorkspaceUncheckedUpdateManyInput>
-    /**
-     * Filter which LabWorkspaces to update
-     */
-    where?: LabWorkspaceWhereInput
-    /**
-     * Limit how many LabWorkspaces to update.
-     */
-    limit?: number
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: LabWorkspaceIncludeUpdateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -4573,10 +4275,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the LabWorkspace
      */
     select?: LabWorkspaceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the LabWorkspace
-     */
-    omit?: LabWorkspaceOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -4604,10 +4302,6 @@ export namespace Prisma {
      */
     select?: LabWorkspaceSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the LabWorkspace
-     */
-    omit?: LabWorkspaceOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: LabWorkspaceInclude<ExtArgs> | null
@@ -4625,10 +4319,6 @@ export namespace Prisma {
      * Filter which LabWorkspaces to delete
      */
     where?: LabWorkspaceWhereInput
-    /**
-     * Limit how many LabWorkspaces to delete.
-     */
-    limit?: number
   }
 
   /**
@@ -4639,10 +4329,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the LabWorkspace
      */
     select?: LabWorkspaceSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the LabWorkspace
-     */
-    omit?: LabWorkspaceOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -4896,19 +4582,6 @@ export namespace Prisma {
     session?: boolean | LabSessionDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["submission"]>
 
-  export type SubmissionSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    sessionId?: boolean
-    status?: boolean
-    passed?: boolean
-    gradePct?: boolean
-    feedback?: boolean
-    artifactsUrl?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    session?: boolean | LabSessionDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["submission"]>
-
   export type SubmissionSelectScalar = {
     id?: boolean
     sessionId?: boolean
@@ -4921,14 +4594,10 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type SubmissionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "sessionId" | "status" | "passed" | "gradePct" | "feedback" | "artifactsUrl" | "createdAt" | "updatedAt", ExtArgs["result"]["submission"]>
   export type SubmissionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     session?: boolean | LabSessionDefaultArgs<ExtArgs>
   }
   export type SubmissionIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    session?: boolean | LabSessionDefaultArgs<ExtArgs>
-  }
-  export type SubmissionIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     session?: boolean | LabSessionDefaultArgs<ExtArgs>
   }
 
@@ -4953,12 +4622,12 @@ export namespace Prisma {
 
   type SubmissionGetPayload<S extends boolean | null | undefined | SubmissionDefaultArgs> = $Result.GetResult<Prisma.$SubmissionPayload, S>
 
-  type SubmissionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
-    Omit<SubmissionFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+  type SubmissionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<SubmissionFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: SubmissionCountAggregateInputType | true
     }
 
-  export interface SubmissionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+  export interface SubmissionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
     [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Submission'], meta: { name: 'Submission' } }
     /**
      * Find zero or one Submission that matches the filter.
@@ -4970,11 +4639,13 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findUnique<T extends SubmissionFindUniqueArgs>(args: SelectSubset<T, SubmissionFindUniqueArgs<ExtArgs>>): Prisma__SubmissionClient<$Result.GetResult<Prisma.$SubmissionPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    **/
+    findUnique<T extends SubmissionFindUniqueArgs<ExtArgs>>(
+      args: SelectSubset<T, SubmissionFindUniqueArgs<ExtArgs>>
+    ): Prisma__SubmissionClient<$Result.GetResult<Prisma.$SubmissionPayload<ExtArgs>, T, 'findUnique'> | null, null, ExtArgs>
 
     /**
-     * Find one Submission that matches the filter or throw an error with `error.code='P2025'`
+     * Find one Submission that matches the filter or throw an error with `error.code='P2025'` 
      * if no matches were found.
      * @param {SubmissionFindUniqueOrThrowArgs} args - Arguments to find a Submission
      * @example
@@ -4984,8 +4655,10 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findUniqueOrThrow<T extends SubmissionFindUniqueOrThrowArgs>(args: SelectSubset<T, SubmissionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SubmissionClient<$Result.GetResult<Prisma.$SubmissionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    findUniqueOrThrow<T extends SubmissionFindUniqueOrThrowArgs<ExtArgs>>(
+      args?: SelectSubset<T, SubmissionFindUniqueOrThrowArgs<ExtArgs>>
+    ): Prisma__SubmissionClient<$Result.GetResult<Prisma.$SubmissionPayload<ExtArgs>, T, 'findUniqueOrThrow'>, never, ExtArgs>
 
     /**
      * Find the first Submission that matches the filter.
@@ -4999,8 +4672,10 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findFirst<T extends SubmissionFindFirstArgs>(args?: SelectSubset<T, SubmissionFindFirstArgs<ExtArgs>>): Prisma__SubmissionClient<$Result.GetResult<Prisma.$SubmissionPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    **/
+    findFirst<T extends SubmissionFindFirstArgs<ExtArgs>>(
+      args?: SelectSubset<T, SubmissionFindFirstArgs<ExtArgs>>
+    ): Prisma__SubmissionClient<$Result.GetResult<Prisma.$SubmissionPayload<ExtArgs>, T, 'findFirst'> | null, null, ExtArgs>
 
     /**
      * Find the first Submission that matches the filter or
@@ -5015,8 +4690,10 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findFirstOrThrow<T extends SubmissionFindFirstOrThrowArgs>(args?: SelectSubset<T, SubmissionFindFirstOrThrowArgs<ExtArgs>>): Prisma__SubmissionClient<$Result.GetResult<Prisma.$SubmissionPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    findFirstOrThrow<T extends SubmissionFindFirstOrThrowArgs<ExtArgs>>(
+      args?: SelectSubset<T, SubmissionFindFirstOrThrowArgs<ExtArgs>>
+    ): Prisma__SubmissionClient<$Result.GetResult<Prisma.$SubmissionPayload<ExtArgs>, T, 'findFirstOrThrow'>, never, ExtArgs>
 
     /**
      * Find zero or more Submissions that matches the filter.
@@ -5033,8 +4710,10 @@ export namespace Prisma {
      * // Only select the `id`
      * const submissionWithIdOnly = await prisma.submission.findMany({ select: { id: true } })
      * 
-     */
-    findMany<T extends SubmissionFindManyArgs>(args?: SelectSubset<T, SubmissionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SubmissionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+    **/
+    findMany<T extends SubmissionFindManyArgs<ExtArgs>>(
+      args?: SelectSubset<T, SubmissionFindManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SubmissionPayload<ExtArgs>, T, 'findMany'>>
 
     /**
      * Create a Submission.
@@ -5047,8 +4726,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    create<T extends SubmissionCreateArgs>(args: SelectSubset<T, SubmissionCreateArgs<ExtArgs>>): Prisma__SubmissionClient<$Result.GetResult<Prisma.$SubmissionPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    create<T extends SubmissionCreateArgs<ExtArgs>>(
+      args: SelectSubset<T, SubmissionCreateArgs<ExtArgs>>
+    ): Prisma__SubmissionClient<$Result.GetResult<Prisma.$SubmissionPayload<ExtArgs>, T, 'create'>, never, ExtArgs>
 
     /**
      * Create many Submissions.
@@ -5061,8 +4742,10 @@ export namespace Prisma {
      *   ]
      * })
      *     
-     */
-    createMany<T extends SubmissionCreateManyArgs>(args?: SelectSubset<T, SubmissionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    **/
+    createMany<T extends SubmissionCreateManyArgs<ExtArgs>>(
+      args?: SelectSubset<T, SubmissionCreateManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Create many Submissions and returns the data saved in the database.
@@ -5076,7 +4759,7 @@ export namespace Prisma {
      * })
      * 
      * // Create many Submissions and only return the `id`
-     * const submissionWithIdOnly = await prisma.submission.createManyAndReturn({
+     * const submissionWithIdOnly = await prisma.submission.createManyAndReturn({ 
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -5085,8 +4768,10 @@ export namespace Prisma {
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
      * 
-     */
-    createManyAndReturn<T extends SubmissionCreateManyAndReturnArgs>(args?: SelectSubset<T, SubmissionCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SubmissionPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+    **/
+    createManyAndReturn<T extends SubmissionCreateManyAndReturnArgs<ExtArgs>>(
+      args?: SelectSubset<T, SubmissionCreateManyAndReturnArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SubmissionPayload<ExtArgs>, T, 'createManyAndReturn'>>
 
     /**
      * Delete a Submission.
@@ -5099,8 +4784,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    delete<T extends SubmissionDeleteArgs>(args: SelectSubset<T, SubmissionDeleteArgs<ExtArgs>>): Prisma__SubmissionClient<$Result.GetResult<Prisma.$SubmissionPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    delete<T extends SubmissionDeleteArgs<ExtArgs>>(
+      args: SelectSubset<T, SubmissionDeleteArgs<ExtArgs>>
+    ): Prisma__SubmissionClient<$Result.GetResult<Prisma.$SubmissionPayload<ExtArgs>, T, 'delete'>, never, ExtArgs>
 
     /**
      * Update one Submission.
@@ -5116,8 +4803,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    update<T extends SubmissionUpdateArgs>(args: SelectSubset<T, SubmissionUpdateArgs<ExtArgs>>): Prisma__SubmissionClient<$Result.GetResult<Prisma.$SubmissionPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    update<T extends SubmissionUpdateArgs<ExtArgs>>(
+      args: SelectSubset<T, SubmissionUpdateArgs<ExtArgs>>
+    ): Prisma__SubmissionClient<$Result.GetResult<Prisma.$SubmissionPayload<ExtArgs>, T, 'update'>, never, ExtArgs>
 
     /**
      * Delete zero or more Submissions.
@@ -5130,8 +4819,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    deleteMany<T extends SubmissionDeleteManyArgs>(args?: SelectSubset<T, SubmissionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    **/
+    deleteMany<T extends SubmissionDeleteManyArgs<ExtArgs>>(
+      args?: SelectSubset<T, SubmissionDeleteManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Update zero or more Submissions.
@@ -5149,38 +4840,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    updateMany<T extends SubmissionUpdateManyArgs>(args: SelectSubset<T, SubmissionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more Submissions and returns the data updated in the database.
-     * @param {SubmissionUpdateManyAndReturnArgs} args - Arguments to update many Submissions.
-     * @example
-     * // Update many Submissions
-     * const submission = await prisma.submission.updateManyAndReturn({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Update zero or more Submissions and only return the `id`
-     * const submissionWithIdOnly = await prisma.submission.updateManyAndReturn({
-     *   select: { id: true },
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    updateManyAndReturn<T extends SubmissionUpdateManyAndReturnArgs>(args: SelectSubset<T, SubmissionUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SubmissionPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+    **/
+    updateMany<T extends SubmissionUpdateManyArgs<ExtArgs>>(
+      args: SelectSubset<T, SubmissionUpdateManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Create or update one Submission.
@@ -5198,9 +4861,10 @@ export namespace Prisma {
      *     // ... the filter for the Submission we want to update
      *   }
      * })
-     */
-    upsert<T extends SubmissionUpsertArgs>(args: SelectSubset<T, SubmissionUpsertArgs<ExtArgs>>): Prisma__SubmissionClient<$Result.GetResult<Prisma.$SubmissionPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
+    **/
+    upsert<T extends SubmissionUpsertArgs<ExtArgs>>(
+      args: SelectSubset<T, SubmissionUpsertArgs<ExtArgs>>
+    ): Prisma__SubmissionClient<$Result.GetResult<Prisma.$SubmissionPayload<ExtArgs>, T, 'upsert'>, never, ExtArgs>
 
     /**
      * Count the number of Submissions.
@@ -5339,37 +5003,38 @@ export namespace Prisma {
    * Because we want to prevent naming conflicts as mentioned in
    * https://github.com/prisma/prisma-client-js/issues/707
    */
-  export interface Prisma__SubmissionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
-    session<T extends LabSessionDefaultArgs<ExtArgs> = {}>(args?: Subset<T, LabSessionDefaultArgs<ExtArgs>>): Prisma__LabSessionClient<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  export interface Prisma__SubmissionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: 'PrismaPromise';
+
+    session<T extends LabSessionDefaultArgs<ExtArgs> = {}>(args?: Subset<T, LabSessionDefaultArgs<ExtArgs>>): Prisma__LabSessionClient<$Result.GetResult<Prisma.$LabSessionPayload<ExtArgs>, T, 'findUniqueOrThrow'> | Null, Null, ExtArgs>;
+
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
      * @param onrejected The callback to execute when the Promise is rejected.
      * @returns A Promise for the completion of which ever callback is executed.
      */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>;
     /**
      * Attaches a callback for only the rejection of the Promise.
      * @param onrejected The callback to execute when the Promise is rejected.
      * @returns A Promise for the completion of the callback.
      */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>;
     /**
      * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
      * resolved value cannot be modified from the callback.
      * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
      * @returns A Promise for the completion of the callback.
      */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>;
   }
-
 
 
 
   /**
    * Fields of the Submission model
-   */
+   */ 
   interface SubmissionFieldRefs {
     readonly id: FieldRef<"Submission", 'String'>
     readonly sessionId: FieldRef<"Submission", 'String'>
@@ -5393,10 +5058,6 @@ export namespace Prisma {
      */
     select?: SubmissionSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Submission
-     */
-    omit?: SubmissionOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: SubmissionInclude<ExtArgs> | null
@@ -5415,10 +5076,6 @@ export namespace Prisma {
      */
     select?: SubmissionSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Submission
-     */
-    omit?: SubmissionOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: SubmissionInclude<ExtArgs> | null
@@ -5436,10 +5093,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the Submission
      */
     select?: SubmissionSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Submission
-     */
-    omit?: SubmissionOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -5489,10 +5142,6 @@ export namespace Prisma {
      */
     select?: SubmissionSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Submission
-     */
-    omit?: SubmissionOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: SubmissionInclude<ExtArgs> | null
@@ -5541,10 +5190,6 @@ export namespace Prisma {
      */
     select?: SubmissionSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Submission
-     */
-    omit?: SubmissionOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: SubmissionInclude<ExtArgs> | null
@@ -5588,10 +5233,6 @@ export namespace Prisma {
      */
     select?: SubmissionSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Submission
-     */
-    omit?: SubmissionOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: SubmissionInclude<ExtArgs> | null
@@ -5620,10 +5261,6 @@ export namespace Prisma {
      */
     select?: SubmissionSelectCreateManyAndReturn<ExtArgs> | null
     /**
-     * Omit specific fields from the Submission
-     */
-    omit?: SubmissionOmit<ExtArgs> | null
-    /**
      * The data used to create many Submissions.
      */
     data: SubmissionCreateManyInput | SubmissionCreateManyInput[]
@@ -5641,10 +5278,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the Submission
      */
     select?: SubmissionSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Submission
-     */
-    omit?: SubmissionOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -5671,40 +5304,6 @@ export namespace Prisma {
      * Filter which Submissions to update
      */
     where?: SubmissionWhereInput
-    /**
-     * Limit how many Submissions to update.
-     */
-    limit?: number
-  }
-
-  /**
-   * Submission updateManyAndReturn
-   */
-  export type SubmissionUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Submission
-     */
-    select?: SubmissionSelectUpdateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the Submission
-     */
-    omit?: SubmissionOmit<ExtArgs> | null
-    /**
-     * The data used to update Submissions.
-     */
-    data: XOR<SubmissionUpdateManyMutationInput, SubmissionUncheckedUpdateManyInput>
-    /**
-     * Filter which Submissions to update
-     */
-    where?: SubmissionWhereInput
-    /**
-     * Limit how many Submissions to update.
-     */
-    limit?: number
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: SubmissionIncludeUpdateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -5715,10 +5314,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the Submission
      */
     select?: SubmissionSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Submission
-     */
-    omit?: SubmissionOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -5746,10 +5341,6 @@ export namespace Prisma {
      */
     select?: SubmissionSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the Submission
-     */
-    omit?: SubmissionOmit<ExtArgs> | null
-    /**
      * Choose, which related nodes to fetch as well
      */
     include?: SubmissionInclude<ExtArgs> | null
@@ -5767,10 +5358,6 @@ export namespace Prisma {
      * Filter which Submissions to delete
      */
     where?: SubmissionWhereInput
-    /**
-     * Limit how many Submissions to delete.
-     */
-    limit?: number
   }
 
   /**
@@ -5781,10 +5368,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the Submission
      */
     select?: SubmissionSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Submission
-     */
-    omit?: SubmissionOmit<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -5884,7 +5467,7 @@ export namespace Prisma {
 
 
   /**
-   * Field references
+   * Field references 
    */
 
 
@@ -6046,7 +5629,7 @@ export namespace Prisma {
     lastHeartbeat?: DateTimeNullableFilter<"LabSession"> | Date | string | null
     createdAt?: DateTimeFilter<"LabSession"> | Date | string
     updatedAt?: DateTimeFilter<"LabSession"> | Date | string
-    challenge?: XOR<LabChallengeScalarRelationFilter, LabChallengeWhereInput>
+    challenge?: XOR<LabChallengeRelationFilter, LabChallengeWhereInput>
     submissions?: SubmissionListRelationFilter
     workspaces?: LabWorkspaceListRelationFilter
   }
@@ -6083,7 +5666,7 @@ export namespace Prisma {
     lastHeartbeat?: DateTimeNullableFilter<"LabSession"> | Date | string | null
     createdAt?: DateTimeFilter<"LabSession"> | Date | string
     updatedAt?: DateTimeFilter<"LabSession"> | Date | string
-    challenge?: XOR<LabChallengeScalarRelationFilter, LabChallengeWhereInput>
+    challenge?: XOR<LabChallengeRelationFilter, LabChallengeWhereInput>
     submissions?: SubmissionListRelationFilter
     workspaces?: LabWorkspaceListRelationFilter
   }, "id">
@@ -6131,7 +5714,7 @@ export namespace Prisma {
     path?: StringFilter<"LabWorkspace"> | string
     repoUrl?: StringNullableFilter<"LabWorkspace"> | string | null
     branch?: StringNullableFilter<"LabWorkspace"> | string | null
-    session?: XOR<LabSessionScalarRelationFilter, LabSessionWhereInput>
+    session?: XOR<LabSessionRelationFilter, LabSessionWhereInput>
   }
 
   export type LabWorkspaceOrderByWithRelationInput = {
@@ -6152,7 +5735,7 @@ export namespace Prisma {
     path?: StringFilter<"LabWorkspace"> | string
     repoUrl?: StringNullableFilter<"LabWorkspace"> | string | null
     branch?: StringNullableFilter<"LabWorkspace"> | string | null
-    session?: XOR<LabSessionScalarRelationFilter, LabSessionWhereInput>
+    session?: XOR<LabSessionRelationFilter, LabSessionWhereInput>
   }, "id">
 
   export type LabWorkspaceOrderByWithAggregationInput = {
@@ -6190,7 +5773,7 @@ export namespace Prisma {
     artifactsUrl?: StringNullableFilter<"Submission"> | string | null
     createdAt?: DateTimeFilter<"Submission"> | Date | string
     updatedAt?: DateTimeFilter<"Submission"> | Date | string
-    session?: XOR<LabSessionScalarRelationFilter, LabSessionWhereInput>
+    session?: XOR<LabSessionRelationFilter, LabSessionWhereInput>
   }
 
   export type SubmissionOrderByWithRelationInput = {
@@ -6219,7 +5802,7 @@ export namespace Prisma {
     artifactsUrl?: StringNullableFilter<"Submission"> | string | null
     createdAt?: DateTimeFilter<"Submission"> | Date | string
     updatedAt?: DateTimeFilter<"Submission"> | Date | string
-    session?: XOR<LabSessionScalarRelationFilter, LabSessionWhereInput>
+    session?: XOR<LabSessionRelationFilter, LabSessionWhereInput>
   }, "id">
 
   export type SubmissionOrderByWithAggregationInput = {
@@ -6794,7 +6377,7 @@ export namespace Prisma {
     not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
   }
 
-  export type LabChallengeScalarRelationFilter = {
+  export type LabChallengeRelationFilter = {
     is?: LabChallengeWhereInput
     isNot?: LabChallengeWhereInput
   }
@@ -6875,7 +6458,7 @@ export namespace Prisma {
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
-  export type LabSessionScalarRelationFilter = {
+  export type LabSessionRelationFilter = {
     is?: LabSessionWhereInput
     isNot?: LabSessionWhereInput
   }
@@ -7911,6 +7494,34 @@ export namespace Prisma {
   }
 
 
+
+  /**
+   * Aliases for legacy arg types
+   */
+    /**
+     * @deprecated Use LabChallengeCountOutputTypeDefaultArgs instead
+     */
+    export type LabChallengeCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = LabChallengeCountOutputTypeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use LabSessionCountOutputTypeDefaultArgs instead
+     */
+    export type LabSessionCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = LabSessionCountOutputTypeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use LabChallengeDefaultArgs instead
+     */
+    export type LabChallengeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = LabChallengeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use LabSessionDefaultArgs instead
+     */
+    export type LabSessionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = LabSessionDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use LabWorkspaceDefaultArgs instead
+     */
+    export type LabWorkspaceArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = LabWorkspaceDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use SubmissionDefaultArgs instead
+     */
+    export type SubmissionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = SubmissionDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

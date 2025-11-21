@@ -1,0 +1,246 @@
+You are a senior engineer inside the Byway monorepo editing the plugin:
+  plugins/institution-portal
+
+All the following ALREADY EXIST and MUST NOT be rewritten from scratch:
+- Join/leave institution backend routes:
+  POST /api/institution-portal/institutions/:id/join
+  POST /api/institution-portal/institutions/:id/leave
+- Institution-portal aggregator routes:
+  GET /api/institution-portal/teacher-dashboard
+  GET /api/institution-portal/admin-dashboard
+  GET /api/institution-portal/departments/:id/overview
+  GET /api/institution-portal/classrooms/:id/overview
+  GET /api/institution-portal/catalog
+  GET /api/institution-portal/people
+  GET /api/institution-portal/teacher-assignments
+  POST /api/institution-portal/assignments/teacher
+  GET /api/institution-portal/students/:id/record
+  GET /api/institution-portal/calendar
+  GET /api/institution-portal/classrooms/:id/attendance
+- Connected pages and navigation are already wired:
+  - /institution/portal → nuxt/pages/index.vue
+  - /institution/departments/[departmentId].vue
+  - /institution/classrooms/[classroomId].vue
+  - /institution/classrooms/[classroomId]/attendance.vue
+  - /institution/catalog/index.vue
+  - /institution/assignments/teachers.vue
+  - /institution/students/[studentId].vue
+  - /institution/directory/index.vue (people)
+  - /institution/calendar/index.vue
+  - /institution/join/index.vue
+  - role hub pages:
+    - nuxt/pages/role-portal/index.vue
+    - nuxt/pages/inst-portal-role-based.vue
+  - student_mode_institution_dashboard.vue
+- Top navigation using Ant Design Vue <a-menu> is already present on all institution pages.
+
+Your task NOW is:
+
+  👉 Turn the institution-portal into a ROLE-AWARE experience so that STUDENTS, TEACHERS, and ADMINS see different flows, content, and navigation emphasis — built on top of what already exists.
+
+You MUST NOT destroy the existing join flow or navigation. You ONLY extend and role-gate what is already there.
+
+────────────────────────────────────────
+HARD RULES (Do NOT break these)
+────────────────────────────────────────
+- Never create new Prisma models for Course/Module/Lesson/Assignment/etc. Those belong to other plugins (teach-internal, etc.).
+- Never import Prisma from another plugin.
+- Every plugin uses ONLY its own Prisma schema.
+- Cross-plugin data (courses, modules, lessons, submissions, assignments, labs, grades, student info) MUST come from other plugins' APIs:
+  - teach-internal
+  - students-internal
+  - teacher-course-lab
+  - institutions
+  - authentication
+- Only modify files inside plugins/institution-portal unless absolutely required.
+- Always apply surgical patches — never rewrite a file wholesale if it already exists.
+- Respect and keep all existing institution-portal routes and pages. Do NOT rename or move them.
+- Do NOT hallucinate imports, modules, or plugin names. Only use what actually exists in the repo.
+
+────────────────────────────────────────
+ROLE MODEL & SOURCE OF TRUTH
+────────────────────────────────────────
+The institution-level roles live in the institutions plugin as InstitutionMember.role:
+  - "student"
+  - "teacher"
+  - "admin"
+
+Relations to teach-internal objects MUST be by ID only. Courses/Modules/Lessons ARE NOT stored here.
+
+To determine the user’s role for a given institution:
+- Use authentication plugin "me" query to get current user id.
+- Use institutions plugin GraphQL (or an existing aggregator in institution-portal) to resolve InstitutionMember for (institutionId, userId).
+- For this prompt, assume a SINGLE ACTIVE institution context is passed via:
+  - query parameter: institutionId
+  - and/or institution slug if already wired
+
+────────────────────────────────────────
+GOAL: ROLE-AWARE PORTAL FLOWS
+────────────────────────────────────────
+
+You must make the portal behave differently depending on whether the current user is:
+
+- STUDENT
+- TEACHER
+- ADMIN
+
+Use the existing hub pages to centralize this:
+- plugins/institution-portal/nuxt/pages/inst-portal-role-based.vue
+- plugins/institution-portal/nuxt/pages/role-portal/index.vue
+
+1) ROLE DETECTION
+   - Implement a small, shared role resolution layer in inst-portal-role-based.vue (or a tiny composable inside this plugin).
+   - It must:
+     • Read the token (used already by existing pages).
+     • Call authentication "me" to get user id.
+     • Call institutions GraphQL (or existing aggregator) to get InstitutionMember for the current institution.
+     • Determine role ∈ {"student", "teacher", "admin"}.
+   - If no membership exists:
+     • Redirect to /institution/join or show CTA to join.
+   - Expose a simple structure like:
+     const currentRole = ref<'student' | 'teacher' | 'admin' | 'none'>('none')
+
+2) ROLE-BASED ENTRY EXPERIENCE (MAIN HUB)
+   - In inst-portal-role-based.vue:
+     • If STUDENT:
+       - Default to the student dashboard / student_mode_institution_dashboard.vue or equivalent student cockpit.
+       - Show tiles/links prioritized for:
+         - My Classrooms
+         - My Assignments / My Calendar
+         - My Academic record
+         - Catalog (browse more courses)
+     • If TEACHER:
+       - Default to the teacher-dashboard aggregator (GET /api/institution-portal/teacher-dashboard).
+       - Highlight:
+         - My Classrooms (with quick links to /institution/classrooms/[classroomId])
+         - My Assignments to grade (link to /institution/assignments/teachers)
+         - Student records overview
+         - Calendar (my sessions, labs)
+     • If ADMIN:
+       - Default to admin-dashboard aggregator (GET /api/institution-portal/admin-dashboard).
+       - Highlight:
+         - Institution overview (KPIs)
+         - Departments and Classrooms management
+         - People directory
+         - Teacher assignment manager
+         - Calendar (institution-wide events)
+         - Any role-management affordances you already wired.
+
+   - DO NOT create new routes; just orchestrate redirects / content blocks inside inst-portal-role-based.vue and role-portal/index.vue using existing pages.
+
+3) ROLE-BASED TOP NAVIGATION
+   The <a-menu> nav bar on institution pages already exists. You must now role-gate items:
+
+   For STUDENT:
+     - Show: Overview, Classrooms, People (limited), Catalog, Calendar, Assignments, My Record
+     - Hide or disable: Admin-level actions (e.g. teacher assignment manager)
+
+   For TEACHER:
+     - Show: Overview, Classrooms, People, Catalog, Calendar, Assignments
+     - Emphasize:
+       • Assignments (grading view)
+       • Classrooms (attendance + progress)
+     - Hide or disable: Institution-wide admin tools (if any appear in UI)
+
+   For ADMIN:
+     - Show all items: Overview, Departments, Classrooms, People, Catalog, Calendar, Assignments
+     - Add or keep access to:
+       • Teacher Assignment Manager
+       • People Directory with full roles visible
+       • Any management actions you already wired (do not invent new APIs).
+
+   Implement this by patching existing pages under:
+     plugins/institution-portal/nuxt/pages/**
+   and using a shared helper or computed that:
+     - Knows the current role
+     - Controls which menu items are visible/active
+
+   IMPORTANT:
+   - DO NOT remove items for other roles completely if they are already coded; you can hide them conditionally or downgrade them (e.g., read-only view).
+   - Keep code DRY by centralizing nav role logic if possible within the plugin.
+
+4) ROLE-SPECIFIC PAGE CONTENT FILTERING
+   You must make page-level content reflect the role:
+
+   Examples (non-exhaustive):
+
+   - /institution/portal (index.vue):
+     • If STUDENT: show student-centric widgets (upcoming deadlines, enrolled classrooms, quick link to My Record).
+     • If TEACHER: show teacher-centric widgets (classes to teach today, submissions awaiting grading).
+     • If ADMIN: show high-level metrics and quick access to people, departments, classrooms, assignment manager.
+
+   - /institution/directory/index.vue:
+     • STUDENT: can only see teachers + maybe fellow students with limited fields.
+     • TEACHER: can see students in their classrooms, teachers in their departments, basic meta.
+     • ADMIN: can see all members, roles, statuses, and management CTAs if already present.
+
+   - /institution/assignments/teachers.vue:
+     • Show meaningful content only if role === "teacher" or "admin".
+     • If a student reaches this page, either:
+       - Redirect to their student dashboard, or
+       - Show a "Not allowed" message and route them back.
+
+   - /institution/students/[studentId].vue:
+     • STUDENT: can view only their own record (or gracefully handle others).
+     • TEACHER: can view records for students in their classes.
+     • ADMIN: can view any student in the institution.
+
+   - /institution/classrooms/[classroomId].vue and attendance:
+     • STUDENT: read-only view of classroom and their own attendance.
+     • TEACHER: can see full classroom roster and attendance (if already wired).
+     • ADMIN: can see everything and any admin-level metadata provided by existing APIs.
+
+   Implement this with conditional blocks and existing API responses; DO NOT add new backend logic unless absolutely necessary.
+
+5) JOIN / LEAVE INSTITUTION UX INTEGRATION
+   Join/leave flow already exists:
+     - POST /api/institution-portal/institutions/:id/join
+     - POST /api/institution-portal/institutions/:id/leave
+     - /institution/join/index.vue implemented
+
+   You must:
+   - Make sure role-based hub pages and the student dashboard:
+     • Offer a clear CTA:
+       - If no institution membership found → go to /institution/join
+   - Ensure leave action:
+     • Is visible in a sensible place (e.g. student dashboard or account widget).
+     • After leave, role is effectively "none" and the user is redirected to /institution/join or a neutral page.
+
+   Do not change the semantics of existing routes; only adjust their usage.
+
+────────────────────────────────────────
+IMPLEMENTATION NOTES
+────────────────────────────────────────
+- Use Ant Design Vue components (a-layout, a-page-header, a-tabs, a-card, a-table, a-menu, etc.).
+- Preserve existing design and component choices wherever possible.
+- Use applyPatch / edit_file_update / write_to_file operations, patching:
+  - nuxt/pages/inst-portal-role-based.vue
+  - nuxt/pages/role-portal/index.vue
+  - nuxt/pages/index.vue (cockpit)
+  - nuxt/pages/student_mode_institution_dashboard.vue
+  - and any other institution-portal pages where role-gating is needed.
+
+- DO NOT:
+  - Remove existing top nav.
+  - Break route paths or manifest entries.
+  - Introduce new global dependencies.
+
+────────────────────────────────────────
+OUTPUT REQUIREMENTS
+────────────────────────────────────────
+- Return ONLY the necessary patches to:
+  - Add role detection.
+  - Apply role-based conditional rendering.
+  - Adjust navigation based on role.
+  - Integrate join/leave into the role-based experience.
+- Do not re-implement join flow or connected navigation; they already exist.
+- Describe briefly what each patch does (e.g., “Add role resolution and route guards in inst-portal-role-based.vue”, “Hide teacher assignments for students”, etc.).
+
+Start by scanning:
+  - plugins/institution-portal/nuxt/pages/inst-portal-role-based.vue
+  - plugins/institution-portal/nuxt/pages/role-portal/index.vue
+  - plugins/institution-portal/nuxt/pages/index.vue
+  - plugins/institution-portal/nuxt/pages/student_mode_institution_dashboard.vue
+  - other pages under plugins/institution-portal/nuxt/pages/**
+
+Then implement the role-aware logic and navigation as described above, using only surgical patches.

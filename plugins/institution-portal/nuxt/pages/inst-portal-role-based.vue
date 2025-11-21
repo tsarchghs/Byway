@@ -58,6 +58,15 @@
         </div>
 
         <div class="portal-hero__right">
+          <a-menu mode="horizontal" :selectedKeys="['overview']" style="margin-bottom:12px">
+            <a-menu-item key="overview"><a :href="navHref('overview')">Overview</a></a-menu-item>
+            <a-menu-item v-if="isAdminView" key="departments"><a :href="navHref('departments')">Departments</a></a-menu-item>
+            <a-menu-item key="classrooms"><a :href="navHref('classrooms')">Classrooms</a></a-menu-item>
+            <a-menu-item key="people"><a :href="navHref('people')">People Directory</a></a-menu-item>
+            <a-menu-item key="catalog"><a :href="navHref('catalog')">Catalog</a></a-menu-item>
+            <a-menu-item key="calendar"><a :href="navHref('calendar')">Calendar</a></a-menu-item>
+            <a-menu-item key="assignments"><a :href="navHref('assignments')">Assignments</a></a-menu-item>
+          </a-menu>
           <div class="hero-controls">
             <a-switch
               v-model:checked="isDarkMode"
@@ -763,6 +772,8 @@ const lastSyncedLabel = ref('never')
 const roleControlValue = ref<RoleToggleValue>('auto')
 const focusTab = ref<TabKey>('overview')
 const isDarkMode = ref(false)
+const currentRole = ref<'student' | 'teacher' | 'admin' | 'none'>('none')
+const meId = ref<string | null>(null)
 
 const selectedClassroom = ref<PortalClassroom | null>(null)
 const classroomDrawerOpen = ref(false)
@@ -799,6 +810,19 @@ const resolveInstitutionKey = () => {
   if (Array.isArray(queryKey)) return queryKey[0]
   if (typeof queryKey === 'string') return queryKey
   return ''
+}
+
+const instId = computed(() => (route.query.institutionId as string) || institutionKey.value || 'inst_byway')
+function navHref(key: string) {
+  const qs = `?institutionId=${encodeURIComponent(instId.value)}`
+  if (key==='overview') return `/institution/portal${qs}`
+  if (key==='departments') return `/institution/departments/${qs}`
+  if (key==='classrooms') return `/institution/classrooms/${qs}`
+  if (key==='people') return `/institution/people${qs}`
+  if (key==='catalog') return `/institution/catalog${qs}`
+  if (key==='calendar') return `/institution/calendar${qs}`
+  if (key==='assignments') return `/institution/assignments/teachers${qs}`
+  return `/institution/portal${qs}`
 }
 
 watch(
@@ -854,12 +878,13 @@ const membership = computed(() => {
 
 const membershipRole = computed<RoleKey>(() => {
   if (roleControlValue.value !== 'auto') return roleControlValue.value
-  if (isInstitutionAdmin.value) return 'admin'
-  if (isTeacher.value) return 'teacher'
-  if (isStudent.value) return 'student'
+  if (currentRole.value === 'admin' || currentRole.value === 'teacher' || currentRole.value === 'student') {
+    return currentRole.value
+  }
   const role = membership.value?.role?.toLowerCase()
   if (role?.includes('admin')) return 'admin'
   if (role?.includes('teach')) return 'teacher'
+  if (role?.includes('student')) return 'student'
   return 'student'
 })
 
@@ -1454,6 +1479,48 @@ onMounted(() => {
   }
   clientReady.value = true
   loadOverview()
+  resolveCurrentRole()
+})
+
+async function resolveCurrentRole() {
+  try {
+    const auth = resolveAuthHeader()
+    if (!auth) { currentRole.value = 'none'; return }
+    const baseUrl = apiBase ? apiBase.replace(/\/$/, '') : ''
+    const meResp = await fetch(`${baseUrl}/api/authentication/graphql`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', Authorization: auth },
+      body: JSON.stringify({ query: `query Me { me { id } }` }),
+    })
+    const meJson = await meResp.json().catch(() => null)
+    const uid = meJson?.data?.me?.id || null
+    meId.value = uid
+    if (!uid) { currentRole.value = 'none'; return }
+    const resp = await fetch(`${baseUrl}/api/institutions/graphql`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', Authorization: auth },
+      body: JSON.stringify({
+        query: `query($institutionId:String!){ members(institutionId:$institutionId){ userId role } }`,
+        variables: { institutionId: instId.value },
+      }),
+    })
+    const json = await resp.json().catch(() => null)
+    const arr = Array.isArray(json?.data?.members) ? json.data.members : []
+    const mem = arr.find((m: any) => m.userId === uid)
+    const role = String(mem?.role || '').toLowerCase()
+    if (role.includes('admin')) currentRole.value = 'admin'
+    else if (role.includes('teach')) currentRole.value = 'teacher'
+    else if (role.includes('student')) currentRole.value = 'student'
+    else currentRole.value = 'none'
+  } catch {
+    currentRole.value = 'none'
+  }
+}
+
+watch(currentRole, (r) => {
+  if (r === 'none') {
+    router.replace({ path: '/institution/join' })
+  }
 })
 </script>
 

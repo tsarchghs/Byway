@@ -123,7 +123,7 @@ input LessonShareInput {
   metadata: JSON
 }
   type Query {
-myCourses(studentId: String!): [GqlStudentCourse!]!
+    myCourses(studentId: String!): [GqlStudentCourse!]!
     studentByUserId(userId: String!): GqlStudent
 
     kvGet(key: String!): KV
@@ -133,7 +133,8 @@ myCourses(studentId: String!): [GqlStudentCourse!]!
     studentExists(studentId: String!): Boolean!
 
     # 👇 Add this new query to match your resolver
-    myProgress(courseId: String, moduleId: String, lessonId: String): [StudentProgress!]!
+    myProgress(studentId: String!, courseId: String, moduleId: String, lessonId: String): [StudentProgress!]!
+    lessonShares(courseId: String, moduleId: String, lessonId: String): [LessonShare!]!
   }
 
   input GradebookInput {

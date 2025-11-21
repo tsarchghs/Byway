@@ -21,7 +21,7 @@ export type GradebookEntry = $Result.DefaultSelection<Prisma.$GradebookEntryPayl
 
 /**
  * ##  Prisma Client ʲˢ
- *
+ * 
  * Type-safe database client for TypeScript & Node.js
  * @example
  * ```
@@ -30,19 +30,19 @@ export type GradebookEntry = $Result.DefaultSelection<Prisma.$GradebookEntryPayl
  * const gradebookEntries = await prisma.gradebookEntry.findMany()
  * ```
  *
- *
+ * 
  * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
  */
 export class PrismaClient<
-  ClientOptions extends Prisma.PrismaClientOptions = Prisma.PrismaClientOptions,
-  const U = 'log' extends keyof ClientOptions ? ClientOptions['log'] extends Array<Prisma.LogLevel | Prisma.LogDefinition> ? Prisma.GetEvents<ClientOptions['log']> : never : never,
+  T extends Prisma.PrismaClientOptions = Prisma.PrismaClientOptions,
+  U = 'log' extends keyof T ? T['log'] extends Array<Prisma.LogLevel | Prisma.LogDefinition> ? Prisma.GetEvents<T['log']> : never : never,
   ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs
 > {
   [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['other'] }
 
     /**
    * ##  Prisma Client ʲˢ
-   *
+   * 
    * Type-safe database client for TypeScript & Node.js
    * @example
    * ```
@@ -51,12 +51,12 @@ export class PrismaClient<
    * const gradebookEntries = await prisma.gradebookEntry.findMany()
    * ```
    *
-   *
+   * 
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
    */
 
-  constructor(optionsArg ?: Prisma.Subset<ClientOptions, Prisma.PrismaClientOptions>);
-  $on<V extends (U | 'beforeExit')>(eventType: V, callback: (event: V extends 'query' ? Prisma.QueryEvent : V extends 'beforeExit' ? () => $Utils.JsPromise<void> : Prisma.LogEvent) => void): PrismaClient;
+  constructor(optionsArg ?: Prisma.Subset<T, Prisma.PrismaClientOptions>);
+  $on<V extends (U | 'beforeExit')>(eventType: V, callback: (event: V extends 'query' ? Prisma.QueryEvent : V extends 'beforeExit' ? () => $Utils.JsPromise<void> : Prisma.LogEvent) => void): void;
 
   /**
    * Connect with the database
@@ -68,13 +68,20 @@ export class PrismaClient<
    */
   $disconnect(): $Utils.JsPromise<void>;
 
+  /**
+   * Add a middleware
+   * @deprecated since 4.16.0. For new code, prefer client extensions instead.
+   * @see https://pris.ly/d/extensions
+   */
+  $use(cb: Prisma.Middleware): void
+
 /**
    * Executes a prepared raw query and returns the number of affected rows.
    * @example
    * ```
    * const result = await prisma.$executeRaw`UPDATE User SET cool = ${true} WHERE email = ${'user@email.com'};`
    * ```
-   *
+   * 
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
    */
   $executeRaw<T = unknown>(query: TemplateStringsArray | Prisma.Sql, ...values: any[]): Prisma.PrismaPromise<number>;
@@ -86,7 +93,7 @@ export class PrismaClient<
    * ```
    * const result = await prisma.$executeRawUnsafe('UPDATE User SET cool = $1 WHERE email = $2 ;', true, 'user@email.com')
    * ```
-   *
+   * 
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
    */
   $executeRawUnsafe<T = unknown>(query: string, ...values: any[]): Prisma.PrismaPromise<number>;
@@ -97,7 +104,7 @@ export class PrismaClient<
    * ```
    * const result = await prisma.$queryRaw`SELECT * FROM User WHERE id = ${1} OR email = ${'user@email.com'};`
    * ```
-   *
+   * 
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
    */
   $queryRaw<T = unknown>(query: TemplateStringsArray | Prisma.Sql, ...values: any[]): Prisma.PrismaPromise<T>;
@@ -109,11 +116,10 @@ export class PrismaClient<
    * ```
    * const result = await prisma.$queryRawUnsafe('SELECT * FROM User WHERE id = $1 OR email = $2;', 1, 'user@email.com')
    * ```
-   *
+   * 
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
    */
   $queryRawUnsafe<T = unknown>(query: string, ...values: any[]): Prisma.PrismaPromise<T>;
-
 
   /**
    * Allows the running of a sequence of read/write operations that are guaranteed to either succeed or fail as a whole.
@@ -133,9 +139,7 @@ export class PrismaClient<
   $transaction<R>(fn: (prisma: Omit<PrismaClient, runtime.ITXClientDenyList>) => $Utils.JsPromise<R>, options?: { maxWait?: number, timeout?: number, isolationLevel?: Prisma.TransactionIsolationLevel }): $Utils.JsPromise<R>
 
 
-  $extends: $Extensions.ExtendsHook<"extends", Prisma.TypeMapCb<ClientOptions>, ExtArgs, $Utils.Call<Prisma.TypeMapCb<ClientOptions>, {
-    extArgs: ExtArgs
-  }>>
+  $extends: $Extensions.ExtendsHook<'extends', Prisma.TypeMapCb, ExtArgs>
 
       /**
    * `prisma.gradebookEntry`: Exposes CRUD operations for the **GradebookEntry** model.
@@ -145,7 +149,7 @@ export class PrismaClient<
     * const gradebookEntries = await prisma.gradebookEntry.findMany()
     * ```
     */
-  get gradebookEntry(): Prisma.GradebookEntryDelegate<ExtArgs, ClientOptions>;
+  get gradebookEntry(): Prisma.GradebookEntryDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -166,6 +170,7 @@ export namespace Prisma {
   export import PrismaClientRustPanicError = runtime.PrismaClientRustPanicError
   export import PrismaClientInitializationError = runtime.PrismaClientInitializationError
   export import PrismaClientValidationError = runtime.PrismaClientValidationError
+  export import NotFoundError = runtime.NotFoundError
 
   /**
    * Re-export of sql-template-tag
@@ -176,8 +181,6 @@ export namespace Prisma {
   export import raw = runtime.raw
   export import Sql = runtime.Sql
 
-
-
   /**
    * Decimal.js
    */
@@ -186,7 +189,7 @@ export namespace Prisma {
   export type DecimalJsLike = runtime.DecimalJsLike
 
   /**
-   * Metrics
+   * Metrics 
    */
   export type Metrics = runtime.Metrics
   export type Metric<T> = runtime.Metric<T>
@@ -204,39 +207,76 @@ export namespace Prisma {
   export import Exact = $Public.Exact
 
   /**
-   * Prisma Client JS version: 6.18.0
-   * Query Engine version: 34b5a692b7bd79939a9a2c3ef97d816e749cda2f
+   * Prisma Client JS version: 5.15.0
+   * Query Engine version: 12e25d8d06f6ea5a0252864dd9a03b1bb51f3022
    */
   export type PrismaVersion = {
     client: string
   }
 
-  export const prismaVersion: PrismaVersion
+  export const prismaVersion: PrismaVersion 
 
   /**
    * Utility Types
    */
 
+  /**
+   * From https://github.com/sindresorhus/type-fest/
+   * Matches a JSON object.
+   * This type can be useful to enforce some input to be JSON-compatible or as a super-type to be extended from. 
+   */
+  export type JsonObject = {[Key in string]?: JsonValue}
 
-  export import Bytes = runtime.Bytes
-  export import JsonObject = runtime.JsonObject
-  export import JsonArray = runtime.JsonArray
-  export import JsonValue = runtime.JsonValue
-  export import InputJsonObject = runtime.InputJsonObject
-  export import InputJsonArray = runtime.InputJsonArray
-  export import InputJsonValue = runtime.InputJsonValue
+  /**
+   * From https://github.com/sindresorhus/type-fest/
+   * Matches a JSON array.
+   */
+  export interface JsonArray extends Array<JsonValue> {}
+
+  /**
+   * From https://github.com/sindresorhus/type-fest/
+   * Matches any valid JSON value.
+   */
+  export type JsonValue = string | number | boolean | JsonObject | JsonArray | null
+
+  /**
+   * Matches a JSON object.
+   * Unlike `JsonObject`, this type allows undefined and read-only properties.
+   */
+  export type InputJsonObject = {readonly [Key in string]?: InputJsonValue | null}
+
+  /**
+   * Matches a JSON array.
+   * Unlike `JsonArray`, readonly arrays are assignable to this type.
+   */
+  export interface InputJsonArray extends ReadonlyArray<InputJsonValue | null> {}
+
+  /**
+   * Matches any valid value that can be used as an input for operations like
+   * create and update as the value of a JSON field. Unlike `JsonValue`, this
+   * type allows read-only arrays and read-only object properties and disallows
+   * `null` at the top level.
+   *
+   * `null` cannot be used as the value of a JSON field because its meaning
+   * would be ambiguous. Use `Prisma.JsonNull` to store the JSON null value or
+   * `Prisma.DbNull` to clear the JSON value and set the field to the database
+   * NULL value instead.
+   *
+   * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-by-null-values
+   */
+  export type InputJsonValue = string | number | boolean | InputJsonObject | InputJsonArray | { toJSON(): unknown }
 
   /**
    * Types of the values used to represent different kinds of `null` values when working with JSON fields.
-   *
+   * 
    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
    */
   namespace NullTypes {
     /**
     * Type of `Prisma.DbNull`.
-    *
+    * 
     * You cannot use other instances of this class. Please use the `Prisma.DbNull` value.
-    *
+    * 
     * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
     */
     class DbNull {
@@ -246,9 +286,9 @@ export namespace Prisma {
 
     /**
     * Type of `Prisma.JsonNull`.
-    *
+    * 
     * You cannot use other instances of this class. Please use the `Prisma.JsonNull` value.
-    *
+    * 
     * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
     */
     class JsonNull {
@@ -258,9 +298,9 @@ export namespace Prisma {
 
     /**
     * Type of `Prisma.AnyNull`.
-    *
+    * 
     * You cannot use other instances of this class. Please use the `Prisma.AnyNull` value.
-    *
+    * 
     * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
     */
     class AnyNull {
@@ -271,21 +311,21 @@ export namespace Prisma {
 
   /**
    * Helper for filtering JSON entries that have `null` on the database (empty on the db)
-   *
+   * 
    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
    */
   export const DbNull: NullTypes.DbNull
 
   /**
    * Helper for filtering JSON entries that have JSON `null` values (not empty on the db)
-   *
+   * 
    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
    */
   export const JsonNull: NullTypes.JsonNull
 
   /**
    * Helper for filtering JSON entries that are `Prisma.DbNull` or `Prisma.JsonNull`
-   *
+   * 
    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
    */
   export const AnyNull: NullTypes.AnyNull
@@ -473,7 +513,7 @@ export namespace Prisma {
   type AtLeast<O extends object, K extends string> = NoExpand<
     O extends unknown
     ? | (K extends keyof O ? { [P in K]: O[P] } & O : O)
-      | {[P in keyof O as P extends K ? P : never]-?: O[P]} & O
+      | {[P in keyof O as P extends K ? K : never]-?: O[P]} & O
     : never>;
 
   type _Strict<U, _U = U> = U extends unknown ? U & OptionalFlat<_Record<Exclude<Keys<_U>, keyof U>, never>> : never;
@@ -597,89 +637,79 @@ export namespace Prisma {
     db?: Datasource
   }
 
-  interface TypeMapCb<ClientOptions = {}> extends $Utils.Fn<{extArgs: $Extensions.InternalArgs }, $Utils.Record<string, any>> {
-    returns: Prisma.TypeMap<this['params']['extArgs'], ClientOptions extends { omit: infer OmitOptions } ? OmitOptions : {}>
+
+  interface TypeMapCb extends $Utils.Fn<{extArgs: $Extensions.InternalArgs}, $Utils.Record<string, any>> {
+    returns: Prisma.TypeMap<this['params']['extArgs']>
   }
 
-  export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> = {
-    globalOmitOptions: {
-      omit: GlobalOmitOptions
-    }
+  export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     meta: {
-      modelProps: "gradebookEntry"
+      modelProps: 'gradebookEntry'
       txIsolationLevel: Prisma.TransactionIsolationLevel
-    }
+    },
     model: {
       GradebookEntry: {
         payload: Prisma.$GradebookEntryPayload<ExtArgs>
         fields: Prisma.GradebookEntryFieldRefs
         operations: {
           findUnique: {
-            args: Prisma.GradebookEntryFindUniqueArgs<ExtArgs>
+            args: Prisma.GradebookEntryFindUniqueArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$GradebookEntryPayload> | null
           }
           findUniqueOrThrow: {
-            args: Prisma.GradebookEntryFindUniqueOrThrowArgs<ExtArgs>
+            args: Prisma.GradebookEntryFindUniqueOrThrowArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$GradebookEntryPayload>
           }
           findFirst: {
-            args: Prisma.GradebookEntryFindFirstArgs<ExtArgs>
+            args: Prisma.GradebookEntryFindFirstArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$GradebookEntryPayload> | null
           }
           findFirstOrThrow: {
-            args: Prisma.GradebookEntryFindFirstOrThrowArgs<ExtArgs>
+            args: Prisma.GradebookEntryFindFirstOrThrowArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$GradebookEntryPayload>
           }
           findMany: {
-            args: Prisma.GradebookEntryFindManyArgs<ExtArgs>
+            args: Prisma.GradebookEntryFindManyArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$GradebookEntryPayload>[]
           }
           create: {
-            args: Prisma.GradebookEntryCreateArgs<ExtArgs>
+            args: Prisma.GradebookEntryCreateArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$GradebookEntryPayload>
           }
           createMany: {
-            args: Prisma.GradebookEntryCreateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          createManyAndReturn: {
-            args: Prisma.GradebookEntryCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$GradebookEntryPayload>[]
+            args: Prisma.GradebookEntryCreateManyArgs<ExtArgs>,
+            result: Prisma.BatchPayload
           }
           delete: {
-            args: Prisma.GradebookEntryDeleteArgs<ExtArgs>
+            args: Prisma.GradebookEntryDeleteArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$GradebookEntryPayload>
           }
           update: {
-            args: Prisma.GradebookEntryUpdateArgs<ExtArgs>
+            args: Prisma.GradebookEntryUpdateArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$GradebookEntryPayload>
           }
           deleteMany: {
-            args: Prisma.GradebookEntryDeleteManyArgs<ExtArgs>
-            result: BatchPayload
+            args: Prisma.GradebookEntryDeleteManyArgs<ExtArgs>,
+            result: Prisma.BatchPayload
           }
           updateMany: {
-            args: Prisma.GradebookEntryUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateManyAndReturn: {
-            args: Prisma.GradebookEntryUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$GradebookEntryPayload>[]
+            args: Prisma.GradebookEntryUpdateManyArgs<ExtArgs>,
+            result: Prisma.BatchPayload
           }
           upsert: {
-            args: Prisma.GradebookEntryUpsertArgs<ExtArgs>
+            args: Prisma.GradebookEntryUpsertArgs<ExtArgs>,
             result: $Utils.PayloadToResult<Prisma.$GradebookEntryPayload>
           }
           aggregate: {
-            args: Prisma.GradebookEntryAggregateArgs<ExtArgs>
+            args: Prisma.GradebookEntryAggregateArgs<ExtArgs>,
             result: $Utils.Optional<AggregateGradebookEntry>
           }
           groupBy: {
-            args: Prisma.GradebookEntryGroupByArgs<ExtArgs>
+            args: Prisma.GradebookEntryGroupByArgs<ExtArgs>,
             result: $Utils.Optional<GradebookEntryGroupByOutputType>[]
           }
           count: {
-            args: Prisma.GradebookEntryCountArgs<ExtArgs>
+            args: Prisma.GradebookEntryCountArgs<ExtArgs>,
             result: $Utils.Optional<GradebookEntryCountAggregateOutputType> | number
           }
         }
@@ -689,15 +719,11 @@ export namespace Prisma {
     other: {
       payload: any
       operations: {
-        $executeRaw: {
-          args: [query: TemplateStringsArray | Prisma.Sql, ...values: any[]],
-          result: any
-        }
         $executeRawUnsafe: {
           args: [query: string, ...values: any[]],
           result: any
         }
-        $queryRaw: {
+        $executeRaw: {
           args: [query: TemplateStringsArray | Prisma.Sql, ...values: any[]],
           result: any
         }
@@ -705,10 +731,14 @@ export namespace Prisma {
           args: [query: string, ...values: any[]],
           result: any
         }
+        $queryRaw: {
+          args: [query: TemplateStringsArray | Prisma.Sql, ...values: any[]],
+          result: any
+        }
       }
     }
   }
-  export const defineExtension: $Extensions.ExtendsHook<"define", Prisma.TypeMapCb, $Extensions.DefaultArgs>
+  export const defineExtension: $Extensions.ExtendsHook<'define', Prisma.TypeMapCb, $Extensions.DefaultArgs>
   export type DefaultPrismaClient = PrismaClient
   export type ErrorFormat = 'pretty' | 'colorless' | 'minimal'
   export interface PrismaClientOptions {
@@ -727,24 +757,16 @@ export namespace Prisma {
     /**
      * @example
      * ```
-     * // Shorthand for `emit: 'stdout'`
+     * // Defaults to stdout
      * log: ['query', 'info', 'warn', 'error']
      * 
-     * // Emit as events only
+     * // Emit as events
      * log: [
-     *   { emit: 'event', level: 'query' },
-     *   { emit: 'event', level: 'info' },
-     *   { emit: 'event', level: 'warn' }
-     *   { emit: 'event', level: 'error' }
+     *   { emit: 'stdout', level: 'query' },
+     *   { emit: 'stdout', level: 'info' },
+     *   { emit: 'stdout', level: 'warn' }
+     *   { emit: 'stdout', level: 'error' }
      * ]
-     * 
-     * / Emit as events and log to stdout
-     * og: [
-     *  { emit: 'stdout', level: 'query' },
-     *  { emit: 'stdout', level: 'info' },
-     *  { emit: 'stdout', level: 'warn' }
-     *  { emit: 'stdout', level: 'error' }
-     * 
      * ```
      * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/logging#the-log-option).
      */
@@ -759,24 +781,6 @@ export namespace Prisma {
       timeout?: number
       isolationLevel?: Prisma.TransactionIsolationLevel
     }
-    /**
-     * Global configuration for omitting model fields by default.
-     * 
-     * @example
-     * ```
-     * const prisma = new PrismaClient({
-     *   omit: {
-     *     user: {
-     *       password: true
-     *     }
-     *   }
-     * })
-     * ```
-     */
-    omit?: Prisma.GlobalOmitConfig
-  }
-  export type GlobalOmitConfig = {
-    gradebookEntry?: GradebookEntryOmit
   }
 
   /* Types for Logging */
@@ -786,15 +790,10 @@ export namespace Prisma {
     emit: 'stdout' | 'event'
   }
 
-  export type CheckIsLogLevel<T> = T extends LogLevel ? T : never;
-
-  export type GetLogType<T> = CheckIsLogLevel<
-    T extends LogDefinition ? T['level'] : T
-  >;
-
-  export type GetEvents<T extends any[]> = T extends Array<LogLevel | LogDefinition>
-    ? GetLogType<T[number]>
-    : never;
+  export type GetLogType<T extends LogLevel | LogDefinition> = T extends LogDefinition ? T['emit'] extends 'event' ? T['level'] : never : never
+  export type GetEvents<T extends any> = T extends Array<LogLevel | LogDefinition> ?
+    GetLogType<T[0]> | GetLogType<T[1]> | GetLogType<T[2]> | GetLogType<T[3]>
+    : never
 
   export type QueryEvent = {
     timestamp: Date
@@ -823,7 +822,6 @@ export namespace Prisma {
     | 'createManyAndReturn'
     | 'update'
     | 'updateMany'
-    | 'updateManyAndReturn'
     | 'upsert'
     | 'delete'
     | 'deleteMany'
@@ -834,6 +832,25 @@ export namespace Prisma {
     | 'runCommandRaw'
     | 'findRaw'
     | 'groupBy'
+
+  /**
+   * These options are being passed into the middleware as "params"
+   */
+  export type MiddlewareParams = {
+    model?: ModelName
+    action: PrismaAction
+    args: any
+    dataPath: string[]
+    runInTransaction: boolean
+  }
+
+  /**
+   * The `T` type makes sure, that the `return proceed` is not forgotten in the middleware implementation
+   */
+  export type Middleware<T = any> = (
+    params: MiddlewareParams,
+    next: (params: MiddlewareParams) => $Utils.JsPromise<T>,
+  ) => $Utils.JsPromise<T>
 
   // tested in getLogLevel.test.ts
   export function getLogLevel(log: Array<LogLevel | LogDefinition>): LogLevel | undefined;
@@ -1129,39 +1146,6 @@ export namespace Prisma {
     updatedAt?: boolean
   }, ExtArgs["result"]["gradebookEntry"]>
 
-  export type GradebookEntrySelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    courseId?: boolean
-    courseTitle?: boolean
-    studentId?: boolean
-    studentDisplayName?: boolean
-    assignmentId?: boolean
-    assignmentTitle?: boolean
-    score?: boolean
-    maxScore?: boolean
-    letter?: boolean
-    feedback?: boolean
-    metadata?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-  }, ExtArgs["result"]["gradebookEntry"]>
-
-  export type GradebookEntrySelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    courseId?: boolean
-    courseTitle?: boolean
-    studentId?: boolean
-    studentDisplayName?: boolean
-    assignmentId?: boolean
-    assignmentTitle?: boolean
-    score?: boolean
-    maxScore?: boolean
-    letter?: boolean
-    feedback?: boolean
-    metadata?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-  }, ExtArgs["result"]["gradebookEntry"]>
 
   export type GradebookEntrySelectScalar = {
     id?: boolean
@@ -1180,7 +1164,6 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type GradebookEntryOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "courseId" | "courseTitle" | "studentId" | "studentDisplayName" | "assignmentId" | "assignmentTitle" | "score" | "maxScore" | "letter" | "feedback" | "metadata" | "createdAt" | "updatedAt", ExtArgs["result"]["gradebookEntry"]>
 
   export type $GradebookEntryPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "GradebookEntry"
@@ -1206,12 +1189,12 @@ export namespace Prisma {
 
   type GradebookEntryGetPayload<S extends boolean | null | undefined | GradebookEntryDefaultArgs> = $Result.GetResult<Prisma.$GradebookEntryPayload, S>
 
-  type GradebookEntryCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
-    Omit<GradebookEntryFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+  type GradebookEntryCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<GradebookEntryFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: GradebookEntryCountAggregateInputType | true
     }
 
-  export interface GradebookEntryDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+  export interface GradebookEntryDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
     [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['GradebookEntry'], meta: { name: 'GradebookEntry' } }
     /**
      * Find zero or one GradebookEntry that matches the filter.
@@ -1223,11 +1206,13 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findUnique<T extends GradebookEntryFindUniqueArgs>(args: SelectSubset<T, GradebookEntryFindUniqueArgs<ExtArgs>>): Prisma__GradebookEntryClient<$Result.GetResult<Prisma.$GradebookEntryPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    **/
+    findUnique<T extends GradebookEntryFindUniqueArgs<ExtArgs>>(
+      args: SelectSubset<T, GradebookEntryFindUniqueArgs<ExtArgs>>
+    ): Prisma__GradebookEntryClient<$Result.GetResult<Prisma.$GradebookEntryPayload<ExtArgs>, T, 'findUnique'> | null, null, ExtArgs>
 
     /**
-     * Find one GradebookEntry that matches the filter or throw an error with `error.code='P2025'`
+     * Find one GradebookEntry that matches the filter or throw an error with `error.code='P2025'` 
      * if no matches were found.
      * @param {GradebookEntryFindUniqueOrThrowArgs} args - Arguments to find a GradebookEntry
      * @example
@@ -1237,8 +1222,10 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findUniqueOrThrow<T extends GradebookEntryFindUniqueOrThrowArgs>(args: SelectSubset<T, GradebookEntryFindUniqueOrThrowArgs<ExtArgs>>): Prisma__GradebookEntryClient<$Result.GetResult<Prisma.$GradebookEntryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    findUniqueOrThrow<T extends GradebookEntryFindUniqueOrThrowArgs<ExtArgs>>(
+      args?: SelectSubset<T, GradebookEntryFindUniqueOrThrowArgs<ExtArgs>>
+    ): Prisma__GradebookEntryClient<$Result.GetResult<Prisma.$GradebookEntryPayload<ExtArgs>, T, 'findUniqueOrThrow'>, never, ExtArgs>
 
     /**
      * Find the first GradebookEntry that matches the filter.
@@ -1252,8 +1239,10 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findFirst<T extends GradebookEntryFindFirstArgs>(args?: SelectSubset<T, GradebookEntryFindFirstArgs<ExtArgs>>): Prisma__GradebookEntryClient<$Result.GetResult<Prisma.$GradebookEntryPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    **/
+    findFirst<T extends GradebookEntryFindFirstArgs<ExtArgs>>(
+      args?: SelectSubset<T, GradebookEntryFindFirstArgs<ExtArgs>>
+    ): Prisma__GradebookEntryClient<$Result.GetResult<Prisma.$GradebookEntryPayload<ExtArgs>, T, 'findFirst'> | null, null, ExtArgs>
 
     /**
      * Find the first GradebookEntry that matches the filter or
@@ -1268,8 +1257,10 @@ export namespace Prisma {
      *     // ... provide filter here
      *   }
      * })
-     */
-    findFirstOrThrow<T extends GradebookEntryFindFirstOrThrowArgs>(args?: SelectSubset<T, GradebookEntryFindFirstOrThrowArgs<ExtArgs>>): Prisma__GradebookEntryClient<$Result.GetResult<Prisma.$GradebookEntryPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    findFirstOrThrow<T extends GradebookEntryFindFirstOrThrowArgs<ExtArgs>>(
+      args?: SelectSubset<T, GradebookEntryFindFirstOrThrowArgs<ExtArgs>>
+    ): Prisma__GradebookEntryClient<$Result.GetResult<Prisma.$GradebookEntryPayload<ExtArgs>, T, 'findFirstOrThrow'>, never, ExtArgs>
 
     /**
      * Find zero or more GradebookEntries that matches the filter.
@@ -1286,8 +1277,10 @@ export namespace Prisma {
      * // Only select the `id`
      * const gradebookEntryWithIdOnly = await prisma.gradebookEntry.findMany({ select: { id: true } })
      * 
-     */
-    findMany<T extends GradebookEntryFindManyArgs>(args?: SelectSubset<T, GradebookEntryFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GradebookEntryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+    **/
+    findMany<T extends GradebookEntryFindManyArgs<ExtArgs>>(
+      args?: SelectSubset<T, GradebookEntryFindManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GradebookEntryPayload<ExtArgs>, T, 'findMany'>>
 
     /**
      * Create a GradebookEntry.
@@ -1300,8 +1293,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    create<T extends GradebookEntryCreateArgs>(args: SelectSubset<T, GradebookEntryCreateArgs<ExtArgs>>): Prisma__GradebookEntryClient<$Result.GetResult<Prisma.$GradebookEntryPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    create<T extends GradebookEntryCreateArgs<ExtArgs>>(
+      args: SelectSubset<T, GradebookEntryCreateArgs<ExtArgs>>
+    ): Prisma__GradebookEntryClient<$Result.GetResult<Prisma.$GradebookEntryPayload<ExtArgs>, T, 'create'>, never, ExtArgs>
 
     /**
      * Create many GradebookEntries.
@@ -1314,32 +1309,10 @@ export namespace Prisma {
      *   ]
      * })
      *     
-     */
-    createMany<T extends GradebookEntryCreateManyArgs>(args?: SelectSubset<T, GradebookEntryCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create many GradebookEntries and returns the data saved in the database.
-     * @param {GradebookEntryCreateManyAndReturnArgs} args - Arguments to create many GradebookEntries.
-     * @example
-     * // Create many GradebookEntries
-     * const gradebookEntry = await prisma.gradebookEntry.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many GradebookEntries and only return the `id`
-     * const gradebookEntryWithIdOnly = await prisma.gradebookEntry.createManyAndReturn({
-     *   select: { id: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends GradebookEntryCreateManyAndReturnArgs>(args?: SelectSubset<T, GradebookEntryCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GradebookEntryPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+    **/
+    createMany<T extends GradebookEntryCreateManyArgs<ExtArgs>>(
+      args?: SelectSubset<T, GradebookEntryCreateManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Delete a GradebookEntry.
@@ -1352,8 +1325,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    delete<T extends GradebookEntryDeleteArgs>(args: SelectSubset<T, GradebookEntryDeleteArgs<ExtArgs>>): Prisma__GradebookEntryClient<$Result.GetResult<Prisma.$GradebookEntryPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    delete<T extends GradebookEntryDeleteArgs<ExtArgs>>(
+      args: SelectSubset<T, GradebookEntryDeleteArgs<ExtArgs>>
+    ): Prisma__GradebookEntryClient<$Result.GetResult<Prisma.$GradebookEntryPayload<ExtArgs>, T, 'delete'>, never, ExtArgs>
 
     /**
      * Update one GradebookEntry.
@@ -1369,8 +1344,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    update<T extends GradebookEntryUpdateArgs>(args: SelectSubset<T, GradebookEntryUpdateArgs<ExtArgs>>): Prisma__GradebookEntryClient<$Result.GetResult<Prisma.$GradebookEntryPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+    **/
+    update<T extends GradebookEntryUpdateArgs<ExtArgs>>(
+      args: SelectSubset<T, GradebookEntryUpdateArgs<ExtArgs>>
+    ): Prisma__GradebookEntryClient<$Result.GetResult<Prisma.$GradebookEntryPayload<ExtArgs>, T, 'update'>, never, ExtArgs>
 
     /**
      * Delete zero or more GradebookEntries.
@@ -1383,8 +1360,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    deleteMany<T extends GradebookEntryDeleteManyArgs>(args?: SelectSubset<T, GradebookEntryDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    **/
+    deleteMany<T extends GradebookEntryDeleteManyArgs<ExtArgs>>(
+      args?: SelectSubset<T, GradebookEntryDeleteManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Update zero or more GradebookEntries.
@@ -1402,38 +1381,10 @@ export namespace Prisma {
      *   }
      * })
      * 
-     */
-    updateMany<T extends GradebookEntryUpdateManyArgs>(args: SelectSubset<T, GradebookEntryUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more GradebookEntries and returns the data updated in the database.
-     * @param {GradebookEntryUpdateManyAndReturnArgs} args - Arguments to update many GradebookEntries.
-     * @example
-     * // Update many GradebookEntries
-     * const gradebookEntry = await prisma.gradebookEntry.updateManyAndReturn({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Update zero or more GradebookEntries and only return the `id`
-     * const gradebookEntryWithIdOnly = await prisma.gradebookEntry.updateManyAndReturn({
-     *   select: { id: true },
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    updateManyAndReturn<T extends GradebookEntryUpdateManyAndReturnArgs>(args: SelectSubset<T, GradebookEntryUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GradebookEntryPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+    **/
+    updateMany<T extends GradebookEntryUpdateManyArgs<ExtArgs>>(
+      args: SelectSubset<T, GradebookEntryUpdateManyArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Create or update one GradebookEntry.
@@ -1451,9 +1402,10 @@ export namespace Prisma {
      *     // ... the filter for the GradebookEntry we want to update
      *   }
      * })
-     */
-    upsert<T extends GradebookEntryUpsertArgs>(args: SelectSubset<T, GradebookEntryUpsertArgs<ExtArgs>>): Prisma__GradebookEntryClient<$Result.GetResult<Prisma.$GradebookEntryPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
-
+    **/
+    upsert<T extends GradebookEntryUpsertArgs<ExtArgs>>(
+      args: SelectSubset<T, GradebookEntryUpsertArgs<ExtArgs>>
+    ): Prisma__GradebookEntryClient<$Result.GetResult<Prisma.$GradebookEntryPayload<ExtArgs>, T, 'upsert'>, never, ExtArgs>
 
     /**
      * Count the number of GradebookEntries.
@@ -1592,36 +1544,37 @@ export namespace Prisma {
    * Because we want to prevent naming conflicts as mentioned in
    * https://github.com/prisma/prisma-client-js/issues/707
    */
-  export interface Prisma__GradebookEntryClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
+  export interface Prisma__GradebookEntryClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: 'PrismaPromise';
+
+
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
      * @param onrejected The callback to execute when the Promise is rejected.
      * @returns A Promise for the completion of which ever callback is executed.
      */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>;
     /**
      * Attaches a callback for only the rejection of the Promise.
      * @param onrejected The callback to execute when the Promise is rejected.
      * @returns A Promise for the completion of the callback.
      */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>;
     /**
      * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
      * resolved value cannot be modified from the callback.
      * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
      * @returns A Promise for the completion of the callback.
      */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>;
   }
-
 
 
 
   /**
    * Fields of the GradebookEntry model
-   */
+   */ 
   interface GradebookEntryFieldRefs {
     readonly id: FieldRef<"GradebookEntry", 'String'>
     readonly courseId: FieldRef<"GradebookEntry", 'String'>
@@ -1650,10 +1603,6 @@ export namespace Prisma {
      */
     select?: GradebookEntrySelect<ExtArgs> | null
     /**
-     * Omit specific fields from the GradebookEntry
-     */
-    omit?: GradebookEntryOmit<ExtArgs> | null
-    /**
      * Filter, which GradebookEntry to fetch.
      */
     where: GradebookEntryWhereUniqueInput
@@ -1668,10 +1617,6 @@ export namespace Prisma {
      */
     select?: GradebookEntrySelect<ExtArgs> | null
     /**
-     * Omit specific fields from the GradebookEntry
-     */
-    omit?: GradebookEntryOmit<ExtArgs> | null
-    /**
      * Filter, which GradebookEntry to fetch.
      */
     where: GradebookEntryWhereUniqueInput
@@ -1685,10 +1630,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the GradebookEntry
      */
     select?: GradebookEntrySelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the GradebookEntry
-     */
-    omit?: GradebookEntryOmit<ExtArgs> | null
     /**
      * Filter, which GradebookEntry to fetch.
      */
@@ -1734,10 +1675,6 @@ export namespace Prisma {
      */
     select?: GradebookEntrySelect<ExtArgs> | null
     /**
-     * Omit specific fields from the GradebookEntry
-     */
-    omit?: GradebookEntryOmit<ExtArgs> | null
-    /**
      * Filter, which GradebookEntry to fetch.
      */
     where?: GradebookEntryWhereInput
@@ -1782,10 +1719,6 @@ export namespace Prisma {
      */
     select?: GradebookEntrySelect<ExtArgs> | null
     /**
-     * Omit specific fields from the GradebookEntry
-     */
-    omit?: GradebookEntryOmit<ExtArgs> | null
-    /**
      * Filter, which GradebookEntries to fetch.
      */
     where?: GradebookEntryWhereInput
@@ -1825,10 +1758,6 @@ export namespace Prisma {
      */
     select?: GradebookEntrySelect<ExtArgs> | null
     /**
-     * Omit specific fields from the GradebookEntry
-     */
-    omit?: GradebookEntryOmit<ExtArgs> | null
-    /**
      * The data needed to create a GradebookEntry.
      */
     data: XOR<GradebookEntryCreateInput, GradebookEntryUncheckedCreateInput>
@@ -1842,24 +1771,7 @@ export namespace Prisma {
      * The data used to create many GradebookEntries.
      */
     data: GradebookEntryCreateManyInput | GradebookEntryCreateManyInput[]
-  }
-
-  /**
-   * GradebookEntry createManyAndReturn
-   */
-  export type GradebookEntryCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the GradebookEntry
-     */
-    select?: GradebookEntrySelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the GradebookEntry
-     */
-    omit?: GradebookEntryOmit<ExtArgs> | null
-    /**
-     * The data used to create many GradebookEntries.
-     */
-    data: GradebookEntryCreateManyInput | GradebookEntryCreateManyInput[]
+    skipDuplicates?: boolean
   }
 
   /**
@@ -1870,10 +1782,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the GradebookEntry
      */
     select?: GradebookEntrySelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the GradebookEntry
-     */
-    omit?: GradebookEntryOmit<ExtArgs> | null
     /**
      * The data needed to update a GradebookEntry.
      */
@@ -1896,36 +1804,6 @@ export namespace Prisma {
      * Filter which GradebookEntries to update
      */
     where?: GradebookEntryWhereInput
-    /**
-     * Limit how many GradebookEntries to update.
-     */
-    limit?: number
-  }
-
-  /**
-   * GradebookEntry updateManyAndReturn
-   */
-  export type GradebookEntryUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the GradebookEntry
-     */
-    select?: GradebookEntrySelectUpdateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the GradebookEntry
-     */
-    omit?: GradebookEntryOmit<ExtArgs> | null
-    /**
-     * The data used to update GradebookEntries.
-     */
-    data: XOR<GradebookEntryUpdateManyMutationInput, GradebookEntryUncheckedUpdateManyInput>
-    /**
-     * Filter which GradebookEntries to update
-     */
-    where?: GradebookEntryWhereInput
-    /**
-     * Limit how many GradebookEntries to update.
-     */
-    limit?: number
   }
 
   /**
@@ -1936,10 +1814,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the GradebookEntry
      */
     select?: GradebookEntrySelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the GradebookEntry
-     */
-    omit?: GradebookEntryOmit<ExtArgs> | null
     /**
      * The filter to search for the GradebookEntry to update in case it exists.
      */
@@ -1963,10 +1837,6 @@ export namespace Prisma {
      */
     select?: GradebookEntrySelect<ExtArgs> | null
     /**
-     * Omit specific fields from the GradebookEntry
-     */
-    omit?: GradebookEntryOmit<ExtArgs> | null
-    /**
      * Filter which GradebookEntry to delete.
      */
     where: GradebookEntryWhereUniqueInput
@@ -1980,10 +1850,6 @@ export namespace Prisma {
      * Filter which GradebookEntries to delete
      */
     where?: GradebookEntryWhereInput
-    /**
-     * Limit how many GradebookEntries to delete.
-     */
-    limit?: number
   }
 
   /**
@@ -1994,10 +1860,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the GradebookEntry
      */
     select?: GradebookEntrySelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the GradebookEntry
-     */
-    omit?: GradebookEntryOmit<ExtArgs> | null
   }
 
 
@@ -2006,6 +1868,9 @@ export namespace Prisma {
    */
 
   export const TransactionIsolationLevel: {
+    ReadUncommitted: 'ReadUncommitted',
+    ReadCommitted: 'ReadCommitted',
+    RepeatableRead: 'RepeatableRead',
     Serializable: 'Serializable'
   };
 
@@ -2057,14 +1922,6 @@ export namespace Prisma {
   export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
 
 
-  export const QueryMode: {
-    default: 'default',
-    insensitive: 'insensitive'
-  };
-
-  export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
-
-
   export const NullsOrder: {
     first: 'first',
     last: 'last'
@@ -2074,7 +1931,7 @@ export namespace Prisma {
 
 
   /**
-   * Field references
+   * Field references 
    */
 
 
@@ -2096,13 +1953,6 @@ export namespace Prisma {
    * Reference to a field of type 'Json'
    */
   export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
-    
-
-
-  /**
-   * Reference to a field of type 'QueryMode'
-   */
-  export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
     
 
 
@@ -2379,7 +2229,7 @@ export namespace Prisma {
     gte?: number | FloatFieldRefInput<$PrismaModel>
     not?: NestedFloatNullableFilter<$PrismaModel> | number | null
   }
-  export type JsonNullableFilter<$PrismaModel = never> =
+  export type JsonNullableFilter<$PrismaModel = never> = 
     | PatchUndefined<
         Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
         Required<JsonNullableFilterBase<$PrismaModel>>
@@ -2389,12 +2239,16 @@ export namespace Prisma {
   export type JsonNullableFilterBase<$PrismaModel = never> = {
     equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
     path?: string
-    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
     string_contains?: string | StringFieldRefInput<$PrismaModel>
     string_starts_with?: string | StringFieldRefInput<$PrismaModel>
     string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
     array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
     array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue
+    lte?: InputJsonValue
+    gt?: InputJsonValue
+    gte?: InputJsonValue
     not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
   }
 
@@ -2522,7 +2376,7 @@ export namespace Prisma {
     _min?: NestedFloatNullableFilter<$PrismaModel>
     _max?: NestedFloatNullableFilter<$PrismaModel>
   }
-  export type JsonNullableWithAggregatesFilter<$PrismaModel = never> =
+  export type JsonNullableWithAggregatesFilter<$PrismaModel = never> = 
     | PatchUndefined<
         Either<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
         Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>
@@ -2532,12 +2386,16 @@ export namespace Prisma {
   export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
     equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
     path?: string
-    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
     string_contains?: string | StringFieldRefInput<$PrismaModel>
     string_starts_with?: string | StringFieldRefInput<$PrismaModel>
     string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
     array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
     array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue
+    lte?: InputJsonValue
+    gt?: InputJsonValue
+    gte?: InputJsonValue
     not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedJsonNullableFilter<$PrismaModel>
@@ -2699,7 +2557,7 @@ export namespace Prisma {
     _min?: NestedFloatNullableFilter<$PrismaModel>
     _max?: NestedFloatNullableFilter<$PrismaModel>
   }
-  export type NestedJsonNullableFilter<$PrismaModel = never> =
+  export type NestedJsonNullableFilter<$PrismaModel = never> = 
     | PatchUndefined<
         Either<Required<NestedJsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>,
         Required<NestedJsonNullableFilterBase<$PrismaModel>>
@@ -2709,12 +2567,16 @@ export namespace Prisma {
   export type NestedJsonNullableFilterBase<$PrismaModel = never> = {
     equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
     path?: string
-    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
     string_contains?: string | StringFieldRefInput<$PrismaModel>
     string_starts_with?: string | StringFieldRefInput<$PrismaModel>
     string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
     array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
     array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue
+    lte?: InputJsonValue
+    gt?: InputJsonValue
+    gte?: InputJsonValue
     not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
   }
 
@@ -2733,6 +2595,14 @@ export namespace Prisma {
   }
 
 
+
+  /**
+   * Aliases for legacy arg types
+   */
+    /**
+     * @deprecated Use GradebookEntryDefaultArgs instead
+     */
+    export type GradebookEntryArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = GradebookEntryDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

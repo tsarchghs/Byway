@@ -3,6 +3,15 @@
     <a-page-header title="Institution Course Catalog">
       <template #extra>
         <a-space>
+          <a-menu mode="horizontal" :selectedKeys="['catalog']">
+            <a-menu-item key="overview"><a :href="navHref('overview')">Overview</a></a-menu-item>
+            <a-menu-item v-if="currentRole==='admin'" key="departments"><a :href="navHref('departments')">Departments</a></a-menu-item>
+            <a-menu-item key="classrooms"><a :href="navHref('classrooms')">Classrooms</a></a-menu-item>
+            <a-menu-item key="people"><a :href="navHref('people')">People Directory</a></a-menu-item>
+            <a-menu-item key="catalog"><a :href="navHref('catalog')">Catalog</a></a-menu-item>
+            <a-menu-item key="calendar"><a :href="navHref('calendar')">Calendar</a></a-menu-item>
+            <a-menu-item key="assignments"><a :href="navHref('assignments')">Assignments</a></a-menu-item>
+          </a-menu>
           <a-input v-model:value="q" placeholder="Search" style="width:220px" />
           <a-select v-model:value="difficulty" placeholder="Difficulty" style="width:160px" allow-clear :options="difficultyOptions" />
           <a-button size="small" @click="load">Reload</a-button>
@@ -12,7 +21,17 @@
 
     <a-skeleton :loading="loading" active :paragraph="{ rows: 8 }">
       <a-card size="small">
-        <a-table size="small" :columns="columns" :dataSource="filtered" row-key="courseId" :pagination="{ pageSize: 8 }" />
+        <a-table size="small" :columns="columns" :dataSource="filtered" row-key="courseId" :pagination="{ pageSize: 8 }">
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.key==='actions'">
+              <a :href="courseLink(record)">Open</a>
+            </template>
+            <template v-else-if="column.key==='availability'">
+              <a-tag v-if="teacherIds.includes(String(record.teacherId || record.teacher_id || ''))" color="geekblue">Institution course</a-tag>
+              <a-tag v-else color="purple">Global course</a-tag>
+            </template>
+          </template>
+        </a-table>
       </a-card>
     </a-skeleton>
   </div>
@@ -32,6 +51,10 @@ const loading = ref(true)
 const q = ref('')
 const difficulty = ref<string | undefined>(undefined)
 const courses = ref<any[]>([])
+const modulesByCourse = ref<Record<string, any[]>>({})
+const currentRole = ref<'student' | 'teacher' | 'admin' | 'none'>('none')
+const meId = ref<string | null>(null)
+const teacherIds = ref<string[]>([])
 
 function resolveAuthHeader(): string | null {
   if (typeof window === 'undefined') return null
@@ -51,6 +74,8 @@ async function load() {
     if (!resp.ok) throw new Error(await resp.text().catch(() => `HTTP ${resp.status}`))
     const json = await resp.json()
     courses.value = json.courses || []
+    await loadModulesForCourses(auth)
+    await loadInstitutionTeachers(auth)
   } catch (e: any) {
     message.error(e?.message || 'Failed to load catalog')
   } finally {
@@ -59,6 +84,7 @@ async function load() {
 }
 
 onMounted(load)
+onMounted(resolveCurrentRole)
 
 const filtered = computed(() => {
   return courses.value
@@ -78,7 +104,97 @@ const columns = [
   { title: 'Category', dataIndex: 'category', key: 'category' },
   { title: 'Difficulty', dataIndex: 'difficulty', key: 'difficulty' },
   { title: 'Availability', dataIndex: 'availability', key: 'availability' },
+  { title: 'Actions', key: 'actions' },
 ]
+
+async function loadModulesForCourses(auth: string) {
+  try {
+    const baseUrl = apiBase ? apiBase.replace(/\/$/, '') : ''
+    const resp = await fetch(`${baseUrl}/api/teach-internal/modules`, { headers: { Authorization: auth } })
+    if (!resp.ok) return
+    const data = await resp.json().catch(() => null)
+    const arr = Array.isArray(data) ? data : (Array.isArray(data?.modules) ? data.modules : [])
+    const grouped: Record<string, any[]> = {}
+    arr.forEach((m: any) => {
+      const cid = m.courseId || m.course_id || ''
+      if (!cid) return
+      grouped[cid] = grouped[cid] || []
+      grouped[cid].push(m)
+    })
+    modulesByCourse.value = grouped
+  } catch {}
+}
+
+async function loadInstitutionTeachers(auth: string) {
+  try {
+    const baseUrl = apiBase ? apiBase.replace(/\/$/, '') : ''
+    const resp = await fetch(`${baseUrl}/api/institutions/graphql`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', Authorization: auth },
+      body: JSON.stringify({
+        query: `query($institutionId:String!){ classrooms(institutionId:$institutionId){ teacherId } }`,
+        variables: { institutionId: institutionId.value },
+      }),
+    })
+    const json = await resp.json().catch(() => null)
+    const arr = Array.isArray(json?.data?.classrooms) ? json.data.classrooms : []
+    teacherIds.value = Array.from(new Set(arr.map((c: any) => String(c.teacherId || '')).filter(Boolean)))
+  } catch {}
+}
+
+function courseLink(record: any) {
+  const cid = record.courseId || record.id
+  const teacherId = record.teacherId || record.teacher_id || 'teacher'
+  const mods = modulesByCourse.value[cid] || []
+  const mod = mods[0]
+  if (mod?.id) return `/teach-internal/${encodeURIComponent(teacherId)}/course/${encodeURIComponent(cid)}/module/${encodeURIComponent(mod.id)}/view`
+  return `/teach-internal/${encodeURIComponent(teacherId)}`
+}
+
+function navHref(key: string) {
+  const qs = `?institutionId=${encodeURIComponent(institutionId.value)}`
+  if (key==='overview') return `/institution/portal${qs}`
+  if (key==='departments') return `/institution/departments/${qs}`
+  if (key==='classrooms') return `/institution/classrooms/${qs}`
+  if (key==='people') return `/institution/people${qs}`
+  if (key==='catalog') return `/institution/catalog${qs}`
+  if (key==='calendar') return `/institution/calendar${qs}`
+  if (key==='assignments') return `/institution/assignments/teachers${qs}`
+  return `/institution/portal${qs}`
+}
+
+async function resolveCurrentRole() {
+  try {
+    const auth = resolveAuthHeader()
+    if (!auth) return
+    const baseUrl = apiBase ? apiBase.replace(/\/$/, '') : ''
+    const meResp = await fetch(`${baseUrl}/api/authentication/graphql`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', Authorization: auth },
+      body: JSON.stringify({ query: `query Me { me { id } }` }),
+    })
+    const meJson = await meResp.json().catch(() => null)
+    const uid = meJson?.data?.me?.id || null
+    meId.value = uid
+    if (!uid) { currentRole.value = 'none'; return }
+    const resp = await fetch(`${baseUrl}/api/institutions/graphql`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', Authorization: auth },
+      body: JSON.stringify({
+        query: `query($institutionId:String!){ members(institutionId:$institutionId){ userId role } }`,
+        variables: { institutionId: institutionId.value },
+      }),
+    })
+    const json = await resp.json().catch(() => null)
+    const arr = Array.isArray(json?.data?.members) ? json.data.members : []
+    const mem = arr.find((m: any) => m.userId === uid)
+    const role = String(mem?.role || '').toLowerCase()
+    if (role.includes('admin')) currentRole.value = 'admin'
+    else if (role.includes('teach')) currentRole.value = 'teacher'
+    else if (role.includes('student')) currentRole.value = 'student'
+    else currentRole.value = 'none'
+  } catch {}
+}
 </script>
 
 <style scoped>

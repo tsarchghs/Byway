@@ -5,8 +5,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./ecommerce.db"
+  provider = "mysql" // can be Postgres too
+  url      = "mysql://root:gjergji21@localhost:3306/byway_ecommerce" // e.g., file:./auth.db
 }
 
 enum OrderStatus {

@@ -48,6 +48,10 @@
     {
       "path": "/institution/classrooms/[classroomId]/attendance",
       "file": "nuxt/pages/classrooms/[classroomId]/attendance.vue"
+    },
+    {
+      "path": "/institution/join",
+      "file": "nuxt/pages/join/index.vue"
     }
   ],
   "server": {
@@ -104,6 +108,14 @@
       {
         "method": "GET",
         "path": "/api/institution-portal/classrooms/:id/attendance"
+      },
+      {
+        "method": "POST",
+        "path": "/api/institution-portal/institutions/:id/join"
+      },
+      {
+        "method": "POST",
+        "path": "/api/institution-portal/institutions/:id/leave"
       }
     ]
   }

@@ -25,6 +25,7 @@ CREATE TABLE "LabSession" (
     "status" TEXT NOT NULL DEFAULT 'created',
     "codeServerUrl" TEXT,
     "codeServerToken" TEXT,
+    "appUrl" TEXT,
     "containerId" TEXT,
     "lastHeartbeat" DATETIME,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

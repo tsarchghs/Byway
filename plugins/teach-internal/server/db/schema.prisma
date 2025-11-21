@@ -5,8 +5,8 @@ engineType = "node-api"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./teach_internal.db"
+  provider = "mysql" // can be Postgres too
+  url      = "mysql://root:gjergji21@localhost:3306/byway_teach_internal" // e.g., file:./auth.db
 }
 
 model Course {

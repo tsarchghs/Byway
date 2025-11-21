@@ -3,8 +3,18 @@
     <a-page-header :title="title" :sub-title="subtitle">
       <template #extra>
         <a-space>
+          <a-menu mode="horizontal" :selectedKeys="['overview']">
+            <a-menu-item key="overview"><a :href="navHref('overview')">Overview</a></a-menu-item>
+            <a-menu-item v-if="currentRole==='admin'" key="departments"><a :href="navHref('departments')">Departments</a></a-menu-item>
+            <a-menu-item key="classrooms"><a :href="navHref('classrooms')">Classrooms</a></a-menu-item>
+            <a-menu-item key="people"><a :href="navHref('people')">People Directory</a></a-menu-item>
+            <a-menu-item key="catalog"><a :href="navHref('catalog')">Catalog</a></a-menu-item>
+            <a-menu-item key="calendar"><a :href="navHref('calendar')">Calendar</a></a-menu-item>
+            <a-menu-item key="assignments"><a :href="navHref('assignments')">Assignments</a></a-menu-item>
+          </a-menu>
           <a-segmented v-model:value="activeRole" :options="roles" />
           <a-button size="small" @click="load">Reload</a-button>
+          <a-button size="small" :href="'/institution/join'">Join Institution</a-button>
         </a-space>
       </template>
     </a-page-header>
@@ -40,7 +50,13 @@
               </a-tab-pane>
 
               <a-tab-pane key="classrooms" tab="Classrooms">
-                <a-table size="small" :columns="classroomColumns" :dataSource="classrooms" row-key="id" />
+                <a-table size="small" :columns="classroomColumns" :dataSource="classrooms" row-key="id">
+                  <template #bodyCell="{ column, record }">
+                    <template v-if="column.dataIndex==='title'">
+                      <a :href="`/institution/classrooms/${record.id}?institutionId=${encodeURIComponent(institutionId)}`">{{ record.title || record.code }}</a>
+                    </template>
+                  </template>
+                </a-table>
               </a-tab-pane>
 
               <a-tab-pane v-if="activeRole==='student'" key="courses" tab="Courses">
@@ -58,7 +74,7 @@
             <a-space direction="vertical" style="width:100%">
               <a-button type="link" :href="`/institution/catalog`">Course Catalog</a-button>
               <a-button type="link" :href="`/institution/people`">People Directory</a-button>
-              <a-button type="link" :href="`/institution/assignments/teachers`">Teacher Assignments</a-button>
+              <a-button v-if="currentRole!=='student'" type="link" :href="`/institution/assignments/teachers`">Teacher Assignments</a-button>
             </a-space>
           </a-card>
           <a-card size="small" title="Institution" style="margin-top:16px">
@@ -79,7 +95,17 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRuntimeConfig } from '#imports'
 import { message } from 'ant-design-vue'
-
+function navHref(key: string) {
+  const qs = `?institutionId=${encodeURIComponent(institutionId.value)}`
+  if (key==='overview') return `/institution/portal${qs}`
+  if (key==='departments') return `/institution/departments/${encodeURIComponent((classrooms.value[0]?.departmentId || ''))}${qs}`
+  if (key==='classrooms') return `/institution/classrooms/${encodeURIComponent((classrooms.value[0]?.id || ''))}${qs}`
+  if (key==='people') return `/institution/people${qs}`
+  if (key==='catalog') return `/institution/catalog${qs}`
+  if (key==='calendar') return `/institution/calendar${qs}`
+  if (key==='assignments') return `/institution/assignments/teachers${qs}`
+  return `/institution/portal${qs}`
+}
 type Role = 'student' | 'teacher' | 'admin'
 
 const roles = ['student', 'teacher', 'admin']
@@ -90,6 +116,8 @@ const apiBase = runtime.public?.apiBase || runtime.public?.appBaseUrl || ''
 const institutionId = computed(() => (route.query.institutionId as string) || (route.params?.institution_id as string) || 'inst_byway')
 
 const activeRole = ref<Role>('student')
+const currentRole = ref<'student' | 'teacher' | 'admin' | 'none'>('none')
+const meId = ref<string | null>(null)
 const activeTab = ref<'overview' | 'classrooms' | 'courses' | 'assignments'>('overview')
 const loading = ref(true)
 const institution = ref<any | null>(null)
@@ -139,6 +167,48 @@ async function load() {
 onMounted(load)
 watch(activeRole, () => load())
 watch(institutionId, () => load())
+
+async function resolveCurrentRole() {
+  try {
+    const auth = resolveAuthHeader()
+    if (!auth) return
+    const baseUrl = apiBase ? apiBase.replace(/\/$/, '') : ''
+    const meResp = await fetch(`${baseUrl}/api/authentication/graphql`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', Authorization: auth },
+      body: JSON.stringify({ query: `query Me { me { id } }` }),
+    })
+    const meJson = await meResp.json().catch(() => null)
+    const uid = meJson?.data?.me?.id || null
+    meId.value = uid
+    if (!uid) { currentRole.value = 'none'; return }
+    const resp = await fetch(`${baseUrl}/api/institutions/graphql`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', Authorization: auth },
+      body: JSON.stringify({
+        query: `query($institutionId:String!){ members(institutionId:$institutionId){ userId role } }`,
+        variables: { institutionId: institutionId.value },
+      }),
+    })
+    const json = await resp.json().catch(() => null)
+    const arr = Array.isArray(json?.data?.members) ? json.data.members : []
+    const mem = arr.find((m: any) => m.userId === uid)
+    const role = String(mem?.role || '').toLowerCase()
+    if (role.includes('admin')) currentRole.value = 'admin'
+    else if (role.includes('teach')) currentRole.value = 'teacher'
+    else if (role.includes('student')) currentRole.value = 'student'
+    else currentRole.value = 'none'
+    if (currentRole.value === 'admin' || currentRole.value === 'teacher' || currentRole.value === 'student') {
+      activeRole.value = currentRole.value as Role
+    }
+    if (currentRole.value === 'student') {
+      const dest = `/institution/student_mode/${encodeURIComponent(institutionId.value)}`
+      window.location.href = dest
+    }
+  } catch {}
+}
+
+onMounted(() => { resolveCurrentRole() })
 
 const classroomColumns = [
   { title: 'Title', dataIndex: 'title', key: 'title' },

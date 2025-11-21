@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./gradebook.db"
+  provider = "mysql" // can be Postgres too
+  url      = "mysql://root:gjergji21@localhost:3306/byway_gradebook" // e.g., file:./auth.db
 }
 
 model GradebookEntry {
