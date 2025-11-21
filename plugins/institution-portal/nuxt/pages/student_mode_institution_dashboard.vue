@@ -1550,9 +1550,14 @@
 
   function navHref(key: string) {
     const qs = `?institutionId=${encodeURIComponent(resolvedInstitutionId.value || '')}`
+    const firstDepartmentId = activeDepartments.value[0]?.id
+    const firstClassroomId = filteredClassrooms.value[0]?.id
+    const roleLower = String(viewModel.value?.member?.role || '').toLowerCase()
+    if (roleLower !== 'admin' && key === 'departments') return `/institution/portal${qs}`
+    if (roleLower === 'student' && key === 'assignments') return `/institution/portal${qs}`
     if (key==='overview') return `/institution/portal${qs}`
-    if (key==='departments') return `/institution/departments/${qs}`
-    if (key==='classrooms') return `/institution/classrooms/${qs}`
+    if (key==='departments') return firstDepartmentId ? `/institution/departments/${encodeURIComponent(firstDepartmentId)}${qs}` : `/institution/portal${qs}`
+    if (key==='classrooms') return firstClassroomId ? `/institution/classrooms/${encodeURIComponent(firstClassroomId)}${qs}` : `/institution/portal${qs}`
     if (key==='people') return `/institution/people${qs}`
     if (key==='catalog') return `/institution/catalog${qs}`
     if (key==='calendar') return `/institution/calendar${qs}`

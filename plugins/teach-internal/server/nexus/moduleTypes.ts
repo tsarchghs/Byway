@@ -1,4 +1,5 @@
 import { objectType, extendType, stringArg, nonNull } from 'nexus'
+import { canUser, resolveInstitutionRole } from '../permissions.mjs'
 
 export const GqlModule = objectType({
   name: 'GqlModule',
@@ -16,11 +17,33 @@ export const ModuleQuery = extendType({
     t.list.field('modulesByCourse', {
       type: 'GqlModule',
       args: { courseId: nonNull(stringArg()) },
-      resolve: (_, { courseId }, ctx) =>
-        ctx.prisma.module.findMany({
+      async resolve(_, { courseId }, ctx) {
+        const baseUrl = (ctx.req.protocol + '://' + ctx.req.get('host')).replace(/\/$/, '')
+        const authHeader = ctx.req.headers.authorization || ''
+        const instResp = await fetch(`${baseUrl}/api/teach-internal/course/${encodeURIComponent(courseId)}/institution-context`).catch(() => null)
+        const instCtx = instResp && (await instResp.json().catch(() => null))
+        const institutionId = instCtx?.institutionId || null
+        const allowed = await canUser('course.view', { user: ctx.user, institutionId, req: ctx.req })
+        if (!allowed) throw new Error('FORBIDDEN')
+        if (institutionId && ctx.user?.id) {
+          const roomsResp = await fetch(`${baseUrl}/api/institutions/graphql`, {
+            method: 'POST', headers: { 'content-type': 'application/json', ...(authHeader ? { Authorization: authHeader } : {}) },
+            body: JSON.stringify({ query: `query($institutionId:String){ classrooms(institutionId:$institutionId){ id enrollments{ studentId status } } }`, variables: { institutionId } })
+          }).catch(() => null)
+          const roomsJson = roomsResp && (await roomsResp.json().catch(() => null))
+          const arr = Array.isArray(roomsJson?.data?.classrooms) ? roomsJson.data.classrooms : []
+          const room = instCtx?.classroomId ? arr.find((r: any) => r.id === instCtx.classroomId) : null
+          const role = await resolveInstitutionRole(ctx.user.id, institutionId, ctx.req)
+          if (role === 'student') {
+            const enrolled = room ? (Array.isArray(room.enrollments) ? room.enrollments.some((en: any) => en.studentId === ctx.user.id && String(en.status || '').toUpperCase() !== 'REMOVED') : false) : false
+            if (!enrolled) throw new Error('FORBIDDEN')
+          }
+        }
+        return ctx.prisma.module.findMany({
           where: { courseId },
           include: { lessons: true },
-        }),
+        })
+      },
     })
   },
 })

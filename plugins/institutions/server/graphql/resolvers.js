@@ -1,7 +1,7 @@
 // plugins/institutions/server/graphql/resolvers.js
 import { PrismaClient } from '../db/generated/index'
 const prismaSingleton = new PrismaClient()
-async function getPrisma() {
+export async function getPrisma() {
   return prismaSingleton
 }
 
@@ -108,7 +108,9 @@ export const resolvers = {
       requireAuth(ctx)
       const { name, ...rest } = args
       const title = args.title || name
-      return prisma.classroom.create({ data: { ...rest, title } })
+      const data:any = { ...rest, title }
+      if (typeof args.courseIds === 'string') data.courseIds = args.courseIds
+      return prisma.classroom.create({ data })
     },
 
     updateClassroom: async (_parent, { id, ...data }, ctx) => {
@@ -118,6 +120,7 @@ export const resolvers = {
       const { name, title, ...rest } = data
       const next = { ...rest }
       if (title || name) next.title = title || name
+      if (typeof data.courseIds === 'string') next.courseIds = data.courseIds
       return prisma.classroom.update({ where: { id }, data: next })
     },
 

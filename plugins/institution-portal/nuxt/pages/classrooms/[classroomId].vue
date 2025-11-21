@@ -59,6 +59,14 @@
               <a-descriptions-item label="Status">{{ room?.status || '—' }}</a-descriptions-item>
             </a-descriptions>
           </a-card>
+          <a-card size="small" title="Teach Course" style="margin-top:16px">
+            <a-descriptions :column="1" size="small">
+              <a-descriptions-item label="Bound">{{ classCourse?.bound ? 'Yes' : 'No' }}</a-descriptions-item>
+              <a-descriptions-item v-if="classCourse?.bound" label="Title">{{ classCourse?.course?.title }}</a-descriptions-item>
+              <a-descriptions-item v-if="classCourse?.bound" label="Modules">{{ classCourse?.moduleCount }}</a-descriptions-item>
+              <a-descriptions-item v-if="classCourse?.bound" label="Lessons">{{ classCourse?.lessonCount }}</a-descriptions-item>
+            </a-descriptions>
+          </a-card>
         </a-col>
       </a-row>
     </a-skeleton>
@@ -87,6 +95,7 @@ const lessons = ref<any[]>([])
 const students = ref<any[]>([])
 const currentRole = ref<'student' | 'teacher' | 'admin' | 'none'>('none')
 const meId = ref<string | null>(null)
+const classCourse = ref<any | null>(null)
 
 function resolveAuthHeader(): string | null {
   if (typeof window === 'undefined') return null
@@ -111,6 +120,9 @@ async function load() {
     assignments.value = json.assignments || []
     lessons.value = json.lessons || []
     students.value = json.students || []
+    const agg = await fetch(`${baseUrl}/api/institution-portal/classrooms/${encodeURIComponent(classroomId.value)}/classroom-course`, { headers: { Authorization: auth } })
+    const aggJson = await agg.json().catch(() => null)
+    classCourse.value = aggJson || null
   } catch (e: any) {
     message.error(e?.message || 'Failed to load classroom')
   } finally {
@@ -141,6 +153,8 @@ const studentColumns = [
 ]
 function navHref(key: string) {
   const qs = `?institutionId=${encodeURIComponent(institutionId.value)}`
+  if (currentRole.value !== 'admin' && key === 'departments') return `/institution/portal${qs}`
+  if (currentRole.value === 'student' && key === 'assignments') return `/institution/portal${qs}`
   if (key==='overview') return `/institution/portal${qs}`
   if (key==='departments') return `/institution/departments/${encodeURIComponent((department.value?.id || ''))}${qs}`
   if (key==='classrooms') return `/institution/classrooms/${encodeURIComponent(classroomId.value)}${qs}`

@@ -46,6 +46,21 @@
           </template>
         </a-page-header>
 
+        <!-- Institution Context -->
+        <div v-if="instCtx.classroomId" class="mt-2" style="padding:0 24px">
+          <a-card size="small" :bordered="false">
+            <a-space wrap>
+              <a-tag color="purple">Institution Classroom</a-tag>
+              <a v-if="instCtx.classroomId" :href="instClassroomHref" style="font-weight:600">
+                {{ instCtx.institution?.name || 'Institution' }} · {{ instCtx.classroomId }}
+              </a>
+              <span v-if="instCtx.teacherIds?.length">• Teachers: {{ instCtx.teacherIds.join(', ') }}</span>
+              <span v-if="instCtx.schedule?.startsAt">• Starts: {{ fmtDate(instCtx.schedule.startsAt) }}</span>
+              <span v-if="instCtx.schedule?.endsAt">• Ends: {{ fmtDate(instCtx.schedule.endsAt) }}</span>
+            </a-space>
+          </a-card>
+        </div>
+
         <!-- ==================== MAIN CONTENT LAYOUT ==================== -->
         <a-layout>
           
@@ -3352,6 +3367,7 @@ onMounted(async () => {
     await fetchAllContent(pid);
     // Load lab challenges for all lab lessons
     await loadLabChallenges();
+    await loadInstitutionContext();
   }
   reflectSideInputs();
 });
@@ -3689,6 +3705,30 @@ const uniLoading = ref(false)
 const courseId = computed(() => (route?.params?.courseId || route?.query?.courseId || (typeof currentCourse !== 'undefined' && currentCourse?.id) || (typeof props !== 'undefined' && props?.courseId) || null))
 
 const institution = ref(null)
+const instCtx = ref<any>({})
+const instClassroomHref = computed(() => {
+  const cid = instCtx.value?.classroomId
+  const instId = instCtx.value?.institution?.id
+  if (!cid) return '#'
+  const qs = instId ? `?institutionId=${encodeURIComponent(instId)}` : ''
+  return `/institution/classrooms/${encodeURIComponent(cid)}${qs}`
+})
+function fmtDate(input?: string | Date | null) {
+  if (!input) return '—'
+  const d = typeof input === 'string' ? new Date(input) : input
+  if (!d || Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' })
+}
+async function loadInstitutionContext() {
+  try {
+    const cid = course?.id || courseId.value
+    if (!cid) return
+    const res = await $fetch(`/api/teach-internal/course/${encodeURIComponent(String(cid))}/institution-context`)
+    instCtx.value = res || {}
+  } catch {}
+}
+watch(() => course?.id, () => loadInstitutionContext())
+watch(courseId, () => loadInstitutionContext())
 
 // Cohorts
 const cohorts = ref([])

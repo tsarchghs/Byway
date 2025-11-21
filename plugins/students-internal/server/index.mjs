@@ -6,6 +6,7 @@ import { resolvers } from './graphql/resolvers.js';
 import { prisma } from './db/client.js';
 import fs from 'fs';
 import path from 'path';
+import { resolveUser } from './permissions.mjs';
 
 const uploadsDir = path.resolve(process.cwd(), 'plugins/students-internal/uploads');
 fs.mkdirSync(uploadsDir, { recursive: true });
@@ -13,6 +14,7 @@ const filePromises = fs.promises;
 
 export async function register(app) {
   const router = express.Router();
+  router.use(async (req, _res, next) => { try { req.user = await resolveUser(req) } catch {} next() })
   router.use(cors({ origin: ['http://localhost:3000'], credentials: true }));
   router.use('/files', express.static(uploadsDir));
   router.use(express.json({ limit: '25mb' }));
@@ -32,6 +34,10 @@ export async function register(app) {
   router.get('/api/student-courses', async (req, res) => {
     try {
       const { studentId, courseId } = req.query;
+      const currentUserId = req.user?.id || null;
+      const isSelf = currentUserId && String(studentId || '') === String(currentUserId);
+      const hasElevated = Array.isArray(req.user?.roles) && (req.user.roles.includes('admin') || req.user.roles.includes('teacher'));
+      if (!isSelf && !hasElevated) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } });
       const where = { studentId: String(studentId || '') };
       const list = await prisma.studentCourse.findMany({ where });
       const filtered = courseId ? list.filter(x => x.courseId === String(courseId)) : list;

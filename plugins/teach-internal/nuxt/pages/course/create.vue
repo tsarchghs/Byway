@@ -189,6 +189,7 @@ const rules: Record<string, Rule[]> = {
 
 /** GraphQL */
 const API_URL = 'http://localhost:4000/api/teach-internal/graphql'
+const API_BASE = 'http://localhost:4000'
 function getAuthHeaders() {
   const headers: Record<string, string> = { 'Content-Type': 'application/json', "Authorization": "Bearer " + localStorage.getItem("token") }
   return headers
@@ -258,6 +259,15 @@ async function submit() {
     const cover = (form.value.coverUrl || '').trim()
     if (cover) await fetchGraphQL(GQL.updateCourseCover, { id: newId, coverUrl: cover })
 
+    const classroomId = (route.query?.classroomId as string) || null
+    if (classroomId) {
+      try {
+        await fetch(`${API_BASE}/api/institutions/classrooms/${encodeURIComponent(classroomId)}/bind-course`, {
+          method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ courseId: newId })
+        })
+      } catch {}
+    }
+
     message.success('Course created')
     router.push(`/teach-internal/${teacherId.value}/course/${newId}/module/new/view`)
   } catch (e: any) {
@@ -291,3 +301,4 @@ definePageMeta({ layout: 'teacher' })
 
 .mb-2 { margin-bottom: 12px; }
 </style>
+const route = useRoute()

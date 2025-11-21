@@ -125,6 +125,12 @@
         </a-form-item>
         <a-form-item label="Capacity"><a-input-number v-model:value="classForm.capacity" :min="1" :max="500" style="width: 100%" /></a-form-item>
         <a-form-item label="Status"><a-input v-model:value="classForm.status" placeholder="active/inactive" /></a-form-item>
+        <a-form-item label="Teach course">
+          <a-select v-model:value="selectedCourseId" :options="courseOptions" allow-clear placeholder="Select course" />
+        </a-form-item>
+        <a-form-item label="Preferred modules">
+          <a-select v-model:value="selectedModuleIds" :options="moduleOptions" mode="multiple" allow-clear placeholder="Select modules" />
+        </a-form-item>
       </a-form>
     </a-modal>
 
@@ -178,6 +184,10 @@ const instForm = ref<any>({})
 const deptForm = ref<any>({})
 const classForm = ref<any>({})
 const inviteForm = ref<any>({ role: 'student', expiresAt: null })
+const selectedCourseId = ref<string | undefined>(undefined)
+const selectedModuleIds = ref<string[]>([])
+const courseOptions = ref<any[]>([])
+const moduleOptions = ref<any[]>([])
 
 function tokenHeader() {
   const t = token?.value || (typeof window !== 'undefined' ? localStorage.getItem('token') : '')
@@ -204,7 +214,7 @@ async function load() {
       query($id:String!){
         institution(id:$id){ id name slug type location email phone active }
         departments(institutionId:$id){ id name slug active }
-        classrooms(institutionId:$id){ id title code departmentId capacity status enrollments { id } }
+        classrooms(institutionId:$id){ id title code departmentId capacity status courseIds enrollments { id } }
         members(institutionId:$id){ id userId role status }
         stats(institutionId:$id){ classrooms activeClassrooms departments members students }
       }
@@ -263,6 +273,16 @@ function openClassroom(c?: any) {
     ? { ...c }
     : { title: '', code: '', departmentId: selectedDept.value?.id, capacity: 30, status: 'active' }
   classOpen.value = true
+  loadCourseOptions()
+  try {
+    const raw = classForm.value?.courseIds
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      selectedCourseId.value = parsed?.courseId || undefined
+      selectedModuleIds.value = Array.isArray(parsed?.preferredModuleIds) ? parsed.preferredModuleIds : []
+      if (selectedCourseId.value) loadModuleOptions(String(selectedCourseId.value))
+    }
+  } catch {}
 }
 function openInvite() {
   inviteForm.value = { role: 'student', expiresAt: null }
@@ -304,14 +324,17 @@ async function saveClassroom() {
   try {
     const vars = { institutionId: inst.value.id, ...classForm.value }
     const mutation = classForm.value.id
-      ? `mutation($id:String!,$departmentId:String,$name:String,$code:String,$teacherId:String,$capacity:Int,$status:String,$startsAt:String,$endsAt:String){
-          updateClassroom(id:$id,departmentId:$departmentId,name:$name,code:$code,teacherId:$teacherId,capacity:$capacity,status:$status,startsAt:$startsAt,endsAt:$endsAt){ id }
+      ? `mutation($id:String!,$departmentId:String,$name:String,$code:String,$teacherId:String,$capacity:Int,$status:String,$startsAt:String,$endsAt:String,$courseIds:String){
+          updateClassroom(id:$id,departmentId:$departmentId,name:$name,code:$code,teacherId:$teacherId,capacity:$capacity,status:$status,startsAt:$startsAt,endsAt:$endsAt,courseIds:$courseIds){ id }
         }`
-      : `mutation($institutionId:String!,$departmentId:String,$name:String!,$code:String!,$teacherId:String,$capacity:Int,$status:String,$startsAt:String,$endsAt:String){
-          createClassroom(institutionId:$institutionId,departmentId:$departmentId,name:$name,code:$code,teacherId:$teacherId,capacity:$capacity,status:$status,startsAt:$startsAt,endsAt:$endsAt){ id }
+      : `mutation($institutionId:String!,$departmentId:String,$name:String!,$code:String!,$teacherId:String,$capacity:Int,$status:String,$startsAt:String,$endsAt:String,$courseIds:String){
+          createClassroom(institutionId:$institutionId,departmentId:$departmentId,name:$name,code:$code,teacherId:$teacherId,capacity:$capacity,status:$status,startsAt:$startsAt,endsAt:$endsAt,courseIds:$courseIds){ id }
         }`
     // map title->name
     vars.name = vars.title || vars.name
+    if (selectedCourseId.value) {
+      vars.courseIds = JSON.stringify({ courseId: selectedCourseId.value, preferredModuleIds: selectedModuleIds.value })
+    }
     await gql(mutation, vars)
     classOpen.value = false
     await load()
@@ -416,3 +439,20 @@ onMounted(() => {
   justify-content: flex-end;
 }
 </style>
+async function loadCourseOptions() {
+  try {
+    const resp = await fetch(`${apiBase}/api/teach-internal/courses`, { headers: { ...tokenHeader() } })
+    const json = await resp.json().catch(() => ({}))
+    const arr = Array.isArray(json?.data) ? json.data : []
+    courseOptions.value = arr.map((c: any) => ({ label: c.title, value: c.id }))
+  } catch { courseOptions.value = [] }
+}
+async function loadModuleOptions(courseId: string) {
+  try {
+    const resp = await fetch(`${apiBase}/api/teach-internal/modules`, { headers: { ...tokenHeader() } })
+    const json = await resp.json().catch(() => ({}))
+    const arr = Array.isArray(json?.data) ? json.data.filter((m: any) => m.courseId === courseId) : []
+    moduleOptions.value = arr.map((m: any) => ({ label: m.title, value: m.id }))
+  } catch { moduleOptions.value = [] }
+}
+watch(selectedCourseId, (cid) => { if (cid) loadModuleOptions(String(cid)); else moduleOptions.value = [] })

@@ -4,8 +4,10 @@ import { startSessionForUser, stopSessionById } from '../services/sessions.mjs';
 import { runGrading } from '../services/grader.mjs';
 import { fetchBindingMetaForChallenge, fetchLessonContextById } from '../services/courses-bridge.mjs';
 import { PrismaClient } from '../../../authentication/server/db/generated';
+import { resolveUser, canUser } from '../permissions.mjs';
 
 export const restRouter = express.Router();
+restRouter.use(async (req, _res, next) => { try { req.user = await resolveUser(req) } catch {} next() })
 function requireUser(req, res) {
   const user = req.user;
   if (!user || !user.id) {
@@ -153,6 +155,8 @@ restRouter.get('/challenges/by-lesson/:lessonId', async (req, res) => {
 restRouter.post('/session/start', express.json(), async (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
+  const allowed = await canUser('lab.run', { user, req })
+  if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
 
   const { challengeId, sessionId, forceRestart } = req.body ?? {};
   if (!challengeId) {
@@ -176,6 +180,8 @@ restRouter.post('/session/start', express.json(), async (req, res) => {
 restRouter.post('/session/refresh', express.json(), async (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
+  const allowed = await canUser('lab.run', { user, req })
+  if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
 
   const { id, challengeId } = req.body ?? {};
   if (!id && !challengeId) {
@@ -228,6 +234,8 @@ restRouter.post('/session/stop', express.json(), async (req, res) => {
 restRouter.post('/submit', express.json(), async (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
+  const allowed = await canUser('lab.run', { user, req })
+  if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
 
   const { sessionId } = req.body ?? {};
   if (!sessionId) return res.status(400).json({ error: 'sessionId required' });
@@ -264,6 +272,8 @@ restRouter.get('/bindings/challenge/:id', async (req, res) => {
 restRouter.post('/bindings/challenge/:id', express.json(), async (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
+  const allowed = await canUser('lab.grade', { user, req })
+  if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
 
   const id = req.params.id;
   const { courseId, moduleId, lessonId } = req.body ?? {};
@@ -301,6 +311,8 @@ restRouter.get('/sessions/me', async (req, res) => {
 restRouter.get('/teacher/submissions', async (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
+  const allowed = await canUser('lab.grade', { user, req })
+  if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
 
   const submissions = await prisma.submission.findMany({
     where: {
@@ -347,6 +359,8 @@ restRouter.get('/teacher/submissions', async (req, res) => {
 restRouter.post('/teacher/submissions/:id/rerun', express.json(), async (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
+  const allowed = await canUser('lab.grade', { user, req })
+  if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
 
   const id = req.params.id;
 
@@ -380,6 +394,8 @@ restRouter.post('/teacher/submissions/:id/rerun', express.json(), async (req, re
 restRouter.get('/teacher/submissions/session/:sessionId', async (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
+  const allowed = await canUser('lab.grade', { user, req })
+  if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
 
   const sessionId = req.params.sessionId;
 

@@ -55,6 +55,8 @@ const modulesByCourse = ref<Record<string, any[]>>({})
 const currentRole = ref<'student' | 'teacher' | 'admin' | 'none'>('none')
 const meId = ref<string | null>(null)
 const teacherIds = ref<string[]>([])
+const firstDepartmentId = ref<string | null>(null)
+const firstClassroomId = ref<string | null>(null)
 
 function resolveAuthHeader(): string | null {
   if (typeof window === 'undefined') return null
@@ -71,8 +73,16 @@ async function load() {
     const baseUrl = apiBase ? apiBase.replace(/\/$/, '') : ''
     const url = `${baseUrl}/api/institution-portal/catalog?institutionId=${encodeURIComponent(institutionId.value)}`
     const resp = await fetch(url, { headers: { Authorization: auth } })
-    if (!resp.ok) throw new Error(await resp.text().catch(() => `HTTP ${resp.status}`))
-    const json = await resp.json()
+    let json: any = null
+    if (resp.ok) {
+      json = await resp.json()
+    } else {
+      const fallback = await fetch(`${baseUrl}/api/teach-internal/courses`, { headers: { Authorization: auth } })
+      if (!fallback.ok) throw new Error(await fallback.text().catch(() => `HTTP ${fallback.status}`))
+      const payload = await fallback.json().catch(() => ({}))
+      const items = Array.isArray(payload?.data) ? payload.data : []
+      json = { courses: items.map((c: any) => ({ courseId: c.id, title: c.title, teacherId: c.teacherId || null, category: c.category || null, difficulty: c.difficulty || null, availability: 'available' })) }
+    }
     courses.value = json.courses || []
     await loadModulesForCourses(auth)
     await loadInstitutionTeachers(auth)
@@ -132,13 +142,15 @@ async function loadInstitutionTeachers(auth: string) {
       method: 'POST',
       headers: { 'content-type': 'application/json', Authorization: auth },
       body: JSON.stringify({
-        query: `query($institutionId:String!){ classrooms(institutionId:$institutionId){ teacherId } }`,
+        query: `query($institutionId:String!){ classrooms(institutionId:$institutionId){ id departmentId teacherId } }`,
         variables: { institutionId: institutionId.value },
       }),
     })
     const json = await resp.json().catch(() => null)
     const arr = Array.isArray(json?.data?.classrooms) ? json.data.classrooms : []
     teacherIds.value = Array.from(new Set(arr.map((c: any) => String(c.teacherId || '')).filter(Boolean)))
+    firstClassroomId.value = (arr[0]?.id as string) || null
+    firstDepartmentId.value = (arr.find((c: any) => c.departmentId)?.departmentId as string) || null
   } catch {}
 }
 
@@ -154,8 +166,8 @@ function courseLink(record: any) {
 function navHref(key: string) {
   const qs = `?institutionId=${encodeURIComponent(institutionId.value)}`
   if (key==='overview') return `/institution/portal${qs}`
-  if (key==='departments') return `/institution/departments/${qs}`
-  if (key==='classrooms') return `/institution/classrooms/${qs}`
+  if (key==='departments') return firstDepartmentId.value ? `/institution/departments/${encodeURIComponent(firstDepartmentId.value)}${qs}` : `/institution/portal${qs}`
+  if (key==='classrooms') return firstClassroomId.value ? `/institution/classrooms/${encodeURIComponent(firstClassroomId.value)}${qs}` : `/institution/portal${qs}`
   if (key==='people') return `/institution/people${qs}`
   if (key==='catalog') return `/institution/catalog${qs}`
   if (key==='calendar') return `/institution/calendar${qs}`

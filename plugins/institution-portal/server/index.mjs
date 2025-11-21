@@ -1,5 +1,6 @@
 import express from 'express'
 import cors from 'cors'
+import { resolveUser, canUser } from './permissions.mjs'
 
 const DEFAULT_CORS = ['http://localhost:3000', 'http://localhost:3001']
 let cachedFetch = null
@@ -78,6 +79,7 @@ function asArray(value) {
 
 export async function register(app) {
   const router = express.Router()
+  router.use(async (req, _res, next) => { try { req.user = await resolveUser(req) } catch {} next() })
   const corsOrigins =
     process.env.PLUGIN_CORS_ORIGINS?.split(',').map((origin) => origin.trim()).filter(Boolean) ||
     DEFAULT_CORS
@@ -803,6 +805,8 @@ export async function register(app) {
       `)
       const me = meData?.me
       if (!me?.id) return res.status(401).json({ error: 'Unable to resolve current user' })
+      const allowedTeacher = await canUser('institution.teacher', { user: req.user, institutionId: institutionIdParam, req })
+      if (!allowedTeacher) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
       const instData = await gql('/api/institutions/graphql', `
         query ($id:String!) { institution(id:$id) { id name slug type location email phone active createdAt updatedAt } }
       `, { id: institutionIdParam })
@@ -952,6 +956,36 @@ export async function register(app) {
       return res.status(502).json({ error: 'Failed to load classroom overview' })
     }
   })
+  
+  router.get('/classrooms/:id/classroom-course', async (req, res) => {
+    const authHeader = req.headers.authorization
+    if (!authHeader) return res.status(401).json({ error: 'Missing Authorization header' })
+    const baseUrl = normalizeBaseUrl(req)
+    if (!baseUrl) return res.status(500).json({ error: 'Unable to resolve API base URL' })
+    const fetchImpl = await ensureFetch()
+    const classroomId = String(req.params.id || '').trim()
+    try {
+      const bindResp = await fetchImpl(`${baseUrl}/api/institutions/classrooms/${encodeURIComponent(classroomId)}/course-binding`, { headers: { Authorization: authHeader } }).catch(() => null)
+      const bindJson = bindResp && (await bindResp.json().catch(() => null))
+      const binding = bindJson?.binding || null
+      const instId = bindJson?.institutionId || null
+      const allowedView = await canUser('classroom.view', { user: req.user, institutionId: instId, req })
+      if (!allowedView) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
+      if (!binding?.courseId) return res.json({ classroomId, bound: false })
+      const courseResp = await fetchImpl(`${baseUrl}/api/teach-internal/courses/${encodeURIComponent(binding.courseId)}`, { headers: { Authorization: authHeader } }).catch(() => null)
+      const courseJson = courseResp && (await courseResp.json().catch(() => null))
+      const course = courseJson?.data || null
+      const modulesResp = await fetchImpl(`${baseUrl}/api/teach-internal/modules`, { headers: { Authorization: authHeader } }).catch(() => null)
+      const modulesJson = modulesResp && (await modulesResp.json().catch(() => null))
+      const modules = Array.isArray(modulesJson?.data) ? modulesJson.data.filter((m) => m.courseId === binding.courseId) : []
+      const lessonsResp = await fetchImpl(`${baseUrl}/api/teach-internal/lessons`, { headers: { Authorization: authHeader } }).catch(() => null)
+      const lessonsJson = lessonsResp && (await lessonsResp.json().catch(() => null))
+      const lessons = Array.isArray(lessonsJson?.data) ? lessonsJson.data.filter((l) => modules.some((m) => m.id === l.moduleId)) : []
+      return res.json({ classroomId, bound: true, course: course ? { id: course.id, title: course.title, category: course.category || null, difficulty: course.difficulty || null } : null, moduleCount: modules.length, lessonCount: lessons.length })
+    } catch (err) {
+      return res.status(502).json({ error: 'Failed to load classroom course', details: err?.message || null })
+    }
+  })
 
   router.get('/catalog', async (req, res) => {
     const authHeader = req.headers.authorization
@@ -1070,6 +1104,8 @@ export async function register(app) {
       `, { id: institutionIdParam })
       const institution = instData?.institution || null
       if (!institution?.id) return res.status(404).json({ error: 'Institution not found' })
+      const allowed = await canUser('attendance.edit', { user: req.user, institutionId: institution.id, req })
+      if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
       const roomData = await gql('/api/institutions/graphql', `
         query ($institutionId:String!) { classrooms(institutionId:$institutionId) { id title code enrollments { id studentId status } } }
       `, { institutionId: institution.id })

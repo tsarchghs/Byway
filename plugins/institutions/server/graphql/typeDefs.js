@@ -27,6 +27,7 @@ type Classroom {
   status: String
   startsAt: String
   endsAt: String
+  courseIds: String
   enrollments: [ClassroomEnrollment!]
   createdAt: String!
   updatedAt: String!
@@ -95,8 +96,8 @@ type Mutation {
   createDepartment(institutionId: String!, name: String!, slug: String!, contact: String, head: String, active: Boolean): Department!
   updateDepartment(id: String!, name: String, slug: String, contact: String, head: String, active: Boolean): Department!
 
-  createClassroom(institutionId: String!, departmentId: String, name: String!, code: String!, teacherId: String, capacity: Int, status: String, startsAt: String, endsAt: String): Classroom!
-  updateClassroom(id: String!, departmentId: String, name: String, code: String, teacherId: String, capacity: Int, status: String, startsAt: String, endsAt: String): Classroom!
+  createClassroom(institutionId: String!, departmentId: String, name: String!, code: String!, teacherId: String, capacity: Int, status: String, startsAt: String, endsAt: String, courseIds: String): Classroom!
+  updateClassroom(id: String!, departmentId: String, name: String, code: String, teacherId: String, capacity: Int, status: String, startsAt: String, endsAt: String, courseIds: String): Classroom!
 
   addMember(institutionId: String!, userId: String!, role: String!, status: String): InstitutionMember!
   removeMember(id: String!): Boolean!

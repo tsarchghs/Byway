@@ -97,9 +97,11 @@ import { useRoute, useRuntimeConfig } from '#imports'
 import { message } from 'ant-design-vue'
 function navHref(key: string) {
   const qs = `?institutionId=${encodeURIComponent(institutionId.value)}`
+  const firstClassroomId = classrooms.value[0]?.id
+  const firstDepartmentId = classrooms.value.find((c) => c.departmentId)?.departmentId
   if (key==='overview') return `/institution/portal${qs}`
-  if (key==='departments') return `/institution/departments/${encodeURIComponent((classrooms.value[0]?.departmentId || ''))}${qs}`
-  if (key==='classrooms') return `/institution/classrooms/${encodeURIComponent((classrooms.value[0]?.id || ''))}${qs}`
+  if (key==='departments') return firstDepartmentId ? `/institution/departments/${encodeURIComponent(firstDepartmentId)}${qs}` : `/institution/portal${qs}`
+  if (key==='classrooms') return firstClassroomId ? `/institution/classrooms/${encodeURIComponent(firstClassroomId)}${qs}` : `/institution/portal${qs}`
   if (key==='people') return `/institution/people${qs}`
   if (key==='catalog') return `/institution/catalog${qs}`
   if (key==='calendar') return `/institution/calendar${qs}`
