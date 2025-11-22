@@ -6,7 +6,7 @@ import { resolvers } from './graphql/resolvers.js';
 import { prisma } from './db/client.js';
 import fs from 'fs';
 import path from 'path';
-import { resolveUser } from './permissions.mjs';
+import { resolveUser, canUser, resolveInstitutionRole } from './permissions.mjs';
 
 const uploadsDir = path.resolve(process.cwd(), 'plugins/students-internal/uploads');
 fs.mkdirSync(uploadsDir, { recursive: true });
@@ -25,7 +25,7 @@ export async function register(app) {
     context: ({ req }) => {
       const auth = req.headers.authorization || '';
       const token = auth.replace('Bearer ', '').trim() || undefined;
-      return { req, token, prisma };
+      return { req, token, prisma, user: req.user };
     },
   });
   await server.start();
@@ -35,9 +35,16 @@ export async function register(app) {
     try {
       const { studentId, courseId } = req.query;
       const currentUserId = req.user?.id || null;
-      const isSelf = currentUserId && String(studentId || '') === String(currentUserId);
-      const hasElevated = Array.isArray(req.user?.roles) && (req.user.roles.includes('admin') || req.user.roles.includes('teacher'));
-      if (!isSelf && !hasElevated) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } });
+      let institutionId = null;
+      if (courseId) {
+        const baseUrl = (req.protocol + '://' + req.get('host')).replace(/\/$/, '')
+        const resp = await fetch(`${baseUrl}/api/teach-internal/course/${encodeURIComponent(String(courseId))}/institution-context`).catch(() => null)
+        const ctx = resp && (await resp.json().catch(() => null))
+        institutionId = ctx?.institutionId || null
+      }
+      const role = currentUserId && institutionId ? await resolveInstitutionRole(currentUserId, institutionId, req) : null
+      const allowed = await canUser('student-record.view', { user: req.user, role, studentId: String(studentId || '') })
+      if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } });
       const where = { studentId: String(studentId || '') };
       const list = await prisma.studentCourse.findMany({ where });
       const filtered = courseId ? list.filter(x => x.courseId === String(courseId)) : list;
@@ -55,6 +62,8 @@ export async function register(app) {
       const userId = req.body?.userId || req.query?.userId;
       const displayName = req.body?.displayName || req.query?.displayName || null;
       if (!userId) return res.status(400).json({ success: false, error: 'userId required' });
+      const allowed = await canUser('student-record.view', { user: req.user, role: null, studentId: String(userId) })
+      if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
       const student = await prisma.student.upsert({
         where: { userId: String(userId) },
         update: { displayName: displayName || undefined },
@@ -69,6 +78,16 @@ export async function register(app) {
   router.post('/files/upload', async (req, res) => {
     try {
       const { fileName, data, courseId, moduleId, lessonId, kind } = req.body || {};
+      let institutionId = null;
+      if (courseId) {
+        const baseUrl = (req.protocol + '://' + req.get('host')).replace(/\/$/, '')
+        const resp = await fetch(`${baseUrl}/api/teach-internal/course/${encodeURIComponent(String(courseId))}/institution-context`).catch(() => null)
+        const ctx = resp && (await resp.json().catch(() => null))
+        institutionId = ctx?.institutionId || null
+      }
+      const role = req.user?.id && institutionId ? await resolveInstitutionRole(req.user.id, institutionId, req) : null
+      const allowed = await canUser('assignment.submit', { user: req.user, role })
+      if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
       if (!fileName || !data) {
         return res.status(400).json({ ok: false, error: 'fileName and data are required' });
       }

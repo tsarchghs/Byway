@@ -1,5 +1,5 @@
 import { objectType, extendType, stringArg, intArg, nonNull, arg } from 'nexus'
-import { canUser, resolveInstitutionRole } from '../permissions.mjs'
+import { canUser, resolveInstitutionRole, canAccessCourse } from '../permissions.mjs'
 
 export const GqlLesson = objectType({
   name: 'GqlLesson',
@@ -32,22 +32,8 @@ export const LessonQuery = extendType({
         const instResp = courseId ? await fetch(`${baseUrl}/api/teach-internal/course/${encodeURIComponent(courseId)}/institution-context`).catch(() => null) : null
         const instCtx = instResp && (await instResp.json().catch(() => null))
         const institutionId = instCtx?.institutionId || null
-        const allowed = await canUser('course.view', { user: ctx.user, institutionId, req: ctx.req })
+        const allowed = await canAccessCourse(ctx.user, { req: ctx.req, courseId, institutionId, classroomIds: instCtx?.classroomId ? [instCtx.classroomId] : [] })
         if (!allowed) throw new Error('FORBIDDEN')
-        if (institutionId && ctx.user?.id) {
-          const roomsResp = await fetch(`${baseUrl}/api/institutions/graphql`, {
-            method: 'POST', headers: { 'content-type': 'application/json', ...(authHeader ? { Authorization: authHeader } : {}) },
-            body: JSON.stringify({ query: `query($institutionId:String){ classrooms(institutionId:$institutionId){ id enrollments{ studentId status } } }`, variables: { institutionId } })
-          }).catch(() => null)
-          const roomsJson = roomsResp && (await roomsResp.json().catch(() => null))
-          const arr = Array.isArray(roomsJson?.data?.classrooms) ? roomsJson.data.classrooms : []
-          const room = instCtx?.classroomId ? arr.find((r: any) => r.id === instCtx.classroomId) : null
-          const role = await resolveInstitutionRole(ctx.user.id, institutionId, ctx.req)
-          if (role === 'student') {
-            const enrolled = room ? (Array.isArray(room.enrollments) ? room.enrollments.some((en: any) => en.studentId === ctx.user.id && String(en.status || '').toUpperCase() !== 'REMOVED') : false) : false
-            if (!enrolled) throw new Error('FORBIDDEN')
-          }
-        }
         return ctx.prisma.lesson.findMany({ where: { moduleId } })
       },
     })
@@ -69,7 +55,18 @@ export const LessonMutation = extendType({
         rubric: stringArg(),
         metadata: arg({ type: 'JSON' }),
       },
-      resolve: (_, args, ctx) => ctx.prisma.lesson.create({ data: args as any }),
+      async resolve(_, args, ctx) {
+        const mod = await ctx.prisma.module.findUnique({ where: { id: args.moduleId } })
+        const courseId = mod?.courseId || ''
+        const baseUrl = (ctx.req.protocol + '://' + ctx.req.get('host')).replace(/\/$/, '')
+        const instResp = courseId ? await fetch(`${baseUrl}/api/teach-internal/course/${encodeURIComponent(courseId)}/institution-context`).catch(() => null) : null
+        const instCtx = instResp && (await instResp.json().catch(() => null))
+        const institutionId = instCtx?.institutionId || null
+        const role = ctx.user?.id && institutionId ? await resolveInstitutionRole(ctx.user.id, institutionId, ctx.req) : null
+        const allowed = await canUser('course.edit', { user: ctx.user, role })
+        if (!allowed) throw new Error('FORBIDDEN')
+        return ctx.prisma.lesson.create({ data: args as any })
+      },
     })
 
     t.field('updateLesson', {
@@ -84,8 +81,18 @@ export const LessonMutation = extendType({
         rubric: stringArg(),
         metadata: arg({ type: 'JSON' }),
       },
-      resolve: async (_, { id, ...data }, ctx) =>
-        ctx.prisma.lesson.update({
+      async resolve(_, { id, ...data }, ctx) {
+        const lesson = await ctx.prisma.lesson.findUnique({ where: { id } })
+        const mod = lesson?.moduleId ? await ctx.prisma.module.findUnique({ where: { id: lesson.moduleId } }) : null
+        const courseId = mod?.courseId || ''
+        const baseUrl = (ctx.req.protocol + '://' + ctx.req.get('host')).replace(/\/$/, '')
+        const instResp = courseId ? await fetch(`${baseUrl}/api/teach-internal/course/${encodeURIComponent(courseId)}/institution-context`).catch(() => null) : null
+        const instCtx = instResp && (await instResp.json().catch(() => null))
+        const institutionId = instCtx?.institutionId || null
+        const role = ctx.user?.id && institutionId ? await resolveInstitutionRole(ctx.user.id, institutionId, ctx.req) : null
+        const allowed = await canUser('course.edit', { user: ctx.user, role })
+        if (!allowed) throw new Error('FORBIDDEN')
+        return ctx.prisma.lesson.update({
           where: { id },
           data: {
             ...(data.title !== undefined ? { title: data.title } : {}),
@@ -96,13 +103,26 @@ export const LessonMutation = extendType({
             ...(data.rubric !== undefined ? { rubric: data.rubric } : {}),
             ...(data.metadata !== undefined ? { metadata: data.metadata as any } : {}),
           },
-        }),
+        })
+      },
     })
 
     t.field('deleteLesson', {
       type: 'GqlLesson',
       args: { id: nonNull(stringArg()) },
-      resolve: (_, { id }, ctx) => ctx.prisma.lesson.delete({ where: { id } }),
+      async resolve(_, { id }, ctx) {
+        const lesson = await ctx.prisma.lesson.findUnique({ where: { id } })
+        const mod = lesson?.moduleId ? await ctx.prisma.module.findUnique({ where: { id: lesson.moduleId } }) : null
+        const courseId = mod?.courseId || ''
+        const baseUrl = (ctx.req.protocol + '://' + ctx.req.get('host')).replace(/\/$/, '')
+        const instResp = courseId ? await fetch(`${baseUrl}/api/teach-internal/course/${encodeURIComponent(courseId)}/institution-context`).catch(() => null) : null
+        const instCtx = instResp && (await instResp.json().catch(() => null))
+        const institutionId = instCtx?.institutionId || null
+        const role = ctx.user?.id && institutionId ? await resolveInstitutionRole(ctx.user.id, institutionId, ctx.req) : null
+        const allowed = await canUser('course.edit', { user: ctx.user, role })
+        if (!allowed) throw new Error('FORBIDDEN')
+        return ctx.prisma.lesson.delete({ where: { id } })
+      },
     })
   },
 })

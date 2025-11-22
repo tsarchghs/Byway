@@ -1,5 +1,6 @@
 // plugins/authentication/server/graphql/resolvers.mjs
 import { PrismaClient } from "../db/generated/index";
+import { canUser } from "../permissions.mjs";
 const prisma = new PrismaClient();
 
 function userFromCtx(ctx) {
@@ -56,6 +57,8 @@ export const authUiResolvers = {
     setMyRole: async (_p, { role }, ctx) => {
       const u = userFromCtx(ctx);
       if (!u?.id) return false;
+      const allowed = await canUser('institution.admin', { user: ctx.user, role: Array.isArray(ctx.user?.roles) && ctx.user.roles.includes('admin') ? 'admin' : null })
+      if (!allowed) throw new Error('FORBIDDEN')
       await prisma.user.update({ where: { id: u.id }, data: { role } });
       return true;
     },

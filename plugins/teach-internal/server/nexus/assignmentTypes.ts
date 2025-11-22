@@ -1,4 +1,5 @@
 import { objectType, extendType, nonNull, stringArg, floatArg } from 'nexus'
+import { canUser, resolveInstitutionRole } from '../permissions.mjs'
 
 export const GqlAssignment = objectType({
   name: 'GqlAssignment',
@@ -33,18 +34,32 @@ export const AssignmentQuery = extendType({
     t.list.field('assignmentsByClassroom', {
       type: 'GqlAssignment',
       args: { classroomId: nonNull(stringArg()) },
-      resolve: (_root, args, ctx) => ctx.prisma.assignment.findMany({
-        where: { classroomId: args.classroomId },
-        orderBy: { dueDate: 'asc' },
-      }),
+      async resolve(_root, args, ctx) {
+        const baseUrl = (ctx.req.protocol + '://' + ctx.req.get('host')).replace(/\/$/, '')
+        const bindResp = await fetch(`${baseUrl}/api/institutions/classrooms/${encodeURIComponent(args.classroomId)}/course-binding`).catch(() => null)
+        const bindJson = bindResp && (await bindResp.json().catch(() => null))
+        const institutionId = bindJson?.institutionId || null
+        const role = ctx.user?.id && institutionId ? await resolveInstitutionRole(ctx.user.id, institutionId, ctx.req) : null
+        const allowed = await canUser('course.view', { user: ctx.user, role })
+        if (!allowed) throw new Error('FORBIDDEN')
+        return ctx.prisma.assignment.findMany({
+          where: { classroomId: args.classroomId },
+          orderBy: { dueDate: 'asc' },
+        })
+      },
     })
     t.list.field('submissionsByAssignment', {
       type: 'GqlSubmission',
       args: { assignmentId: nonNull(stringArg()) },
-      resolve: (_root, args, ctx) => ctx.prisma.submission.findMany({
-        where: { assignmentId: args.assignmentId },
-        orderBy: { createdAt: 'desc' },
-      }),
+      async resolve(_root, args, ctx) {
+        const role = Array.isArray(ctx.user?.roles) && ctx.user.roles.includes('admin') ? 'admin' : (Array.isArray(ctx.user?.roles) && ctx.user.roles.includes('teacher') ? 'teacher' : null)
+        const allowed = await canUser('assignment.grade', { user: ctx.user, role })
+        if (!allowed) throw new Error('FORBIDDEN')
+        return ctx.prisma.submission.findMany({
+          where: { assignmentId: args.assignmentId },
+          orderBy: { createdAt: 'desc' },
+        })
+      },
     })
   },
 })
@@ -60,14 +75,23 @@ export const AssignmentMutation = extendType({
         description: nonNull(stringArg()),
         dueDate: nonNull(stringArg()),
       },
-      resolve: (_root, args, ctx) => ctx.prisma.assignment.create({
-        data: {
-          classroomId: args.classroomId,
-          title: args.title,
-          description: args.description,
-          dueDate: new Date(args.dueDate),
-        } as any,
-      }),
+      async resolve(_root, args, ctx) {
+        const baseUrl = (ctx.req.protocol + '://' + ctx.req.get('host')).replace(/\/$/, '')
+        const bindResp = await fetch(`${baseUrl}/api/institutions/classrooms/${encodeURIComponent(args.classroomId)}/course-binding`).catch(() => null)
+        const bindJson = bindResp && (await bindResp.json().catch(() => null))
+        const institutionId = bindJson?.institutionId || null
+        const role = ctx.user?.id && institutionId ? await resolveInstitutionRole(ctx.user.id, institutionId, ctx.req) : null
+        const allowed = await canUser('assignment.grade', { user: ctx.user, role })
+        if (!allowed) throw new Error('FORBIDDEN')
+        return ctx.prisma.assignment.create({
+          data: {
+            classroomId: args.classroomId,
+            title: args.title,
+            description: args.description,
+            dueDate: new Date(args.dueDate),
+          } as any,
+        })
+      },
     })
 
     t.field('gradeSubmission', {
@@ -77,10 +101,15 @@ export const AssignmentMutation = extendType({
         grade: nonNull(floatArg()),
         feedback: stringArg(),
       },
-      resolve: (_root, args, ctx) => ctx.prisma.submission.update({
-        where: { id: args.id },
-        data: { grade: args.grade, feedback: args.feedback ?? null },
-      }),
+      async resolve(_root, args, ctx) {
+        const role = Array.isArray(ctx.user?.roles) && ctx.user.roles.includes('admin') ? 'admin' : (Array.isArray(ctx.user?.roles) && ctx.user.roles.includes('teacher') ? 'teacher' : null)
+        const allowed = await canUser('assignment.grade', { user: ctx.user, role })
+        if (!allowed) throw new Error('FORBIDDEN')
+        return ctx.prisma.submission.update({
+          where: { id: args.id },
+          data: { grade: args.grade, feedback: args.feedback ?? null },
+        })
+      },
     })
   },
 })
@@ -91,10 +120,14 @@ export const SubmissionQuery = extendType({
     t.list.field('mySubmissions', {
       type: 'GqlSubmission',
       args: { studentId: nonNull(stringArg()) },
-      resolve: (_root, args, ctx) => ctx.prisma.submission.findMany({
-        where: { studentId: args.studentId },
-        orderBy: { createdAt: 'desc' },
-      }),
+      async resolve(_root, args, ctx) {
+        const allowed = await canUser('student-record.view', { user: ctx.user, role: null, studentId: args.studentId })
+        if (!allowed) throw new Error('FORBIDDEN')
+        return ctx.prisma.submission.findMany({
+          where: { studentId: args.studentId },
+          orderBy: { createdAt: 'desc' },
+        })
+      },
     })
   },
 })
@@ -109,13 +142,18 @@ export const SubmissionMutation = extendType({
         studentId: nonNull(stringArg()),
         fileUrl: stringArg(),
       },
-      resolve: (_root, args, ctx) => ctx.prisma.submission.create({
-        data: { attempt: attemptNo, isLate: isLate2, 
-          assignmentId: args.assignmentId,
-          studentId: args.studentId,
-          fileUrl: args.fileUrl ?? null,
-        } as any,
-      }),
+      async resolve(_root, args, ctx) {
+        const role = Array.isArray(ctx.user?.roles) && ctx.user.roles.includes('student') ? 'student' : null
+        const allowed = await canUser('assignment.submit', { user: ctx.user, role })
+        if (!allowed) throw new Error('FORBIDDEN')
+        return ctx.prisma.submission.create({
+          data: { attempt: attemptNo, isLate: isLate2, 
+            assignmentId: args.assignmentId,
+            studentId: args.studentId,
+            fileUrl: args.fileUrl ?? null,
+          } as any,
+        })
+      },
     })
   },
 })
@@ -127,6 +165,9 @@ export const AssignmentGradebookQuery = extendType({
       type: 'String',
       args: { classroomId: nonNull(stringArg()) },
       async resolve(_root, args, ctx) {
+        const role = Array.isArray(ctx.user?.roles) && ctx.user.roles.includes('teacher') ? 'teacher' : (Array.isArray(ctx.user?.roles) && ctx.user.roles.includes('admin') ? 'admin' : null)
+        const allowed = await canUser('assignment.grade', { user: ctx.user, role })
+        if (!allowed) throw new Error('FORBIDDEN')
         const assignments = await ctx.prisma.assignment.findMany({ where: { classroomId: args.classroomId } })
         const subs = await ctx.prisma.submission.findMany({ where: { assignmentId: { in: assignments.map(a=>a.id) } } })
         const header = ['studentId','assignmentId','grade','isLate','attempt','gradedAt']
@@ -149,6 +190,9 @@ export const UpdateAssignmentRubricMutation = extendType({
         rubric: nonNull(stringArg())
       },
       async resolve(_root, args, ctx){
+        const role = Array.isArray(ctx.user?.roles) && ctx.user.roles.includes('teacher') ? 'teacher' : (Array.isArray(ctx.user?.roles) && ctx.user.roles.includes('admin') ? 'admin' : null)
+        const allowed = await canUser('assignment.grade', { user: ctx.user, role })
+        if (!allowed) throw new Error('FORBIDDEN')
         let parsed:any = null
         try { parsed = JSON.parse(args.rubric) } catch(_e){}
         return ctx.prisma.assignment.update({
@@ -168,6 +212,8 @@ export const SubmissionComments = extendType({
       type: 'String',
       args: { submissionId: nonNull(stringArg()) },
       async resolve(_root, args, ctx){
+        const allowed = await canUser('student-record.view', { user: ctx.user, role: null })
+        if (!allowed) throw new Error('FORBIDDEN')
         const s = await ctx.prisma.submission.findUnique({ where: { id: args.submissionId } })
         return JSON.stringify(s?.comments || [])
       }
@@ -187,6 +233,9 @@ export const AddSubmissionComment = extendType({
         authorId: stringArg()
       },
       async resolve(_root, args, ctx){
+        const role = Array.isArray(ctx.user?.roles) && ctx.user.roles.includes('teacher') ? 'teacher' : (Array.isArray(ctx.user?.roles) && ctx.user.roles.includes('admin') ? 'admin' : null)
+        const allowed = await canUser('assignment.grade', { user: ctx.user, role })
+        if (!allowed) throw new Error('FORBIDDEN')
         const s = await ctx.prisma.submission.findUnique({ where: { id: args.submissionId } })
         const now = new Date().toISOString()
         const items = Array.isArray(s?.comments) ? s.comments : []

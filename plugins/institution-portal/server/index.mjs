@@ -92,6 +92,8 @@ export async function register(app) {
   )
 
   router.get('/overview', async (req, res) => {
+    const allowed = await canUser('course.view', { user: req.user })
+    if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
     const authHeader = req.headers.authorization
     if (!authHeader) {
       return res.status(401).json({ error: 'Missing Authorization header' })
@@ -186,6 +188,7 @@ export async function register(app) {
   })
 
   router.get('/student-dashboard', async (req, res) => {
+    if (!req.user?.id) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
     const authHeader = req.headers.authorization
     if (!authHeader) {
       return res.status(401).json({ error: 'Missing Authorization header' })
@@ -353,6 +356,9 @@ export async function register(app) {
       if (!institution?.id) {
         return res.status(404).json({ error: 'Institution not found' })
       }
+      const role = await (await import('./permissions.mjs')).resolveInstitutionRole(me.id, institution.id, req)
+      const allowed = await canUser('student-record.view', { user: req.user, role, studentId: me.id })
+      if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
 
       const institutionId = institution.id
       const [deptData, classroomData, memberData] = await Promise.all([
@@ -1012,6 +1018,9 @@ export async function register(app) {
     const fetchImpl = await ensureFetch()
     const gql = (path, query, variables = {}) => callGraphQL(fetchImpl, `${baseUrl}${path}`, query, variables, authHeader)
     const institutionIdParam = String(req.query.institutionId || req.query.institution_id || '').trim()
+    const role = req.user?.id && institutionIdParam ? await (await import('./permissions.mjs')).resolveInstitutionRole(req.user.id, institutionIdParam, req) : null
+    const allowed = await canUser('institution.admin', { user: req.user, role })
+    if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
     try {
       const membersData = await gql('/api/institutions/graphql', `
         query ($institutionId:String!) { members(institutionId:$institutionId) { id institutionId userId role status createdAt updatedAt } }
@@ -1041,6 +1050,9 @@ export async function register(app) {
     const fetchImpl = await ensureFetch()
     const gql = (path, query, variables = {}) => callGraphQL(fetchImpl, `${baseUrl}${path}`, query, variables, authHeader)
     const institutionIdParam = String(req.query.institutionId || req.query.institution_id || '').trim()
+    const role = req.user?.id && institutionIdParam ? await (await import('./permissions.mjs')).resolveInstitutionRole(req.user.id, institutionIdParam, req) : null
+    const allowed = await canUser('institution.student', { user: req.user, role })
+    if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
     const from = req.query.from ? new Date(String(req.query.from)) : new Date()
     const to = req.query.to ? new Date(String(req.query.to)) : new Date(Date.now() + 30 * 86400e3)
     try {
@@ -1200,6 +1212,9 @@ export async function register(app) {
     const fetchImpl = await ensureFetch()
     const gql = (path, query, variables = {}) => callGraphQL(fetchImpl, `${baseUrl}${path}`, query, variables, authHeader)
     const institutionIdParam = String(req.query.institutionId || req.query.institution_id || '').trim()
+    const role = req.user?.id && institutionIdParam ? await (await import('./permissions.mjs')).resolveInstitutionRole(req.user.id, institutionIdParam, req) : null
+    const allowed = await canUser('institution.admin', { user: req.user, role })
+    if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
     try {
       const teachersData = await gql('/api/institutions/graphql', `
         query ($institutionId:String!, $role:String) { members(institutionId:$institutionId, role:$role) { id institutionId userId role status createdAt updatedAt } }
@@ -1233,6 +1248,10 @@ export async function register(app) {
     const fetchImpl = await ensureFetch()
     const scope = String(req.body?.scope || '').trim()
     const teacherId = String(req.body?.teacherId || '').trim()
+    const institutionIdParam = String(req.body?.institutionId || req.query?.institutionId || '').trim()
+    const role = req.user?.id && institutionIdParam ? await (await import('./permissions.mjs')).resolveInstitutionRole(req.user.id, institutionIdParam, req) : null
+    const allowed = await canUser('institution.admin', { user: req.user, role })
+    if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
     try {
       if (scope === 'classroom') {
         const classroomId = String(req.body?.classroomId || '').trim()
@@ -1260,6 +1279,8 @@ export async function register(app) {
     const fetchImpl = await ensureFetch()
     const gql = (path, query, variables = {}) => callGraphQL(fetchImpl, `${baseUrl}${path}`, query, variables, authHeader)
     const studentId = String(req.params.id || '').trim()
+    const allowedBasic = await canUser('student-record.view', { user: req.user, role: null, studentId })
+    if (!allowedBasic) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
     try {
       const studentData = await gql('/api/students-internal/graphql', `
         query ($userId:String!) { studentByUserId(userId:$userId) { id userId displayName createdAt updatedAt } }

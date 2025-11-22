@@ -23,6 +23,7 @@ app.use(base, (req, _res, next) => {
 
   next()
 })
+  app.use(base, async (req, _res, next) => { try { const mod = await import('./permissions.mjs'); req.user = req.user || await mod.resolveUser(req) } catch {} next() })
   // Mount REST — ONLY ONCE
   app.use(base, restRouter)
 

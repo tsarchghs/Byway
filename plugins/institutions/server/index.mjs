@@ -22,7 +22,7 @@ export async function register(app) {
       const prisma = await (await import('./graphql/resolvers.js')).getPrisma?.()
       const auth = req?.headers?.authorization || ''
       const token = auth.replace('Bearer ', '').trim()
-      return { prisma, token }
+      return { prisma, token, user: req.user, req }
     },
   })
 
@@ -35,11 +35,14 @@ export async function register(app) {
   })
 
   router.use(async (req, _res, next) => { try { req.user = await resolveUser(req) } catch {} next() })
+  router.use('/graphql', async (req, _res, next) => { try { req.user = req.user || await resolveUser(req) } catch {} next() })
   router.use(express.json())
 
   
   router.get('/classrooms/:id/course-binding', async (req, res) => {
     try {
+      const allowed = await canUser('course.view', { user: req.user })
+      if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
       const prisma = await (await import('./graphql/resolvers.js')).getPrisma?.()
       const id = String(req.params.id || '').trim()
       if (!id) return res.status(400).json({ error: 'Missing classroom id' })

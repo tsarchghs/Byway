@@ -1,4 +1,5 @@
 import { objectType, extendType, nonNull, stringArg } from 'nexus'
+import { canUser, resolveInstitutionRole } from '../permissions.mjs'
 
 export const GqlClassroom = objectType({
   name: 'GqlClassroom',
@@ -20,10 +21,19 @@ export const ClassroomQuery = extendType({
     t.list.field('classroomsByCourse', {
       type: 'GqlClassroom',
       args: { courseId: nonNull(stringArg()) },
-      resolve: (_root, args, ctx) => ctx.prisma.classroom.findMany({
-        where: { courseId: args.courseId },
-        orderBy: { createdAt: 'desc' },
-      }),
+      async resolve(_root, args, ctx) {
+        const baseUrl = (ctx.req.protocol + '://' + ctx.req.get('host')).replace(/\/$/, '')
+        const instResp = await fetch(`${baseUrl}/api/teach-internal/course/${encodeURIComponent(args.courseId)}/institution-context`).catch(() => null)
+        const instCtx = instResp && (await instResp.json().catch(() => null))
+        const institutionId = instCtx?.institutionId || null
+        const role = ctx.user?.id && institutionId ? await resolveInstitutionRole(ctx.user.id, institutionId, ctx.req) : null
+        const allowed = await canUser('course.view', { user: ctx.user, role })
+        if (!allowed) throw new Error('FORBIDDEN')
+        return ctx.prisma.classroom.findMany({
+          where: { courseId: args.courseId },
+          orderBy: { createdAt: 'desc' },
+        })
+      },
     })
   },
 })

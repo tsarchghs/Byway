@@ -1,10 +1,13 @@
 import prisma from '../db/client.mjs';
 import { startSessionForUser, stopSessionById } from '../services/sessions.mjs';
 import { runGrading } from '../services/grader.mjs';
+import { canUser } from '../permissions.mjs'
 
 export const resolvers = {
   Query: {
-    tclab_challenges: async (_root, { search }) => {
+    tclab_challenges: async (_root, { search }, ctx) => {
+      const allowed = await canUser('course.view', { user: ctx?.user })
+      if (!allowed) throw new Error('FORBIDDEN')
       if (!search) {
         return prisma.labChallenge.findMany({ orderBy: { createdAt: 'desc' } });
       }
@@ -19,25 +22,36 @@ export const resolvers = {
         orderBy: { createdAt: 'desc' }
       });
     },
-    tclab_challengeBySlug: (_root, { slug }) =>
-      prisma.labChallenge.findUnique({ where: { slug } }),
-    tclab_sessionsByUser: (_root, { userId }, ctx) => {
+    tclab_challengeBySlug: async (_root, { slug }, ctx) => {
+      const allowed = await canUser('course.view', { user: ctx?.user })
+      if (!allowed) throw new Error('FORBIDDEN')
+      return prisma.labChallenge.findUnique({ where: { slug } })
+    },
+    tclab_sessionsByUser: async (_root, { userId }, ctx) => {
       const effectiveUserId = userId || ctx?.user?.id;
       if (!effectiveUserId) {
         throw new Error('Not authenticated');
       }
+      const allowed = await canUser('lab.run', { user: ctx?.user })
+      if (!allowed) throw new Error('FORBIDDEN')
       return prisma.labSession.findMany({
         where: { userId: effectiveUserId },
         orderBy: { createdAt: 'desc' }
       });
     },
-    tclab_session: (_root, { id }) =>
-      prisma.labSession.findUnique({ where: { id } }),
-    tclab_submissions: (_root, { sessionId }) =>
-      prisma.submission.findMany({
+    tclab_session: async (_root, { id }, ctx) => {
+      const allowed = await canUser('course.view', { user: ctx?.user })
+      if (!allowed) throw new Error('FORBIDDEN')
+      return prisma.labSession.findUnique({ where: { id } })
+    },
+    tclab_submissions: async (_root, { sessionId }, ctx) => {
+      const allowed = await canUser('lab.grade', { user: ctx?.user })
+      if (!allowed) throw new Error('FORBIDDEN')
+      return prisma.submission.findMany({
         where: { sessionId },
         orderBy: { createdAt: 'desc' }
-      }),
+      })
+    },
   },
   Mutation: {
     tclab_createChallenge: async (_root, { input }, ctx) => {
@@ -45,6 +59,8 @@ export const resolvers = {
       if (!user?.id) {
         throw new Error('Not authenticated');
       }
+      const allowed = await canUser('lab.grade', { user })
+      if (!allowed) throw new Error('FORBIDDEN')
       return prisma.labChallenge.create({
         data: {
           title: input.title,
@@ -68,6 +84,8 @@ export const resolvers = {
       if (!effectiveUserId) {
         throw new Error('Not authenticated');
       }
+      const allowed = await canUser('lab.run', { user })
+      if (!allowed) throw new Error('FORBIDDEN')
       const session = await startSessionForUser({
         challengeId: input.challengeId,
         userId: effectiveUserId,
@@ -81,6 +99,8 @@ export const resolvers = {
       if (!user?.id) {
         throw new Error('Not authenticated');
       }
+      const allowed = await canUser('lab.run', { user })
+      if (!allowed) throw new Error('FORBIDDEN')
       const session = await stopSessionById(id);
       // Optionally check ownership/teacher role here.
       return session;
@@ -90,6 +110,8 @@ export const resolvers = {
       if (!user?.id) {
         throw new Error('Not authenticated');
       }
+      const allowed = await canUser('lab.run', { user })
+      if (!allowed) throw new Error('FORBIDDEN')
       const sub = await prisma.submission.create({
         data: {
           sessionId: input.sessionId,

@@ -4,7 +4,7 @@ import express from 'express'
 import { ApolloServer } from 'apollo-server-express'
 import { schema } from './nexus/index.js'
 import { PrismaClient } from './db/generated/client/index.js'
-import { resolveUser, canUser, resolveInstitutionRole } from './permissions.mjs'
+import { resolveUser, canUser, resolveInstitutionRole, canAccessCourse } from './permissions.mjs'
 import jwt from 'jsonwebtoken'
 import cors from 'cors'
 import { ensureCodeServer } from './codeServerManager.js'
@@ -109,6 +109,9 @@ export async function register(app) {
 
   router.post('/files/upload', async (req, res) => {
     try {
+      const role = Array.isArray(req.user?.roles) && req.user.roles.includes('admin') ? 'admin' : (Array.isArray(req.user?.roles) && req.user.roles.includes('teacher') ? 'teacher' : null)
+      const allowed = await canUser('course.edit', { user: req.user, role })
+      if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
       const { fileName, data } = req.body || {}
       if (!fileName || !data) {
         return res.status(400).json({ ok: false, error: 'fileName and data are required' })
@@ -142,6 +145,9 @@ export async function register(app) {
   })
 router.get('/code-server/:teacherId/:lessonId', async (req, res) => {
   try {
+    const role = Array.isArray(req.user?.roles) && req.user.roles.includes('admin') ? 'admin' : (Array.isArray(req.user?.roles) && req.user.roles.includes('teacher') ? 'teacher' : null)
+    const allowed = await canUser('lab.grade', { user: req.user, role })
+    if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
     const { teacherId, lessonId } = req.params
     const info = await ensureCodeServer(teacherId, lessonId)
     res.json({ ok: true, ...info })
@@ -154,8 +160,18 @@ router.get('/code-server/:teacherId/:lessonId', async (req, res) => {
   // === REST: Courses ===
   router.get('/courses', async (_req, res) => {
     try {
-      const list = await await sdk.courses.list();
-      res.json({ success: true, data: list });
+      const allowed = await canUser('course.view', { user: _req.user })
+      if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
+      const list = await sdk.courses.list();
+      const baseUrl = (_req.protocol + '://' + _req.get('host')).replace(/\/$/, '')
+      const filtered = []
+      for (const c of Array.isArray(list) ? list : []) {
+        const r = await fetch(`${baseUrl}/api/teach-internal/course/${encodeURIComponent(c.id)}/institution-context`).catch(() => null)
+        const inst = r && (await r.json().catch(() => null))
+        const ok = await canAccessCourse(_req.user, { req: _req, courseId: c.id, institutionId: inst?.institutionId || null, classroomIds: inst?.classroomId ? [inst.classroomId] : [] })
+        if (ok) filtered.push(c)
+      }
+      res.json({ success: true, data: filtered });
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
   });
   router.get('/courses/:id', async (req, res) => {
@@ -163,24 +179,8 @@ router.get('/code-server/:teacherId/:lessonId', async (req, res) => {
       const institutionCtxResp = await fetch(`${req.protocol}://${req.get('host')}/api/teach-internal/course/${encodeURIComponent(req.params.id)}/institution-context`).catch(() => null)
       const instCtx = institutionCtxResp && (await institutionCtxResp.json().catch(() => null))
       const institutionId = instCtx?.institutionId || null
-      const allowed = await canUser('course.view', { user: req.user, institutionId, req })
+      const allowed = await canAccessCourse(req.user, { req, courseId: req.params.id, institutionId, classroomIds: instCtx?.classroomId ? [instCtx.classroomId] : [] })
       if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
-      if (institutionId && req.user?.id) {
-        const baseUrl = (req.protocol + '://' + req.get('host')).replace(/\/$/, '')
-        const authHeader = req.headers.authorization || ''
-        const resp = await fetch(`${baseUrl}/api/institutions/graphql`, {
-          method: 'POST', headers: { 'content-type': 'application/json', ...(authHeader ? { Authorization: authHeader } : {}) },
-          body: JSON.stringify({ query: `query($institutionId:String){ classrooms(institutionId:$institutionId){ id enrollments{ studentId status } } }`, variables: { institutionId } })
-        }).catch(() => null)
-        const json = resp && (await resp.json().catch(() => null))
-        const arr = Array.isArray(json?.data?.classrooms) ? json.data.classrooms : []
-        const room = instCtx?.classroomId ? arr.find((r) => r.id === instCtx.classroomId) : null
-        const role = await resolveInstitutionRole(req.user.id, institutionId, req)
-        if (role === 'student') {
-          const enrolled = room ? (Array.isArray(room.enrollments) ? room.enrollments.some((en) => en.studentId === req.user.id && String(en.status || '').toUpperCase() !== 'REMOVED') : false) : false
-          if (!enrolled) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not enrolled in classroom' } })
-        }
-      }
       const item = await sdk.courses.get(req.params.id);
       if (!item) return res.status(404).json({ success: false, error: 'Not found' });
       res.json({ success: true, data: item });
@@ -223,6 +223,8 @@ router.get('/code-server/:teacherId/:lessonId', async (req, res) => {
   // === REST: Modules ===
   router.get('/modules', async (_req, res) => {
     try {
+      const allowed = await canUser('course.view', { user: _req.user })
+      if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
       const list = await prisma.module.findMany();
       res.json({ success: true, data: list });
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
@@ -295,6 +297,8 @@ router.get('/code-server/:teacherId/:lessonId', async (req, res) => {
   // === REST: Lessons ===
   router.get('/lessons', async (_req, res) => {
     try {
+      const allowed = await canUser('course.view', { user: _req.user })
+      if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
       const list = await prisma.lesson.findMany();
       res.json({ success: true, data: list });
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
@@ -439,6 +443,8 @@ router.get('/code-server/:teacherId/:lessonId', async (req, res) => {
 
   router.get('/course/:id/institution-context', async (req, res) => {
     try {
+      const allowed = await canUser('course.view', { user: req.user })
+      if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
       const courseId = String(req.params.id || '').trim()
       const authHeader = req.headers.authorization || ''
       const baseUrl = (req.protocol + '://' + req.get('host')).replace(/\/$/, '')

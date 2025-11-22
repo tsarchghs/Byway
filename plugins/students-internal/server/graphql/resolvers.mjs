@@ -1,13 +1,28 @@
 import { PrismaClient } from '../db/generated/client/index.js';
+import { resolveUser, resolveInstitutionRole, canUser } from '../permissions.mjs'
 const prisma = new PrismaClient();
 
 export const resolvers = {
   Query: {
-    async isEnrolled(_, { studentId, courseId }) {
+    async isEnrolled(_, { studentId, courseId }, ctx) {
+      const user = await resolveUser(ctx.req).catch(()=>null)
+      let role = null
+      if (courseId && user?.id) {
+        const baseUrl = (ctx.req.protocol + '://' + ctx.req.get('host')).replace(/\/$/, '')
+        const icResp = await fetch(`${baseUrl}/api/teach-internal/course/${encodeURIComponent(String(courseId))}/institution-context`).catch(() => null)
+        const ic = icResp && (await icResp.json().catch(() => null))
+        const institutionId = ic?.institutionId || null
+        role = institutionId ? await resolveInstitutionRole(user.id, institutionId, ctx.req) : null
+      }
+      const allowed = await canUser('student-record.view', { user, role, studentId })
+      if (!allowed) throw new Error('FORBIDDEN')
       const sc = await prisma.studentCourse.findFirst({ where: { studentId, courseId } });
       return !!sc;
     },
-    async enrollments(_, { studentId }) {
+    async enrollments(_, { studentId }, ctx) {
+      const user = await resolveUser(ctx.req).catch(()=>null)
+      const allowed = await canUser('student-record.view', { user, role: null, studentId })
+      if (!allowed) throw new Error('FORBIDDEN')
       const rows = await prisma.studentCourse.findMany({ where: { studentId } });
       return rows.map(r => ({
         id: r.id,
@@ -17,7 +32,18 @@ export const resolvers = {
         createdAt: r.createdAt,
       }));
     },
-    async gradebook(_, { studentId, courseId }) {
+    async gradebook(_, { studentId, courseId }, ctx) {
+      const user = await resolveUser(ctx.req).catch(()=>null)
+      let role = null
+      if (courseId && user?.id) {
+        const baseUrl = (ctx.req.protocol + '://' + ctx.req.get('host')).replace(/\/$/, '')
+        const icResp = await fetch(`${baseUrl}/api/teach-internal/course/${encodeURIComponent(String(courseId))}/institution-context`).catch(() => null)
+        const ic = icResp && (await icResp.json().catch(() => null))
+        const institutionId = ic?.institutionId || null
+        role = institutionId ? await resolveInstitutionRole(user.id, institutionId, ctx.req) : null
+      }
+      const allowed = await canUser('student-record.view', { user, role, studentId })
+      if (!allowed) throw new Error('FORBIDDEN')
       const where = { studentId, ...(courseId ? { courseId } : {}) };
       const rows = await prisma.gradebookEntry.findMany({
         where,
@@ -38,7 +64,10 @@ export const resolvers = {
         course: r.course || null,
       }));
     },
-    async gradebookOverview(_, { studentId }) {
+    async gradebookOverview(_, { studentId }, ctx) {
+      const user = await resolveUser(ctx.req).catch(()=>null)
+      const allowed = await canUser('student-record.view', { user, role: null, studentId })
+      if (!allowed) throw new Error('FORBIDDEN')
       const enrolls = await prisma.studentCourse.findMany({ where: { studentId } });
       const entries = await prisma.gradebookEntry.findMany({
         where: { studentId },
@@ -102,7 +131,18 @@ export const resolvers = {
     },
   },
   Mutation: {
-    async enrollStudent(_, { studentId, courseId }) {
+    async enrollStudent(_, { studentId, courseId }, ctx) {
+      const user = await resolveUser(ctx.req).catch(()=>null)
+      let role = null
+      if (courseId && user?.id) {
+        const baseUrl = (ctx.req.protocol + '://' + ctx.req.get('host')).replace(/\/$/, '')
+        const icResp = await fetch(`${baseUrl}/api/teach-internal/course/${encodeURIComponent(String(courseId))}/institution-context`).catch(() => null)
+        const ic = icResp && (await icResp.json().catch(() => null))
+        const institutionId = ic?.institutionId || null
+        role = institutionId ? await resolveInstitutionRole(user.id, institutionId, ctx.req) : null
+      }
+      const allowed = await canUser('institution.teacher', { user, role })
+      if (!allowed) throw new Error('FORBIDDEN')
       const rec = await prisma.studentCourse.upsert({
         where: { unique_student_course: { studentId, courseId } },
         update: { status: 'ENROLLED' },
@@ -116,7 +156,18 @@ export const resolvers = {
         createdAt: rec.createdAt,
       };
     },
-    async upsertGrade(_, { input }) {
+    async upsertGrade(_, { input }, ctx) {
+      const user = await resolveUser(ctx.req).catch(()=>null)
+      let role = null
+      if (input?.courseId && user?.id) {
+        const baseUrl = (ctx.req.protocol + '://' + ctx.req.get('host')).replace(/\/$/, '')
+        const icResp = await fetch(`${baseUrl}/api/teach-internal/course/${encodeURIComponent(String(input.courseId))}/institution-context`).catch(() => null)
+        const ic = icResp && (await icResp.json().catch(() => null))
+        const institutionId = ic?.institutionId || null
+        role = institutionId ? await resolveInstitutionRole(user.id, institutionId, ctx.req) : null
+      }
+      const allowed = await canUser('assignment.grade', { user, role })
+      if (!allowed) throw new Error('FORBIDDEN')
       const { studentId, courseId, assignmentId, label, points, maxPoints } = input;
       const rec = await prisma.gradebookEntry.upsert({
         where: { unique_grade: { studentId, courseId, assignmentId: assignmentId || null, label: label || null } },

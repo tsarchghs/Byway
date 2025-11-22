@@ -22,7 +22,9 @@ restRouter.get('/health', (_req, res) => {
 });
 
 // Quick list of challenges (REST)
-restRouter.get('/challenges', async (_req, res) => {
+restRouter.get('/challenges', async (req, res) => {
+  const allowed = await canUser('course.view', { user: req.user, req })
+  if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
   const items = await prisma.labChallenge.findMany({ orderBy: { createdAt: 'desc' } });
   res.json({ items });
 });
@@ -31,6 +33,8 @@ restRouter.get('/challenges', async (_req, res) => {
 restRouter.post('/challenges', express.json(), async (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
+  const allowedCreate = await canUser('lab.grade', { user, req })
+  if (!allowedCreate) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
 
   const body = req.body ?? {};
   if (!body.title || !body.slug || !body.description || !body.difficulty) {
@@ -112,6 +116,8 @@ async function autoCreateChallengeForLesson(lessonId, context) {
 
 // Resolve challenge metadata by lesson (autocreation if lesson has lab metadata)
 restRouter.get('/challenges/by-lesson/:lessonId', async (req, res) => {
+  const allowed = await canUser('course.view', { user: req.user, req })
+  if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
   const { lessonId } = req.params;
   if (!lessonId) {
     return res.status(400).json({ error: 'lessonId required' });
@@ -218,6 +224,8 @@ restRouter.post('/session/refresh', express.json(), async (req, res) => {
 restRouter.post('/session/stop', express.json(), async (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
+  const allowed = await canUser('lab.run', { user, req })
+  if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
 
   const { id } = req.body ?? {};
   if (!id) return res.status(400).json({ error: 'id required' });
@@ -253,6 +261,8 @@ restRouter.post('/submit', express.json(), async (req, res) => {
 
 // Course/module/lesson bindings
 restRouter.get('/bindings/challenge/:id', async (req, res) => {
+  const allowed = await canUser('course.view', { user: req.user, req })
+  if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
   const id = req.params.id;
   const challenge = await prisma.labChallenge.findUnique({ where: { id } });
   if (!challenge) {
@@ -294,6 +304,8 @@ restRouter.post('/bindings/challenge/:id', express.json(), async (req, res) => {
 restRouter.get('/sessions/me', async (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
+  const allowed = await canUser('lab.run', { user, req })
+  if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
 
   const sessions = await prisma.labSession.findMany({
     where: { userId: user.id },
@@ -421,6 +433,8 @@ restRouter.get('/teacher/submissions/session/:sessionId', async (req, res) => {
 
 // Get lab metadata for a challenge (from bound lesson)
 restRouter.get('/challenges/:id/lab-meta', async (req, res) => {
+  const allowed = await canUser('course.view', { user: req.user, req })
+  if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
   const id = req.params.id;
   const challenge = await prisma.labChallenge.findUnique({ where: { id } });
   if (!challenge) {

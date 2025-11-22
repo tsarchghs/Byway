@@ -1,6 +1,6 @@
 // src/graphql/courseTypes.ts
 import { objectType, extendType, stringArg, floatArg, nonNull, arg } from 'nexus'
-import { canUser, resolveInstitutionRole } from '../permissions.mjs'
+import { canUser, resolveInstitutionRole, canAccessCourse } from '../permissions.mjs'
 import { callGraphQL } from '../graphql/callPlugins'
 
 function getCurrentUserId(ctx: any) {
@@ -75,10 +75,22 @@ export const CourseQuery = extendType({
   definition(t) {
     t.list.field('courses', {
       type: 'GqlCourse',
-      resolve: (_, __, ctx) =>
-        ctx.prisma.course.findMany({
+      async resolve(_, __, ctx) {
+        const allowed = await canUser('course.view', { user: ctx.user })
+        if (!allowed) throw new Error('FORBIDDEN')
+        const items = await ctx.prisma.course.findMany({
           include: { modules: { include: { lessons: true } } },
-        }),
+        })
+        const baseUrl = (ctx.req.protocol + '://' + ctx.req.get('host')).replace(/\/$/, '')
+        const out = []
+        for (const c of Array.isArray(items) ? items : []) {
+          const r = await fetch(`${baseUrl}/api/teach-internal/course/${encodeURIComponent(c.id)}/institution-context`).catch(() => null)
+          const inst = r && (await r.json().catch(() => null))
+          const ok = await canAccessCourse(ctx.user, { req: ctx.req, courseId: c.id, institutionId: inst?.institutionId || null, classroomIds: inst?.classroomId ? [inst.classroomId] : [] })
+          if (ok) out.push(c)
+        }
+        return out
+      },
     })
 
     t.field('course', {
@@ -90,22 +102,8 @@ export const CourseQuery = extendType({
         const instResp = await fetch(`${baseUrl}/api/teach-internal/course/${encodeURIComponent(id)}/institution-context`).catch(() => null)
         const instCtx = instResp && (await instResp.json().catch(() => null))
         const institutionId = instCtx?.institutionId || null
-        const allowed = await canUser('course.view', { user: ctx.user, institutionId, req: ctx.req })
+        const allowed = await canAccessCourse(ctx.user, { req: ctx.req, courseId: id, institutionId, classroomIds: instCtx?.classroomId ? [instCtx.classroomId] : [] })
         if (!allowed) throw new Error('FORBIDDEN')
-        if (institutionId && ctx.user?.id) {
-          const roomsResp = await fetch(`${baseUrl}/api/institutions/graphql`, {
-            method: 'POST', headers: { 'content-type': 'application/json', ...(authHeader ? { Authorization: authHeader } : {}) },
-            body: JSON.stringify({ query: `query($institutionId:String){ classrooms(institutionId:$institutionId){ id enrollments{ studentId status } } }`, variables: { institutionId } })
-          }).catch(() => null)
-          const roomsJson = roomsResp && (await roomsResp.json().catch(() => null))
-          const arr = Array.isArray(roomsJson?.data?.classrooms) ? roomsJson.data.classrooms : []
-          const room = instCtx?.classroomId ? arr.find((r: any) => r.id === instCtx.classroomId) : null
-          const role = await resolveInstitutionRole(ctx.user.id, institutionId, ctx.req)
-          if (role === 'student') {
-            const enrolled = room ? (Array.isArray(room.enrollments) ? room.enrollments.some((en: any) => en.studentId === ctx.user.id && String(en.status || '').toUpperCase() !== 'REMOVED') : false) : false
-            if (!enrolled) throw new Error('FORBIDDEN')
-          }
-        }
         return ctx.prisma.course.findUnique({
           where: { id },
           include: { modules: { include: { lessons: true } } },
@@ -122,6 +120,9 @@ export const CourseQuery = extendType({
       async resolve(_, args, ctx) {
         const teacherId = args.teacherId || getCurrentUserId(ctx)
         if (!teacherId) throw new Error('Not authenticated')
+        const role = Array.isArray(ctx.user?.roles) && ctx.user.roles.includes('admin') ? 'admin' : (Array.isArray(ctx.user?.roles) && ctx.user.roles.includes('teacher') ? 'teacher' : null)
+        const allowed = await canUser('course.edit', { user: ctx.user, role })
+        if (!allowed) throw new Error('FORBIDDEN')
 
         const where: Record<string, string> = { teacherId }
         if (args.institutionId) where.institutionId = args.institutionId
@@ -153,6 +154,9 @@ export const CourseMutation = extendType({
         files: arg({ type: 'JSON' }),
       },
       resolve: async (_, args, ctx) => {
+          const role = Array.isArray(ctx.user?.roles) && ctx.user.roles.includes('admin') ? 'admin' : (Array.isArray(ctx.user?.roles) && ctx.user.roles.includes('teacher') ? 'teacher' : null)
+          const allowedEdit = await canUser('course.edit', { user: ctx.user, role })
+          if (!allowedEdit) throw new Error('FORBIDDEN')
           // require authenticated user and ensure they own the teacher profile
           const token = ctx?.token
           if (!token) throw new Error('Not authenticated')
@@ -202,6 +206,14 @@ export const CourseMutation = extendType({
         files: arg({ type: 'JSON' }),
       },
       resolve: async (_, args, ctx) => {
+        const baseUrl = (ctx.req.protocol + '://' + ctx.req.get('host')).replace(/\/$/, '')
+        const authHeader = ctx.req.headers.authorization || ''
+        const instResp = await fetch(`${baseUrl}/api/teach-internal/course/${encodeURIComponent(args.id)}/institution-context`).catch(() => null)
+        const instCtx = instResp && (await instResp.json().catch(() => null))
+        const institutionId = instCtx?.institutionId || null
+        const role = ctx.user?.id && institutionId ? await resolveInstitutionRole(ctx.user.id, institutionId, ctx.req) : null
+        const allowedEdit = await canUser('course.edit', { user: ctx.user, role })
+        if (!allowedEdit) throw new Error('FORBIDDEN')
         const { id, files, ...data } = args
         let metadataPatch
         if (files !== undefined) {
@@ -221,7 +233,16 @@ export const CourseMutation = extendType({
     t.field('deleteCourse', {
       type: 'GqlCourse',
       args: { id: nonNull(stringArg()) },
-      resolve: (_, { id }, ctx) => ctx.prisma.course.delete({ where: { id } }),
+      resolve: async (_, { id }, ctx) => {
+        const baseUrl = (ctx.req.protocol + '://' + ctx.req.get('host')).replace(/\/$/, '')
+        const instResp = await fetch(`${baseUrl}/api/teach-internal/course/${encodeURIComponent(id)}/institution-context`).catch(() => null)
+        const instCtx = instResp && (await instResp.json().catch(() => null))
+        const institutionId = instCtx?.institutionId || null
+        const role = ctx.user?.id && institutionId ? await resolveInstitutionRole(ctx.user.id, institutionId, ctx.req) : null
+        const allowedEdit = await canUser('course.edit', { user: ctx.user, role })
+        if (!allowedEdit) throw new Error('FORBIDDEN')
+        return ctx.prisma.course.delete({ where: { id } })
+      },
     })
   },
 })

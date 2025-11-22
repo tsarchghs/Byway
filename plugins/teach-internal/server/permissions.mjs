@@ -76,3 +76,46 @@ export async function canUser(action, ctx) {
       return false
   }
 }
+
+export async function canAccessCourse(user, ctx) {
+  if (!user?.id) return false
+  const req = ctx?.req
+  if (!req) return false
+  const baseUrl = (req.protocol + '://' + req.get('host')).replace(/\/$/, '')
+  const auth = req.headers.authorization || ''
+  const courseId = String(ctx?.courseId || '').trim()
+  const institutionId = ctx?.institutionId || null
+  const classroomIds = Array.isArray(ctx?.classroomIds) ? ctx.classroomIds : []
+  let isEnrolled = false
+  try {
+    const enrResp = await fetch(`${baseUrl}/api/students-internal/api/student-courses?studentId=${encodeURIComponent(user.id)}&courseId=${encodeURIComponent(courseId)}`, { headers: { ...(auth ? { Authorization: auth } : {}) } })
+    const enrJson = enrResp && (await enrResp.json().catch(() => null))
+    isEnrolled = Array.isArray(enrJson?.data) ? enrJson.data.some((x) => String(x.courseId) === String(courseId)) : false
+  } catch {}
+  let hasBought = false
+  try {
+    const purResp = await fetch(`${baseUrl}/api/ecommerce/purchases?userId=${encodeURIComponent(user.id)}&courseId=${encodeURIComponent(courseId)}`, { headers: { ...(auth ? { Authorization: auth } : {}) } })
+    const purJson = purResp && (await purResp.json().catch(() => null))
+    hasBought = Array.isArray(purJson?.data) ? purJson.data.some((p) => String(p.courseId) === String(courseId)) : false
+  } catch {}
+  let role = null
+  if (institutionId) {
+    role = await resolveInstitutionRole(user.id, institutionId, req)
+  }
+  let inClassroom = false
+  if (classroomIds.length > 0 && institutionId) {
+    try {
+      const query = `query($institutionId:String){ classrooms(institutionId:$institutionId){ id enrollments{ studentId status } } }`
+      const resp = await fetch(`${baseUrl}/api/institutions/graphql`, { method: 'POST', headers: { 'content-type': 'application/json', ...(auth ? { Authorization: auth } : {}) }, body: JSON.stringify({ query, variables: { institutionId } }) })
+      const json = resp && (await resp.json().catch(() => null))
+      const rooms = Array.isArray(json?.data?.classrooms) ? json.data.classrooms : []
+      inClassroom = classroomIds.some((cid) => {
+        const room = rooms.find((r) => r.id === cid)
+        if (!room) return false
+        const enrollments = Array.isArray(room.enrollments) ? room.enrollments : []
+        return enrollments.some((en) => en.studentId === user.id && String(en.status || '').toUpperCase() !== 'REMOVED')
+      })
+    } catch {}
+  }
+  return Boolean(isEnrolled || hasBought || (institutionId && (role === 'teacher' || role === 'admin')) || inClassroom)
+}

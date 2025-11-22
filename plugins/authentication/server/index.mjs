@@ -16,6 +16,7 @@ import {
 } from "./graphql/prefs.merge.mjs";
 import { authUiResolvers } from "./graphql/resolvers.mjs";
 import { authUiTypeDefs } from "./graphql/typeDefs.mjs";
+import { resolveUser, canUser } from "./permissions.mjs";
 
 // --- Zod route validators ---
 export const ZUserCreate = z.object({
@@ -44,6 +45,7 @@ export async function register(app) {
 
   // ✅ Security / Middleware
   router.use(cors({ origin: process.env.CORS_ORIGIN || "*", credentials: true }));
+  router.use(async (req, _res, next) => { try { req.user = await resolveUser(req) } catch {} next() })
   router.use(helmet());
   router.use(compression());
   router.use(express.json({ limit: "1mb" }));
@@ -80,8 +82,11 @@ export async function register(app) {
   );
 
   // ✅ REST: Users
-  router.get("/users", async (_, res, next) => {
+  router.get("/users", async (req, res, next) => {
     try {
+      const role = Array.isArray(req.user?.roles) && req.user.roles.includes('admin') ? 'admin' : null
+      const allowed = await canUser('institution.admin', { user: req.user, role })
+      if (!allowed) return res.status(403).json({ ok: false, error: { code: "FORBIDDEN", message: "Not allowed" } })
       const users = await prisma.user.findMany();
       res.json({
         success: true,
@@ -94,6 +99,9 @@ export async function register(app) {
 
   router.get("/users/:id", async (req, res, next) => {
     try {
+      const role = Array.isArray(req.user?.roles) && req.user.roles.includes('admin') ? 'admin' : null
+      const allowed = await canUser('institution.admin', { user: req.user, role })
+      if (!allowed) return res.status(403).json({ ok: false, error: { code: "FORBIDDEN", message: "Not allowed" } })
       const user = await prisma.user.findUnique({
         where: { id: req.params.id },
       });
@@ -107,6 +115,9 @@ export async function register(app) {
 
   router.post("/users", async (req, res, next) => {
     try {
+      const role = Array.isArray(req.user?.roles) && req.user.roles.includes('admin') ? 'admin' : null
+      const allowed = await canUser('institution.admin', { user: req.user, role })
+      if (!allowed) return res.status(403).json({ ok: false, error: { code: "FORBIDDEN", message: "Not allowed" } })
       const parsed = ZUserCreate.parse(req.body);
       const created = await prisma.user.create({ data: parsed });
       res.status(201).json({
@@ -120,6 +131,9 @@ export async function register(app) {
 
   router.put("/users/:id", async (req, res, next) => {
     try {
+      const role = Array.isArray(req.user?.roles) && req.user.roles.includes('admin') ? 'admin' : null
+      const allowed = await canUser('institution.admin', { user: req.user, role })
+      if (!allowed) return res.status(403).json({ ok: false, error: { code: "FORBIDDEN", message: "Not allowed" } })
       const parsed = ZUserUpdate.parse(req.body);
       const updated = await prisma.user.update({
         where: { id: req.params.id },
@@ -136,6 +150,9 @@ export async function register(app) {
 
   router.delete("/users/:id", async (req, res, next) => {
     try {
+      const role = Array.isArray(req.user?.roles) && req.user.roles.includes('admin') ? 'admin' : null
+      const allowed = await canUser('institution.admin', { user: req.user, role })
+      if (!allowed) return res.status(403).json({ ok: false, error: { code: "FORBIDDEN", message: "Not allowed" } })
       await prisma.user.delete({ where: { id: req.params.id } });
       res.json({ success: true });
     } catch (err) {
