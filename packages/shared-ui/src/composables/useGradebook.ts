@@ -35,7 +35,7 @@ export function useGradebook() {
       rows.value = data?.courseGradebook || [];
       error.value = null;
     } catch (e:any) {
-      error.value = e?.message || String(e);
+      error.value = (e as any)?.message || String(e);
     } finally {
       loading.value = false;
     }

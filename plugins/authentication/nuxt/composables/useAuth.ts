@@ -31,7 +31,7 @@ export function useAuth() {
       if (j.errors) throw new Error(j.errors.map((e:any)=>e.message).join('; '))
       me.value = j?.data?.me ?? null
     } catch (e:any) {
-      error.value = e?.message || String(e)
+      error.value = (e as any)?.message || String(e)
       me.value = null
     } finally {
       loading.value = false

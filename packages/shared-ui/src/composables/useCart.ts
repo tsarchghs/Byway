@@ -117,7 +117,7 @@ async function fetchCart() {
     `, { studentId: sid })
     cart.value = data?.cartByStudent || null
   } catch (e: any) {
-    error.value = e?.message || String(e)
+    error.value = (e as any)?.message || String(e)
     console.warn('[useCart] Failed to fetch cart:', e)
   } finally {
     loading.value = false
@@ -151,7 +151,7 @@ async function addToCart(courseId: string, quantity: number = 1) {
     await fetchCart()
     return data?.addCartItem?.id
   } catch (e: any) {
-    error.value = e?.message || String(e)
+    error.value = (e as any)?.message || String(e)
     throw e
   } finally {
     loading.value = false
@@ -181,7 +181,7 @@ async function removeFromCart(orderItemId: string) {
     // Refresh cart
     await fetchCart()
   } catch (e: any) {
-    error.value = e?.message || String(e)
+    error.value = (e as any)?.message || String(e)
     throw e
   } finally {
     loading.value = false
@@ -211,7 +211,7 @@ async function clearCart() {
     // Refresh cart
     await fetchCart()
   } catch (e: any) {
-    error.value = e?.message || String(e)
+    error.value = (e as any)?.message || String(e)
     throw e
   } finally {
     loading.value = false

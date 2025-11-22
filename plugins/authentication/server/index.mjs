@@ -7,8 +7,6 @@ import { z } from "zod";
 import { PrismaClient } from "./db/generated/index.js";
 import { schema } from "./nexus/authSchema.ts";
 import { createContext } from "./nexus/context.js";
-import { sdk } from "../../../apps/api/src/sdk/index.js";
-import { mergeUiPrefs } from "./graphql/merge.uiPrefs.js";
 import {
   loadPrefsTypeDefs,
   prefsResolversExport,

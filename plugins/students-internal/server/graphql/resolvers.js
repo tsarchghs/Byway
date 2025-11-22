@@ -1,6 +1,12 @@
 import { GraphQLScalarType, Kind } from 'graphql'
 import { PrismaClient } from '../db/generated/client'
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.STUDENTS_DATABASE_URL ?? process.env.DATABASE_URL ?? 'mysql://root:gjergji21@localhost:3306/byway_students'
+    }
+  }
+})
 
 const JSONScalar = new GraphQLScalarType({
   name: 'JSON',
@@ -27,7 +33,7 @@ Query: {
   },
   async studentByUserId(_, { userId }) {
     if (!userId) return null
-    return prisma.student.findUnique({ where: { userId } })
+    return prisma.student.findUnique({ where: { userId } }).catch(() => null)
   },
   async myCourses(_, { studentId }, ctx) {
     return prisma.studentCourse.findMany({
@@ -142,6 +148,12 @@ async myProgress(_, { studentId }) {
       } catch {
         return false;
       }
+    },
+    async createStudent(_, { userId, displayName }) {
+      if (!userId) throw new Error('userId is required');
+      const existing = await prisma.student.findUnique({ where: { userId } }).catch(() => null);
+      if (existing) return existing;
+      return prisma.student.create({ data: { userId, displayName } });
     },
   },
 }

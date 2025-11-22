@@ -95,7 +95,7 @@ onMounted(async () => {
     if (!j.ok) throw new Error(j.error || 'Discovery failed')
     rows.value = j.plugins
   } catch (e:any) {
-    error.value = e?.message || String(e)
+    error.value = (e as any)?.message || String(e)
     message.error(error.value)
   }
 })

@@ -5,8 +5,8 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql" // can be Postgres too
-  url      = "mysql://root:gjergji21@localhost:3306/byway_students" // e.g., file:./auth.db
+  provider = "mysql"
+  url      = "mysql://root:gjergji21@localhost:3306/byway_students"
 }
 
 // Minimal Student model to store auth linkage
