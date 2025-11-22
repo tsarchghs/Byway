@@ -185,7 +185,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\Users\\PC\\Documents\\GitHub\\byway\\plugins\\institutions\\server\\db\\generated",
+      "value": "/Users/gjergjkadriu/Documents/GitHub/Byway/plugins/institutions/server/db/generated",
       "fromEnvVar": null
     },
     "config": {
@@ -194,7 +194,7 @@ const config = {
     "binaryTargets": [
       {
         "fromEnvVar": null,
-        "value": "windows",
+        "value": "darwin-arm64",
         "native": true
       }
     ],
@@ -258,8 +258,8 @@ exports.PrismaClient = PrismaClient
 Object.assign(exports, Prisma)
 
 // file annotations for bundling tools to include these files
-path.join(__dirname, "query_engine-windows.dll.node");
-path.join(process.cwd(), "plugins/institutions/server/db/generated/query_engine-windows.dll.node")
+path.join(__dirname, "libquery_engine-darwin-arm64.dylib.node");
+path.join(process.cwd(), "plugins/institutions/server/db/generated/libquery_engine-darwin-arm64.dylib.node")
 // file annotations for bundling tools to include these files
 path.join(__dirname, "schema.prisma");
 path.join(process.cwd(), "plugins/institutions/server/db/generated/schema.prisma")

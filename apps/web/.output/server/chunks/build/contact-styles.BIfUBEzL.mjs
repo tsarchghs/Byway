@@ -1,8 +1,0 @@
-const contact_vue_vue_type_style_index_0_scoped_5122158d_lang = ".contact-page[data-v-5122158d]{background:#fafafa;display:flex;justify-content:center;padding:80px 24px}.contact-container[data-v-5122158d]{max-width:1200px;width:100%}.contact-card[data-v-5122158d]{background:#fff;border-radius:8px;box-shadow:0 2px 8px #0000000d}.form-title[data-v-5122158d]{margin-bottom:16px}.contact-form[data-v-5122158d]{margin-top:24px}.info-card[data-v-5122158d]{background:#fff;border-radius:8px;box-shadow:0 2px 8px #0000000d;text-align:left}.info-list .icon[data-v-5122158d]{color:#1677ff;font-size:18px}.social-icons[data-v-5122158d]{color:#000000a6;display:flex;font-size:20px;gap:16px;margin-top:12px}.social-icons .anticon[data-v-5122158d]:hover{color:#1677ff;transform:translateY(-2px);transition:all .2s ease}@media(max-width:768px){.contact-page[data-v-5122158d]{padding:64px 16px}}";
-
-const contactStyles_BIfUBEzL = [
-  contact_vue_vue_type_style_index_0_scoped_5122158d_lang
-];
-
-export { contactStyles_BIfUBEzL as default };
-//# sourceMappingURL=contact-styles.BIfUBEzL.mjs.map

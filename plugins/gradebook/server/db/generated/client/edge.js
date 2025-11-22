@@ -140,7 +140,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\Users\\PC\\Documents\\GitHub\\byway\\plugins\\gradebook\\server\\db\\generated\\client",
+      "value": "/Users/gjergjkadriu/Documents/GitHub/Byway/plugins/gradebook/server/db/generated/client",
       "fromEnvVar": null
     },
     "config": {
@@ -149,7 +149,7 @@ const config = {
     "binaryTargets": [
       {
         "fromEnvVar": null,
-        "value": "windows",
+        "value": "darwin-arm64",
         "native": true
       }
     ],

@@ -6,13 +6,26 @@ import { pathToFileURL } from "node:url"
 
 // ✅ bring Nexus internals into scope
 import { makeSchema } from "nexus"
-import * as Nexus from 'nexus/dist/core.js'
-import { EventEmitter } from 'events'
-EventEmitter.defaultMaxListeners = 30
+import * as Nexus from "nexus/dist/core"
 
 // --- Nexus runtime duplicate detection patch ---
 const seen = new Set<string>()
 const SchemaBuilder = Nexus.SchemaBuilder
+if (SchemaBuilder && !SchemaBuilder.__patchedForDuplicates) {
+  const originalAddType = SchemaBuilder.prototype.addType
+  SchemaBuilder.prototype.addType = function (typeDef: any) {
+    const name = typeDef?.name ?? "unknown"
+    if (seen.has(name)) {
+      console.warn(`⚠️ Runtime duplicate Nexus type detected: "${name}"`)
+      console.warn("   ↳ Check if multiple plugins export the same objectType")
+    }
+    seen.add(name)
+    return originalAddType.call(this, typeDef)
+  }
+  // prevent double-patching
+  SchemaBuilder.__patchedForDuplicates = true
+}
+
 // --- Express setup ---
 const app = express()
 
@@ -87,9 +100,9 @@ app.get("/api/discovery/routes", (_req, res) => {
         }
         // discover pages
         const pagesRoot = path.join(plugDir, "nuxt", "pages");
-const discoveredPages: string[] = [];
-
-const walk = (p: string) => {       if (fs.existsSync(pagesRoot)) {
+        const discoveredPages = [];
+        if (fs.existsSync(pagesRoot)) {
+          const walk = (p) => {
             for (const entry of fs.readdirSync(p)) {
               const full = path.join(p, entry);
               const stat = fs.statSync(full);
@@ -107,7 +120,7 @@ const walk = (p: string) => {       if (fs.existsSync(pagesRoot)) {
     res.json({ ok: true, plugins: result });
   } catch (e) {
     console.error("[discovery] error", e);
-    res.status(500).json({ ok: false, error: (e as any)?.message || String(e) });
+    res.status(500).json({ ok: false, error: e?.message || String(e) });
   }
 });
 

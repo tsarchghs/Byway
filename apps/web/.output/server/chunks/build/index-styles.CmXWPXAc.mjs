@@ -1,8 +1,0 @@
-const index_vue_vue_type_style_index_0_scoped_36176191_lang = ".top-categories[data-v-36176191]{background:#fff;margin:0 auto;max-width:1200px;padding:100px 24px}.top-categories-header[data-v-36176191]{align-items:center;display:flex;justify-content:space-between;margin-bottom:48px}.section-title[data-v-36176191]{color:#000000e0;margin:0}.view-all-btn[data-v-36176191]{color:#1677ff;font-weight:500}.view-all-btn[data-v-36176191]:hover{background-color:#e6f4ff;border-radius:8px}.category-card[data-v-36176191]{border-radius:12px;padding:24px 16px;text-align:center;transition:all .3s ease}.category-card[data-v-36176191]:hover{border-color:#91caff;box-shadow:0 8px 20px #1677ff26;transform:translateY(-4px)}.icon-wrapper[data-v-36176191]{margin-bottom:16px}.icon-circle[data-v-36176191],.icon-wrapper[data-v-36176191]{display:flex;justify-content:center}.icon-circle[data-v-36176191]{align-items:center;background:#e6f4ff;border-radius:50%;height:80px;transition:background .3s ease;width:80px}.category-card:hover .icon-circle[data-v-36176191]{background:#bae0ff}.icon-image[data-v-36176191]{height:36px;-o-object-fit:contain;object-fit:contain;width:36px}.category-title[data-v-36176191]{color:#000000e0;font-weight:600;margin-top:12px}.category-courses[data-v-36176191]{color:#000000a6;font-size:14px}@media(max-width:768px){.top-categories[data-v-36176191]{padding:64px 16px}.top-categories-header[data-v-36176191]{flex-direction:column;gap:12px}.section-title[data-v-36176191]{font-size:22px}.icon-circle[data-v-36176191]{height:70px;width:70px}}";
-
-const indexStyles_CmXWPXAc = [
-  index_vue_vue_type_style_index_0_scoped_36176191_lang
-];
-
-export { indexStyles_CmXWPXAc as default };
-//# sourceMappingURL=index-styles.CmXWPXAc.mjs.map

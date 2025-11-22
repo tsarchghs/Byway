@@ -1,8 +1,0 @@
-const faq_vue_vue_type_style_index_0_scoped_eb3bd45c_lang = ".faq-page[data-v-eb3bd45c]{background:#fafafa;display:flex;justify-content:center;padding:80px 24px}.faq-container[data-v-eb3bd45c]{max-width:900px;width:100%}.faq-header[data-v-eb3bd45c]{margin-bottom:40px;text-align:center}.faq-search[data-v-eb3bd45c]{display:flex;justify-content:center;margin-bottom:40px}.faq-collapse[data-v-eb3bd45c]{background:#fff;border-radius:8px;box-shadow:0 2px 8px #0000000d}.faq-collapse .ant-collapse-item[data-v-eb3bd45c]{border:none}.faq-collapse .ant-collapse-header[data-v-eb3bd45c]{font-size:16px;font-weight:500}.faq-contact[data-v-eb3bd45c]{background:#fff;border-radius:8px;box-shadow:0 4px 16px #1677ff14;margin-top:64px;padding:40px 20px;text-align:center}@media(max-width:768px){.faq-page[data-v-eb3bd45c]{padding:64px 16px}.faq-header[data-v-eb3bd45c]{margin-bottom:32px}.faq-contact[data-v-eb3bd45c]{padding:32px 16px}}";
-
-const faqStyles_CyZbYYfg = [
-  faq_vue_vue_type_style_index_0_scoped_eb3bd45c_lang
-];
-
-export { faqStyles_CyZbYYfg as default };
-//# sourceMappingURL=faq-styles.CyZbYYfg.mjs.map

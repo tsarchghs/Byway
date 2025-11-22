@@ -84,7 +84,10 @@
         "../../../node_modules/.pnpm/vite@7.1.12_@types+node@22.18.13_jiti@2.6.1_terser@5.44.0_tsx@4.20.6_yaml@2.8.1/node_modules/vite/client"
       ],
       "#shared": [
-        "../../packages/shared-ui/src"
+        "../shared"
+      ],
+      "#shared/*": [
+        "../shared/*"
       ],
       "#build": [
         "./"
@@ -104,12 +107,6 @@
       "@shared/*": [
         "../../../packages/shared-ui/src/*"
       ],
-      "@shared-apollo": [
-        "../../../packages/shared-apollo"
-      ],
-      "@shared-apollo/*": [
-        "../../../packages/shared-apollo/*"
-      ],
       "#unhead/composables": [
         "../../../node_modules/.pnpm/nuxt@4.2.0_@parcel+watcher@2.5.1_@types+node@22.18.13_@vue+compiler-sfc@3.5.22_db0@0.3.4_iore_f5v7hewsddy5avpu7qdacj2zgu/node_modules/nuxt/dist/head/runtime/composables"
       ]
@@ -124,8 +121,8 @@
     "./types/nitro-nuxt.d.ts",
     "../../../packages/shared-ui/nuxt/runtime/server",
     "../../../packages/shared-ui/nuxt/dist/runtime/server",
-    "../modules/runtime/server",
-    "../modules/dist/runtime/server",
+    "../modules/plugin-loader.mjs/runtime/server",
+    "../modules/plugin-loader.mjs/dist/runtime/server",
     "../../../node_modules/.pnpm/@nuxt+devtools@2.7.0_vite@7.1.12_@types+node@22.18.13_jiti@2.6.1_terser@5.44.0_tsx@4.20.6_yam_vehq43gy6idzlt7qme7gzblbvq/node_modules/runtime/server",
     "../../../node_modules/.pnpm/@nuxt+devtools@2.7.0_vite@7.1.12_@types+node@22.18.13_jiti@2.6.1_terser@5.44.0_tsx@4.20.6_yam_vehq43gy6idzlt7qme7gzblbvq/node_modules/dist/runtime/server",
     "../../../node_modules/.pnpm/@nuxt+telemetry@2.6.6_magicast@0.5.1/node_modules/runtime/server",
