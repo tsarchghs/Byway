@@ -10,7 +10,7 @@
 
 <script setup lang="ts">
 import StudentsNav from "../components/StudentsNav.vue"
-import { useGql } from "../composables/useGql"
+import { useGql } from '#shared/composables/useGql.ts'
 import { useAuth } from '../../../../packages/shared-ui/src/composables/useAuth'
 const { gql } = useGql()
 const route = useRoute()

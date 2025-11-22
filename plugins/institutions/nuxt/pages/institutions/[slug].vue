@@ -24,7 +24,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from '#app'
-import { useGql } from '../../../../../packages/shared-ui/src/composables/useGql'
+import { useGql } from '#shared/composables/useGql.ts'
 
 const route = useRoute()
 const router = useRouter()

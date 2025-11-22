@@ -1,0 +1,8 @@
+const grading_vue_vue_type_style_index_0_scoped_f8f7005f_lang = ".grade-page[data-v-f8f7005f]{background:#fafafa;min-height:100vh}.toolbar[data-v-f8f7005f]{background:#fff;border-radius:6px;padding:8px 12px}.muted[data-v-f8f7005f]{color:#64748b}.comment-item[data-v-f8f7005f]{border-bottom:1px solid #f0f0f0;padding:6px 0}.flex[data-v-f8f7005f]{display:flex}.gap-2[data-v-f8f7005f]{gap:8px}.justify-between[data-v-f8f7005f]{justify-content:space-between}.mb-3[data-v-f8f7005f]{margin-bottom:12px}.items-center[data-v-f8f7005f]{align-items:center}";
+
+const gradingStyles_CJL4Aa3t = [
+  grading_vue_vue_type_style_index_0_scoped_f8f7005f_lang
+];
+
+export { gradingStyles_CJL4Aa3t as default };
+//# sourceMappingURL=grading-styles.CJL4Aa3t.mjs.map

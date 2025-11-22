@@ -591,18 +591,17 @@
 </template>
 
 <script setup lang="ts">
-import { useQuery, useMutation, gql } from '@apollo/client/core'
-import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { computed, ref } from 'vue'
+import { useGql } from '#shared/composables/useGql.ts'
 
 import {
-  ref,
   reactive,
   watch,
   onMounted,
   onUnmounted,
   nextTick
 } from 'vue'
-import { useRoute } from 'vue-router'
 import {
   PlusOutlined,
   SaveOutlined,

@@ -282,7 +282,6 @@ function exportActive(){
     exporting.value = false
   }
 }
-\n
 // --- increment: bulk selection, export, messaging (surgical) ---
 import { ref, computed } from 'vue'
 import { message as $message } from 'ant-design-vue'

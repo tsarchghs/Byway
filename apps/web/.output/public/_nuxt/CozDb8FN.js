@@ -1,0 +1,1 @@
+import{e as u}from"./DQDUwbr-.js";function n(){const{$uiPrefs:e}=u();return e}function c(e="ui"){const s=n();return{get:(t,r)=>s.getSync(`${e}:${t}`,r),set:(t,r)=>s.set(`${e}:${t}`,r),all:()=>s.getSync(e,{}),setAll:t=>s.setAll(t)}}export{c as useKV};

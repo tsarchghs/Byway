@@ -107,25 +107,65 @@ export const resolvers = {
   },
 
   Mutation: {
-    createInstitution: async (_parent, args, ctx) => {
-      const prisma = await getPrisma()
-      if (!prisma?.institution) throw new Error('Prisma not ready for Institution')
-      const reqLike = { headers: { authorization: ctx?.token ? `Bearer ${ctx.token}` : '' } }
-      const user = await resolveUser(reqLike).catch(() => null)
-      const allowed = await canUser('institution.admin', { user, role: 'admin' })
-      if (!allowed) throw new Error('FORBIDDEN')
-      return prisma.institution.create({ data: args })
-    },
+  createInstitution: async (_, { data }, ctx) => {
+    if (!ctx.user?.id) throw new Error("Not authenticated")
 
-    updateInstitution: async (_parent, { id, ...data }, ctx) => {
-      const prisma = await getPrisma()
-      if (!prisma?.institution) throw new Error('Prisma not ready for Institution')
-      const reqLike = { headers: { authorization: ctx?.token ? `Bearer ${ctx.token}` : '' } }
-      const user = await resolveUser(reqLike).catch(() => null)
-      const allowed = await canUser('institution.admin', { user, role: 'admin' })
-      if (!allowed) throw new Error('FORBIDDEN')
-      return prisma.institution.update({ where: { id }, data })
-    },
+    // 1) Create institution
+    const inst = await ctx.prisma.institution.create({
+      data: {
+        name: data.name,
+        slug: data.slug,
+        description: data.description,
+        type: data.type,
+        location: data.location,
+        email: data.email,
+        phone: data.phone,
+      }
+    })
+
+    // 2) Attach creator as ADMIN
+    await ctx.prisma.institutionMember.create({
+      data: {
+        userId: ctx.user.id,
+        institutionId: inst.id,
+        role: "admin"
+      }
+    })
+
+    return inst
+  }
+,
+
+updateInstitution: async (_parent, { id, ...data }, ctx) => {
+  const prisma = await getPrisma()
+  if (!prisma?.institution) throw new Error('Prisma not ready for Institution')
+
+  // Resolve user normally from your authentication plugin
+  const reqLike = { 
+    headers: { authorization: ctx?.token ? `Bearer ${ctx.token}` : '' },
+    protocol: 'http',
+    get: () => 'localhost:3000' // required by resolveInstitutionRole()
+  }
+
+  const user = await resolveUser(reqLike).catch(() => null)
+  if (!user?.id) throw new Error('UNAUTHENTICATED')
+
+  // Prepare context for canUser
+  const permCtx = {
+    user,
+    institutionId: id,   // <── THIS IS CRITICAL
+    req: reqLike
+  }
+
+  const allowed = await canUser('institution.edit', permCtx)
+  if (!allowed) throw new Error('FORBIDDEN')
+
+  return prisma.institution.update({
+    where: { id },
+    data
+  })
+},
+
 
     createDepartment: async (_parent, args, ctx) => {
       const prisma = await getPrisma()

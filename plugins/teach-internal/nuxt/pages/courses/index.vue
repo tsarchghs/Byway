@@ -9,6 +9,6 @@
   </a-layout>
 </template>
 <script setup lang="ts">
-import { useGql } from '../../../../packages/shared-ui/src/composables/useGql'
+import { useGql } from '#shared/composables/useGql.ts'
 definePageMeta({ layout:'teacher', title:'Courses' })
 </script>

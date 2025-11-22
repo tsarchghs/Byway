@@ -72,5 +72,10 @@ export const typeDefs = /* GraphQL */ `
   type Mutation {
     enrollStudent(studentId: String!, courseId: String!): Enrollment!
     upsertGrade(input: GradeInput!): GradebookEntry!
+  createStudent(
+    institutionId: String!
+    userId: String!
+  ): GqlStudent
+
   }
 `;

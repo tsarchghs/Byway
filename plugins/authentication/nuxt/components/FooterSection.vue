@@ -41,7 +41,7 @@
           <li>Tel: +(123) 456-7890</li>
           <li>Mail: bywayedu@webkul.in</li>
         </ul>
-        <img src="socials.png" alt="Social Links" class="footer-socials" />
+        <img  alt="Social Links" class="footer-socials" />
       </div>
     </div>
   </footer>

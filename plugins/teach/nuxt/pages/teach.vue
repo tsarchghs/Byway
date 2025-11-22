@@ -14,7 +14,7 @@
             </a-typography-paragraph>
           </a-col>
           <a-col :xs="0" :md="12">
-            <img src="/images/teach-hero.png" alt="Teach" class="hero-image" />
+            <img alt="Teach" class="hero-image" />
           </a-col>
         </a-row>
       </section>

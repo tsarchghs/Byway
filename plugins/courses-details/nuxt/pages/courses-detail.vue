@@ -248,7 +248,8 @@
 <script setup lang="ts">
 import { h, ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useQuery, gql } from '@apollo/client/core'
+import { useQuery } from '@vue/apollo-composable'
+import gql from 'graphql-tag'
 import Header from '../../../../packages/shared-ui/src/components/Header.vue'
 import { message, Modal } from 'ant-design-vue'
 import {

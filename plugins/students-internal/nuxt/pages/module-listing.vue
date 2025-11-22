@@ -845,7 +845,7 @@
 import { definePageMeta } from '#imports' // Declare definePageMeta before using it
 definePageMeta({ layout: 'student', ssr: false })
 import { provideApolloClient } from '@vue/apollo-composable'
-import { createApolloClient } from '../../../../packages/shared-apollo/client'
+import { createApolloClient } from '@shared-apollo/client'
 
 import { computed } from 'vue'
 import { useQuery } from '@vue/apollo-composable'

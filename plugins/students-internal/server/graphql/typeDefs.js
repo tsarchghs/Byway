@@ -154,5 +154,10 @@ input LessonShareInput {
     setProgress(enrollmentId: ID!, progressPct: Int!): Enrollment!
   upsertLessonShare(input: LessonShareInput!): LessonShare!
   deleteLessonShare(id: ID!): Boolean!
+    createStudent(
+    institutionId: String!
+    userId: String!
+  ): GqlStudent
+
   }
 `

@@ -8,7 +8,7 @@
 </template>
 <script setup lang="ts">
 import { h, ref, onMounted } from 'vue'
-import { useGql } from '../composables/useGql'
+import { useGql } from '#shared/composables/useGql.ts'
 
 const rows = ref<any[]>([])
 function renderItem(it:any){

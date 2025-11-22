@@ -141,6 +141,7 @@ exports.Prisma.ClassroomScalarFieldEnum = {
   status: 'status',
   startsAt: 'startsAt',
   endsAt: 'endsAt',
+  courseIds: 'courseIds',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };

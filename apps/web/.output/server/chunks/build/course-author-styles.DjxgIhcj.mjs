@@ -1,0 +1,8 @@
+const courseAuthor_vue_vue_type_style_index_0_scoped_15d4ded5_lang = ".author-page[data-v-15d4ded5]{background:#fff;padding:24px 16px 40px}.author-main[data-v-15d4ded5]{display:grid;gap:16px;margin:0 auto;max-width:1180px}.author-header[data-v-15d4ded5]{align-items:center;display:flex;flex-wrap:wrap;gap:24px;justify-content:space-between}.author-meta[data-v-15d4ded5]{display:grid;gap:8px;min-width:260px}.role[data-v-15d4ded5]{letter-spacing:.4px;text-transform:uppercase}.subtitle[data-v-15d4ded5]{color:#000000a6;margin:0}.actions[data-v-15d4ded5],.stats-row[data-v-15d4ded5]{margin-top:8px}.author-avatar[data-v-15d4ded5]{display:grid;place-items:center}.courses-header[data-v-15d4ded5]{align-items:center;display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between}.toolbar[data-v-15d4ded5]{margin-left:auto}.course-card[data-v-15d4ded5] .ant-card-meta-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.course-actions[data-v-15d4ded5]{margin-top:12px;text-align:center}@media(max-width:768px){.author-page[data-v-15d4ded5]{padding:16px 12px 28px}.author-header[data-v-15d4ded5]{align-items:flex-start;flex-direction:column}}";
+
+const courseAuthorStyles_DjxgIhcj = [
+  courseAuthor_vue_vue_type_style_index_0_scoped_15d4ded5_lang
+];
+
+export { courseAuthorStyles_DjxgIhcj as default };
+//# sourceMappingURL=course-author-styles.DjxgIhcj.mjs.map

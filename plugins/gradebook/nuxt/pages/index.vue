@@ -33,7 +33,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { definePageMeta } from '#imports'
-import { useGql } from '../../../../packages/shared-ui/src/composables/useGql'
+import { useGql } from '#shared/composables/useGql.ts'
 
 definePageMeta({
   layout: 'student',

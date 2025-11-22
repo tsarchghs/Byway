@@ -10,7 +10,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { useGql } from '../../../packages/shared-ui/src/composables/useGql'
+import { useGql } from '#shared/composables/useGql.ts'
 import { useRoute } from '#imports'
 const route = useRoute()
 const courseTitle = ref('')

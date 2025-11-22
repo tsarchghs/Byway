@@ -3,7 +3,7 @@
     <div class="header-inner">
       <!-- Logo -->
       <NuxtLink to="/" class="logo">
-        <img src="/plugins/homepage/logo.png" alt="Byway" class="logo-image" />
+        <img  alt="Byway" class="logo-image" />
         <span class="logo-text">Byway</span>
       </NuxtLink>
 

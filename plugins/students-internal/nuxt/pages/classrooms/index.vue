@@ -125,7 +125,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, h } from "vue";
-import { useGql } from "../../../../../packages/shared-ui/src/composables/useGql";
+import { useGql } from '#shared/composables/useGql.ts'
 import { theme } from "ant-design-vue";
 import { BulbOutlined, BookOutlined } from "@ant-design/icons-vue";
 import { definePageMeta } from "#imports";

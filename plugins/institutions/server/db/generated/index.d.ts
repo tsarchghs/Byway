@@ -2577,6 +2577,7 @@ export namespace Prisma {
     status: string | null
     startsAt: Date | null
     endsAt: Date | null
+    courseIds: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -2592,6 +2593,7 @@ export namespace Prisma {
     status: string | null
     startsAt: Date | null
     endsAt: Date | null
+    courseIds: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -2607,6 +2609,7 @@ export namespace Prisma {
     status: number
     startsAt: number
     endsAt: number
+    courseIds: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -2632,6 +2635,7 @@ export namespace Prisma {
     status?: true
     startsAt?: true
     endsAt?: true
+    courseIds?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -2647,6 +2651,7 @@ export namespace Prisma {
     status?: true
     startsAt?: true
     endsAt?: true
+    courseIds?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -2662,6 +2667,7 @@ export namespace Prisma {
     status?: true
     startsAt?: true
     endsAt?: true
+    courseIds?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -2764,6 +2770,7 @@ export namespace Prisma {
     status: string | null
     startsAt: Date | null
     endsAt: Date | null
+    courseIds: string | null
     createdAt: Date
     updatedAt: Date
     _count: ClassroomCountAggregateOutputType | null
@@ -2798,6 +2805,7 @@ export namespace Prisma {
     status?: boolean
     startsAt?: boolean
     endsAt?: boolean
+    courseIds?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     institution?: boolean | InstitutionDefaultArgs<ExtArgs>
@@ -2817,6 +2825,7 @@ export namespace Prisma {
     status?: boolean
     startsAt?: boolean
     endsAt?: boolean
+    courseIds?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     institution?: boolean | InstitutionDefaultArgs<ExtArgs>
@@ -2834,6 +2843,7 @@ export namespace Prisma {
     status?: boolean
     startsAt?: boolean
     endsAt?: boolean
+    courseIds?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
@@ -2867,6 +2877,7 @@ export namespace Prisma {
       status: string | null
       startsAt: Date | null
       endsAt: Date | null
+      courseIds: string | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["classroom"]>
@@ -3303,6 +3314,7 @@ export namespace Prisma {
     readonly status: FieldRef<"Classroom", 'String'>
     readonly startsAt: FieldRef<"Classroom", 'DateTime'>
     readonly endsAt: FieldRef<"Classroom", 'DateTime'>
+    readonly courseIds: FieldRef<"Classroom", 'String'>
     readonly createdAt: FieldRef<"Classroom", 'DateTime'>
     readonly updatedAt: FieldRef<"Classroom", 'DateTime'>
   }
@@ -7660,6 +7672,7 @@ export namespace Prisma {
     status: 'status',
     startsAt: 'startsAt',
     endsAt: 'endsAt',
+    courseIds: 'courseIds',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -7886,6 +7899,7 @@ export namespace Prisma {
     status?: StringNullableFilter<"Classroom"> | string | null
     startsAt?: DateTimeNullableFilter<"Classroom"> | Date | string | null
     endsAt?: DateTimeNullableFilter<"Classroom"> | Date | string | null
+    courseIds?: StringNullableFilter<"Classroom"> | string | null
     createdAt?: DateTimeFilter<"Classroom"> | Date | string
     updatedAt?: DateTimeFilter<"Classroom"> | Date | string
     institution?: XOR<InstitutionRelationFilter, InstitutionWhereInput>
@@ -7904,6 +7918,7 @@ export namespace Prisma {
     status?: SortOrderInput | SortOrder
     startsAt?: SortOrderInput | SortOrder
     endsAt?: SortOrderInput | SortOrder
+    courseIds?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     institution?: InstitutionOrderByWithRelationInput
@@ -7925,6 +7940,7 @@ export namespace Prisma {
     status?: StringNullableFilter<"Classroom"> | string | null
     startsAt?: DateTimeNullableFilter<"Classroom"> | Date | string | null
     endsAt?: DateTimeNullableFilter<"Classroom"> | Date | string | null
+    courseIds?: StringNullableFilter<"Classroom"> | string | null
     createdAt?: DateTimeFilter<"Classroom"> | Date | string
     updatedAt?: DateTimeFilter<"Classroom"> | Date | string
     institution?: XOR<InstitutionRelationFilter, InstitutionWhereInput>
@@ -7943,6 +7959,7 @@ export namespace Prisma {
     status?: SortOrderInput | SortOrder
     startsAt?: SortOrderInput | SortOrder
     endsAt?: SortOrderInput | SortOrder
+    courseIds?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: ClassroomCountOrderByAggregateInput
@@ -7966,6 +7983,7 @@ export namespace Prisma {
     status?: StringNullableWithAggregatesFilter<"Classroom"> | string | null
     startsAt?: DateTimeNullableWithAggregatesFilter<"Classroom"> | Date | string | null
     endsAt?: DateTimeNullableWithAggregatesFilter<"Classroom"> | Date | string | null
+    courseIds?: StringNullableWithAggregatesFilter<"Classroom"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Classroom"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Classroom"> | Date | string
   }
@@ -8359,6 +8377,7 @@ export namespace Prisma {
     status?: string | null
     startsAt?: Date | string | null
     endsAt?: Date | string | null
+    courseIds?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     institution: InstitutionCreateNestedOneWithoutClassroomsInput
@@ -8377,6 +8396,7 @@ export namespace Prisma {
     status?: string | null
     startsAt?: Date | string | null
     endsAt?: Date | string | null
+    courseIds?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     enrollments?: ClassroomEnrollmentUncheckedCreateNestedManyWithoutClassroomInput
@@ -8391,6 +8411,7 @@ export namespace Prisma {
     status?: NullableStringFieldUpdateOperationsInput | string | null
     startsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    courseIds?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     institution?: InstitutionUpdateOneRequiredWithoutClassroomsNestedInput
@@ -8409,6 +8430,7 @@ export namespace Prisma {
     status?: NullableStringFieldUpdateOperationsInput | string | null
     startsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    courseIds?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     enrollments?: ClassroomEnrollmentUncheckedUpdateManyWithoutClassroomNestedInput
@@ -8425,6 +8447,7 @@ export namespace Prisma {
     status?: string | null
     startsAt?: Date | string | null
     endsAt?: Date | string | null
+    courseIds?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -8438,6 +8461,7 @@ export namespace Prisma {
     status?: NullableStringFieldUpdateOperationsInput | string | null
     startsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    courseIds?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -8453,6 +8477,7 @@ export namespace Prisma {
     status?: NullableStringFieldUpdateOperationsInput | string | null
     startsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    courseIds?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -8977,6 +9002,7 @@ export namespace Prisma {
     status?: SortOrder
     startsAt?: SortOrder
     endsAt?: SortOrder
+    courseIds?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -8996,6 +9022,7 @@ export namespace Prisma {
     status?: SortOrder
     startsAt?: SortOrder
     endsAt?: SortOrder
+    courseIds?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -9011,6 +9038,7 @@ export namespace Prisma {
     status?: SortOrder
     startsAt?: SortOrder
     endsAt?: SortOrder
+    courseIds?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -9738,6 +9766,7 @@ export namespace Prisma {
     status?: string | null
     startsAt?: Date | string | null
     endsAt?: Date | string | null
+    courseIds?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     department?: DepartmentCreateNestedOneWithoutClassroomsInput
@@ -9754,6 +9783,7 @@ export namespace Prisma {
     status?: string | null
     startsAt?: Date | string | null
     endsAt?: Date | string | null
+    courseIds?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     enrollments?: ClassroomEnrollmentUncheckedCreateNestedManyWithoutClassroomInput
@@ -9883,6 +9913,7 @@ export namespace Prisma {
     status?: StringNullableFilter<"Classroom"> | string | null
     startsAt?: DateTimeNullableFilter<"Classroom"> | Date | string | null
     endsAt?: DateTimeNullableFilter<"Classroom"> | Date | string | null
+    courseIds?: StringNullableFilter<"Classroom"> | string | null
     createdAt?: DateTimeFilter<"Classroom"> | Date | string
     updatedAt?: DateTimeFilter<"Classroom"> | Date | string
   }
@@ -10224,6 +10255,7 @@ export namespace Prisma {
     status?: string | null
     startsAt?: Date | string | null
     endsAt?: Date | string | null
+    courseIds?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     institution: InstitutionCreateNestedOneWithoutClassroomsInput
@@ -10240,6 +10272,7 @@ export namespace Prisma {
     status?: string | null
     startsAt?: Date | string | null
     endsAt?: Date | string | null
+    courseIds?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     enrollments?: ClassroomEnrollmentUncheckedCreateNestedManyWithoutClassroomInput
@@ -10408,6 +10441,7 @@ export namespace Prisma {
     status?: string | null
     startsAt?: Date | string | null
     endsAt?: Date | string | null
+    courseIds?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     institution: InstitutionCreateNestedOneWithoutClassroomsInput
@@ -10425,6 +10459,7 @@ export namespace Prisma {
     status?: string | null
     startsAt?: Date | string | null
     endsAt?: Date | string | null
+    courseIds?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -10454,6 +10489,7 @@ export namespace Prisma {
     status?: NullableStringFieldUpdateOperationsInput | string | null
     startsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    courseIds?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     institution?: InstitutionUpdateOneRequiredWithoutClassroomsNestedInput
@@ -10471,6 +10507,7 @@ export namespace Prisma {
     status?: NullableStringFieldUpdateOperationsInput | string | null
     startsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    courseIds?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -10569,6 +10606,7 @@ export namespace Prisma {
     status?: string | null
     startsAt?: Date | string | null
     endsAt?: Date | string | null
+    courseIds?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -10610,6 +10648,7 @@ export namespace Prisma {
     status?: NullableStringFieldUpdateOperationsInput | string | null
     startsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    courseIds?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     department?: DepartmentUpdateOneWithoutClassroomsNestedInput
@@ -10626,6 +10665,7 @@ export namespace Prisma {
     status?: NullableStringFieldUpdateOperationsInput | string | null
     startsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    courseIds?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     enrollments?: ClassroomEnrollmentUncheckedUpdateManyWithoutClassroomNestedInput
@@ -10641,6 +10681,7 @@ export namespace Prisma {
     status?: NullableStringFieldUpdateOperationsInput | string | null
     startsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    courseIds?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -10773,6 +10814,7 @@ export namespace Prisma {
     status?: string | null
     startsAt?: Date | string | null
     endsAt?: Date | string | null
+    courseIds?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -10786,6 +10828,7 @@ export namespace Prisma {
     status?: NullableStringFieldUpdateOperationsInput | string | null
     startsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    courseIds?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     institution?: InstitutionUpdateOneRequiredWithoutClassroomsNestedInput
@@ -10802,6 +10845,7 @@ export namespace Prisma {
     status?: NullableStringFieldUpdateOperationsInput | string | null
     startsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    courseIds?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     enrollments?: ClassroomEnrollmentUncheckedUpdateManyWithoutClassroomNestedInput
@@ -10817,6 +10861,7 @@ export namespace Prisma {
     status?: NullableStringFieldUpdateOperationsInput | string | null
     startsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    courseIds?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }

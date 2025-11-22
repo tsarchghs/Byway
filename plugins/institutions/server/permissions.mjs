@@ -46,6 +46,13 @@ export async function canUser(action, ctx) {
   const isStudent = role === 'student'
 
   switch (action) {
+    case 'institution.create':
+      // ANY logged-in user can create institutions
+      return Boolean(user?.id)
+
+    case 'institution.edit':
+      // Only institution admin can edit
+      return isAdmin
     case 'classroom.view':
       return Boolean(role)
     case 'classroom.edit':

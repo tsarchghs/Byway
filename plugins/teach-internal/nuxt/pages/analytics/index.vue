@@ -18,6 +18,6 @@ import { ref, onMounted } from 'vue'
 const metrics = ref<any>({ students:0, submissions:0, avg:0 })
 const { call, endpoints } = useGql()
 onMounted(async () => { try { const q = `query { teacherAnalytics { students submissions avg } }`; const d:any = await call(endpoints.teachInternal, q); metrics.value = d?.teacherAnalytics || metrics.value } catch {} })
-import { useGql } from '../../../../packages/shared-ui/src/composables/useGql'
+import { useGql } from '#shared/composables/useGql.ts'
 definePageMeta({ layout:'teacher', title:'Analytics' })
 </script>

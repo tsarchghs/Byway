@@ -77,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { useGql } from '../../../../packages/shared-ui/src/composables/useGql'
+import { useGql } from '#shared/composables/useGql.ts'
 import { ref, computed, h, onMounted, defineComponent } from 'vue'
 import { useRoute, useRuntimeConfig } from '#imports'
 
@@ -88,7 +88,8 @@ let ModuleUniversityPanel: any = defineComponent({
 })
 try {
   // top-level await is supported in <script setup>
-  ModuleUniversityPanel = (await import('@/components/ModuleUniversityPanel.vue')).default
+ModuleUniversityPanel = (await import('../../components/ModuleUniversityPanel.vue')).default
+
 } catch (e) {
   console.warn('[students-internal] Using stub ModuleUniversityPanel:', (e as any)?.message || e)
 }

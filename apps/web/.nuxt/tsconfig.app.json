@@ -80,10 +80,7 @@
         "../*"
       ],
       "#shared": [
-        "../shared"
-      ],
-      "#shared/*": [
-        "../shared/*"
+        "../../packages/shared-ui/src"
       ],
       "@shared-ui": [
         "../../packages/shared-ui/src"
@@ -93,6 +90,12 @@
       ],
       "@shared/*": [
         "../../../packages/shared-ui/src/*"
+      ],
+      "@shared-apollo": [
+        "../../../packages/shared-apollo"
+      ],
+      "@shared-apollo/*": [
+        "../../../packages/shared-apollo/*"
       ],
       "#app": [
         "../../../node_modules/.pnpm/nuxt@4.2.0_@parcel+watcher@2.5.1_@types+node@22.18.13_@vue+compiler-sfc@3.5.22_db0@0.3.4_iore_f5v7hewsddy5avpu7qdacj2zgu/node_modules/nuxt/dist/app"

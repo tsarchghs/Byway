@@ -1704,7 +1704,7 @@ import {
 } from "@ant-design/icons-vue";
 import { useRoute } from "vue-router";
 import { provideApolloClient } from '@vue/apollo-composable'
-import { createApolloClient } from '../../../../../../packages/shared-apollo/client'
+import { createApolloClient } from '@shared-apollo/client'
 
 const apollo = createApolloClient('teach-internal', getCookieToken())
 provideApolloClient(apollo)
