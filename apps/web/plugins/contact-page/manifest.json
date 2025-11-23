@@ -1,0 +1,9 @@
+{
+  "name": "contact-page",
+  "routes": [
+    {
+      "path": "/contact",
+      "file": "nuxt/pages/contact.vue"
+    }
+  ]
+}

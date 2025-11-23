@@ -25,5 +25,5 @@ export default defineNuxtConfig({
     }
   },
   nitro: { preset: 'node' },
-  ssr: true
+  ssr: process.env.NUXT_SSR !== 'false'
 })

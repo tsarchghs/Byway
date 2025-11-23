@@ -14,7 +14,8 @@
     "dev:api": "pnpm --filter @bloggrs/api dev",
     "dev": "concurrently -k -n web,api -c blue,green \"pnpm dev:web\" \"pnpm dev:api\"",
     "build": "pnpm -r build",
-    "start:api": "pnpm --filter @bloggrs/api start"
+    "start:api": "pnpm --filter @bloggrs/api start",
+    "migrate:plugins": "node scripts/migrate-plugins.mjs"
   },
   "dependencies": {
     "@ant-design/icons-vue": "^7.0.1",

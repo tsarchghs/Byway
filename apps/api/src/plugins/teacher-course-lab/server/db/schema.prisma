@@ -1,0 +1,73 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./teacher-course-lab.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/client"
+}
+
+// External references by ID (string) to keep plugin autonomy; integrate via REST between plugins.
+model LabChallenge {
+  courseId        String?
+  moduleId        String?
+  lessonId        String?
+
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  description     String
+  difficulty      String   // e.g. Beginner, Intermediate, Advanced
+  starterRepoUrl  String?
+  testsRepoUrl    String?
+  runtime         String?  // e.g. node18, python3.11, c_gcc, etc.
+  createdByUserId String
+  visibility      String   @default("private") // private|course|public
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  sessions        LabSession[]
+}
+
+model LabSession {
+  id              String   @id @default(cuid())
+  userId          String
+  challengeId     String
+  status          String   @default("created") // created|starting|running|stopped|error
+  codeServerUrl   String?
+  codeServerToken String?
+  appUrl          String?     // 
+  containerId     String?
+  lastHeartbeat   DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  challenge       LabChallenge @relation(fields: [challengeId], references: [id])
+  submissions     Submission[]
+  workspaces      LabWorkspace[]
+}
+
+model LabWorkspace {
+  id          String   @id @default(cuid())
+  sessionId   String
+  path        String
+  repoUrl     String?
+  branch      String?
+
+  session     LabSession @relation(fields: [sessionId], references: [id])
+}
+
+model Submission {
+  id          String   @id @default(cuid())
+  sessionId   String
+  status      String   @default("pending") // pending|running|passed|failed|graded
+  passed      Boolean  @default(false)
+  gradePct    Float?   // optional grade from 0..100
+  feedback    String?
+  artifactsUrl String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  session     LabSession @relation(fields: [sessionId], references: [id])
+}

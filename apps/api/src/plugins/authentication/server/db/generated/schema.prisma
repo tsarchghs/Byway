@@ -1,0 +1,51 @@
+generator client {
+  engineType = "node-api"
+  provider   = "prisma-client-js"
+  output     = "./generated"
+}
+
+datasource db {
+  provider = "mysql" // can be Postgres too
+  url      = "mysql://root:gjergji21@localhost:3306/bloggrs_authentication" // e.g., file:./auth.db
+}
+
+model User {
+  uiPrefsJson      String?
+  id               String  @id @default(cuid())
+  teacherProfileId String?
+  email            String  @unique
+  password         String
+  firstName        String?
+  lastName         String?
+
+  // UI/roles
+  role    String @default("STUDENT")
+  uiPrefs Json?  @default("{}")
+
+  // Optional profile customization
+  bannerUrl    String?
+  primaryColor String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Institution {
+  id           String   @id @default(cuid())
+  name         String
+  domain       String?
+  logoUrl      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  primaryColor String?
+  bannerUrl    String?
+}
+
+model InstitutionUser {
+  id            String   @id @default(cuid())
+  userId        String
+  institutionId String
+  role          String // Dean | FacultyAdmin | Teacher | Student
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

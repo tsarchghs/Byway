@@ -1,0 +1,11 @@
+#graphql
+extend type Query {
+  uiPrefs: JSON
+  getUiPref(key: String!): String
+}
+
+extend type Mutation {
+  setUiPref(key: String!, value: String!): Boolean!
+  setUiPrefs(input: JSON!): Boolean!
+  setMyRole(role: String!): Boolean!
+}

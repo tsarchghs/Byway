@@ -1,0 +1,9 @@
+{
+  "name": "profile-page",
+  "routes": [
+    {
+      "path": "/profile-page",
+      "file": "nuxt/pages/profile-page.vue"
+    }
+  ]
+}

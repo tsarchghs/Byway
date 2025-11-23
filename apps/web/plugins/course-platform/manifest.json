@@ -1,0 +1,13 @@
+{
+  "name": "course-platform",
+  "routes": [
+    {
+      "path": "/course",
+      "file": "nuxt/pages/course.vue"
+    },
+    {
+      "path": "/course-lab/[course_id]",
+      "file": "nuxt/pages/lab.vue"
+    }
+  ]
+}

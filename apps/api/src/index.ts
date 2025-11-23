@@ -2,7 +2,7 @@ import express from "express"
 import cors from "cors"
 import path from "node:path"
 import fs from "node:fs"
-import { pathToFileURL } from "node:url"
+import { pathToFileURL, fileURLToPath } from "node:url"
 
 // ✅ bring Nexus internals into scope
 import { makeSchema } from "nexus"
@@ -43,10 +43,14 @@ app.use((req, res, next) => {
 })
 
 const PORT = Number(process.env.PORT || 4000)
+const HOST = process.env.HOST || '0.0.0.0'
 
 // --- Load plugin routers dynamically ---
+const here = path.dirname(fileURLToPath(import.meta.url))
 const candidates = [
   process.env.BLOGGRS_PLUGINS_DIR,
+  path.resolve(here, "plugins"),
+  path.resolve(process.cwd(), "apps/api/src/plugins"),
   path.resolve(process.cwd(), "../../plugins"),
   path.resolve(process.cwd(), "../plugins"),
   path.resolve(process.cwd(), "./plugins"),
@@ -128,6 +132,6 @@ app.get("/api/health", (_req, res) => {
   res.json({ ok: true, time: new Date().toISOString() })
 })
 
-app.listen(PORT, () => {
-  console.log(`[api] listening on http://localhost:${PORT}`)
+app.listen(PORT, HOST, () => {
+  console.log(`[api] listening on http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`)
 })

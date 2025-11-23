@@ -1,0 +1,64 @@
+{
+  "name": "teach-internal",
+  "routes": [
+    {
+      "path": "/teach-internal/[teacher_id]",
+      "file": "nuxt/pages/teach-internal.vue"
+    },
+    {
+      "path": "/teach-internal/[teacher_id]/course/create",
+      "file": "nuxt/pages/course/create.vue"
+    },
+    {
+      "path": "/teach-internal/[teacher_id]/course/create/module/create",
+      "file": "nuxt/pages/course/module/create.vue"
+    },
+    {
+      "path": "/teach-internal/[teacher_id]/course/[course_id]/module/[module_id]/view",
+      "file": "nuxt/pages/course/module/view.vue"
+    },
+    {
+      "path": "/institutions",
+      "file": "nuxt/pages/institutions/index.vue"
+    },
+    {
+      "path": "/institutions/[slug]/admin",
+      "file": "nuxt/pages/institutions/[slug]/admin.vue"
+    },
+    {
+      "path": "/institutions/[slug]/assignments/[id]/grading",
+      "file": "nuxt/pages/institutions/[slug]/assignments/[id]/grading.vue"
+    },
+    {
+      "path": "/institutions/[slug]/dashboard",
+      "file": "nuxt/pages/institutions/[slug]/dashboard.vue"
+    },
+    {
+      "path": "/modules/[id]/admin",
+      "file": "nuxt/pages/modules/[id]/admin.vue"
+    },
+    "/institutions/[slug]/classrooms/[id]/gradebook",
+    {
+      "path": "/teach/labs",
+      "file": "nuxt/pages/labs/index.vue"
+    }
+  ],
+  "endpoints": {
+    "GET /api/courses": true,
+    "GET /api/courses/:id": true,
+    "POST /api/courses": true,
+    "PUT /api/courses/:id": true,
+    "DELETE /api/courses/:id": true,
+    "GET /api/modules": true,
+    "GET /api/modules/:id": true,
+    "POST /api/modules": true,
+    "PUT /api/modules/:id": true,
+    "DELETE /api/modules/:id": true,
+    "GET /api/lessons": true,
+    "GET /api/lessons/:id": true,
+    "POST /api/lessons": true,
+    "PUT /api/lessons/:id": true,
+    "DELETE /api/lessons/:id": true,
+    "POST /api/teach-internal/files/upload": true
+  }
+}

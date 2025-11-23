@@ -1,0 +1,9 @@
+{
+  "name": "footer-links-pages",
+  "routes": [
+    {
+      "path": "/faq",
+      "file": "nuxt/pages/faq.vue"
+    }
+  ]
+}

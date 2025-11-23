@@ -1,0 +1,122 @@
+{
+  "name": "institutions-portal",
+  "routes": [
+    {
+      "path": "/institution/student_mode/[institution_id]",
+      "file": "nuxt/pages/student_mode_institution_dashboard.vue"
+    },
+    {
+      "path": "/institution/[institution_id]/backup",
+      "file": "nuxt/pages/inst-portal-role-based.vue"
+    },
+    {
+      "path": "/institutions-portal",
+      "file": "nuxt/pages/role-portal/index.vue"
+    },
+    {
+      "path": "/institution/portal",
+      "file": "nuxt/pages/index.vue"
+    },
+    {
+      "path": "/institution/departments/[departmentId]",
+      "file": "nuxt/pages/departments/[departmentId].vue"
+    },
+    {
+      "path": "/institution/classrooms/[classroomId]",
+      "file": "nuxt/pages/classrooms/[classroomId].vue"
+    },
+    {
+      "path": "/institution/catalog",
+      "file": "nuxt/pages/catalog/index.vue"
+    },
+    {
+      "path": "/institution/assignments/teachers",
+      "file": "nuxt/pages/assignments/teachers.vue"
+    },
+    {
+      "path": "/institution/students/[studentId]",
+      "file": "nuxt/pages/students/[studentId].vue"
+    },
+    {
+      "path": "/institution/people",
+      "file": "nuxt/pages/directory/index.vue"
+    },
+    {
+      "path": "/institution/calendar",
+      "file": "nuxt/pages/calendar/index.vue"
+    },
+    {
+      "path": "/institution/classrooms/[classroomId]/attendance",
+      "file": "nuxt/pages/classrooms/[classroomId]/attendance.vue"
+    },
+    {
+      "path": "/institution/join",
+      "file": "nuxt/pages/join/index.vue"
+    }
+  ],
+  "server": {
+    "index": "server/index.mjs",
+    "routes": [
+      {
+        "method": "GET",
+        "path": "/api/institution-portal/overview"
+      },
+      {
+        "method": "GET",
+        "path": "/api/institution-portal/student-dashboard"
+      },
+      {
+        "method": "GET",
+        "path": "/api/institution-portal/teacher-dashboard"
+      },
+      {
+        "method": "GET",
+        "path": "/api/institution-portal/admin-dashboard"
+      },
+      {
+        "method": "GET",
+        "path": "/api/institution-portal/departments/:id/overview"
+      },
+      {
+        "method": "GET",
+        "path": "/api/institution-portal/classrooms/:id/overview"
+      },
+      {
+        "method": "GET",
+        "path": "/api/institution-portal/catalog"
+      },
+      {
+        "method": "GET",
+        "path": "/api/institution-portal/people"
+      },
+      {
+        "method": "GET",
+        "path": "/api/institution-portal/teacher-assignments"
+      },
+      {
+        "method": "POST",
+        "path": "/api/institution-portal/assignments/teacher"
+      },
+      {
+        "method": "GET",
+        "path": "/api/institution-portal/students/:id/record"
+      },
+      {
+        "method": "GET",
+        "path": "/api/institution-portal/calendar"
+      },
+      {
+        "method": "GET",
+        "path": "/api/institution-portal/classrooms/:id/attendance"
+      },
+      {
+        "method": "POST",
+        "path": "/api/institution-portal/institutions/:id/join"
+      },
+      {
+        "method": "POST",
+        "path": "/api/institution-portal/institutions/:id/leave"
+      }
+    ]
+  }
+}
