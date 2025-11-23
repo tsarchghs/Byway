@@ -167,6 +167,7 @@ const form = ref<FormT>({
   discount: 0,
   coverUrl: ''
 })
+const route = useRoute()        // <-- THIS is what was missing
 
 /** Derived */
 const payable = computed(() =>

@@ -2,6 +2,7 @@ import { ApolloClient, InMemoryCache, createHttpLink, from } from '@apollo/clien
 import { setContext } from '@apollo/client/link/context'
 import { provideApolloClient } from '@vue/apollo-composable'
 import { useRoute, useRuntimeConfig } from '#imports'
+import { useKV } from '../plugins/students-internal/nuxt/composables/useKV'
 
 /**
  * Creates a dynamic Apollo Client that automatically points to
@@ -19,7 +20,6 @@ export async function useApolloPluginClient(manualName?: string) {
   let token: string | null = null
   if (typeof window !== 'undefined') {
     try {
-      const { useKV } = await import('../../../plugins/students-internal/nuxt/composables/useKV')
       const kv = useKV()
       token = await kv.get('token')
     } catch {

@@ -1704,7 +1704,7 @@ import {
 } from "@ant-design/icons-vue";
 import { useRoute } from "vue-router";
 import { provideApolloClient } from '@vue/apollo-composable'
-import { createApolloClient } from '@shared-apollo/client'
+import { createApolloClient } from '../../../../../../../../packages/shared-apollo/client';
 
 const apollo = createApolloClient('teach-internal', getCookieToken())
 provideApolloClient(apollo)
@@ -1939,7 +1939,7 @@ type CourseT = {
 /** Config / GraphQL helper */
 const route = useRoute();
 const API_URL = "http://localhost:4000/api/teach-internal/graphql";
-const FILE_UPLOAD_ENDPOINT = "/api/teach-internal/files/upload";
+const FILE_UPLOAD_ENDPOINT = "http://localhost:4000/api/teach-internal/files/upload";
 // rely on HttpOnly auth cookie; no /* removed_localStorage */ null token
 function getAuthHeaders(options: { json?: boolean } = {}) {
   const token = getCookieToken();

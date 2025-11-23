@@ -1,6 +1,0 @@
-{
-  "name": "homepage",
-  "routes": [
-    { "path": "/", "file": "nuxt/pages/homepage.vue" }
-  ]
-}

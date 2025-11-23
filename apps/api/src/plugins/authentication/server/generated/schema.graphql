@@ -51,6 +51,7 @@ type Mutation {
   linkInstitutionUser(institutionId: String!, role: String!, userId: String!): GqlInstitutionUser
   login(email: String!, password: String!): AuthPayload
   register(email: String!, firstName: String, lastName: String, password: String!): GqlUser
+  setMyUiPrefs(json: String!): UiPrefsResult
   updateUserTeacherProfile(teacherProfileId: String!): GqlUser
 }
 
@@ -60,4 +61,9 @@ type Query {
   institutionRoles(userId: String!): [GqlInstitutionUser]
   institutions: [GqlInstitution]
   me: GqlUser
+  myUiPrefs: String
+}
+
+type UiPrefsResult {
+  ok: Boolean
 }

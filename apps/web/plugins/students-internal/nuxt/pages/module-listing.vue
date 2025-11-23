@@ -845,7 +845,6 @@
 import { definePageMeta } from '#imports' // Declare definePageMeta before using it
 definePageMeta({ layout: 'student', ssr: false })
 import { provideApolloClient } from '@vue/apollo-composable'
-import { createApolloClient } from '@shared-apollo/client'
 
 import { computed } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
@@ -860,6 +859,7 @@ import {
   UploadOutlined, BookOutlined, PrinterOutlined, ClockCircleOutlined,
   CodeOutlined, ReloadOutlined
 } from '@ant-design/icons-vue'
+import { createApolloClient } from '../../../../../../packages/shared-apollo/client'
 
 const Q_ME = gql`query Me { me { id email displayName roles } }`
 

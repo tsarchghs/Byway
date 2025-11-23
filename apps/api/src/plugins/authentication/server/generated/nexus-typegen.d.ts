@@ -76,6 +76,9 @@ export interface NexusGenObjects {
   }
   Mutation: {};
   Query: {};
+  UiPrefsResult: { // root type
+    ok?: boolean | null; // Boolean
+  }
 }
 
 export interface NexusGenInterfaces {
@@ -127,6 +130,7 @@ export interface NexusGenFieldTypes {
     linkInstitutionUser: NexusGenRootTypes['GqlInstitutionUser'] | null; // GqlInstitutionUser
     login: NexusGenRootTypes['AuthPayload'] | null; // AuthPayload
     register: NexusGenRootTypes['GqlUser'] | null; // GqlUser
+    setMyUiPrefs: NexusGenRootTypes['UiPrefsResult'] | null; // UiPrefsResult
     updateUserTeacherProfile: NexusGenRootTypes['GqlUser'] | null; // GqlUser
   }
   Query: { // field return type
@@ -135,6 +139,10 @@ export interface NexusGenFieldTypes {
     institutionRoles: Array<NexusGenRootTypes['GqlInstitutionUser'] | null> | null; // [GqlInstitutionUser]
     institutions: Array<NexusGenRootTypes['GqlInstitution'] | null> | null; // [GqlInstitution]
     me: NexusGenRootTypes['GqlUser'] | null; // GqlUser
+    myUiPrefs: string | null; // String
+  }
+  UiPrefsResult: { // field return type
+    ok: boolean | null; // Boolean
   }
 }
 
@@ -177,6 +185,7 @@ export interface NexusGenFieldTypeNames {
     linkInstitutionUser: 'GqlInstitutionUser'
     login: 'AuthPayload'
     register: 'GqlUser'
+    setMyUiPrefs: 'UiPrefsResult'
     updateUserTeacherProfile: 'GqlUser'
   }
   Query: { // field return type name
@@ -185,6 +194,10 @@ export interface NexusGenFieldTypeNames {
     institutionRoles: 'GqlInstitutionUser'
     institutions: 'GqlInstitution'
     me: 'GqlUser'
+    myUiPrefs: 'String'
+  }
+  UiPrefsResult: { // field return type name
+    ok: 'Boolean'
   }
 }
 
@@ -209,6 +222,9 @@ export interface NexusGenArgTypes {
       firstName?: string | null; // String
       lastName?: string | null; // String
       password: string; // String!
+    }
+    setMyUiPrefs: { // args
+      json: string; // String!
     }
     updateUserTeacherProfile: { // args
       teacherProfileId: string; // String!

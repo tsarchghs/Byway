@@ -1,9 +1,0 @@
-{
-  "name": "articles",
-  "routes": [
-    {
-      "path": "/articles",
-      "file": "nuxt/pages/articles.vue"
-    }
-  ]
-}

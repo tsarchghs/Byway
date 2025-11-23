@@ -1,5 +1,0 @@
-scalar JSON
-extend type Me { uiPrefs: JSON, role: String }
-extend type Query { me: Me! }
-type Me { id: ID!, email: String, role: String, uiPrefs: JSON }
-extend type Mutation { setUiPref(key:String!, value: JSON!): Boolean!, setUiPrefs(prefs: JSON!): Boolean! }

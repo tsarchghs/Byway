@@ -1448,22 +1448,7 @@ const plugins = [
 _z9hL_NSM06eTILGQ9SM3VDiVxjMWnkxmIe_dL7HZtwc
 ];
 
-const assets = {
-  "/index.mjs": {
-    "type": "text/javascript; charset=utf-8",
-    "etag": "\"14ac3-VpMMMBdxPTRnxuQivtSmK0ss064\"",
-    "mtime": "2025-11-23T11:49:32.147Z",
-    "size": 84675,
-    "path": "index.mjs"
-  },
-  "/index.mjs.map": {
-    "type": "application/json",
-    "etag": "\"50f4f-FbUEiiC/QQ2sa1+imT66pMz2QoQ\"",
-    "mtime": "2025-11-23T11:49:32.147Z",
-    "size": 331599,
-    "path": "index.mjs.map"
-  }
-};
+const assets = {};
 
 function readAsset (id) {
   const serverDir = dirname$1(fileURLToPath(globalThis._importMeta_.url));
@@ -1593,7 +1578,7 @@ function createSSRContext(event) {
     url: event.path,
     event,
     runtimeConfig: useRuntimeConfig(event),
-    noSSR: true,
+    noSSR: event.context.nuxt?.noSSR || (false),
     head: createHead(unheadOptions),
     error: false,
     nuxt: void 0,
@@ -1624,7 +1609,7 @@ function publicAssetsURL(...path) {
 
 const APP_ROOT_OPEN_TAG = `<${appRootTag}${propsToString(appRootAttrs)}>`;
 const APP_ROOT_CLOSE_TAG = `</${appRootTag}>`;
-const getServerEntry = () => Promise.resolve().then(function () { return server$1; }).then((r) => r.default || r);
+const getServerEntry = () => import('file://C:/Users/PC/Documents/GitHub/byway/apps/web/.nuxt//dist/server/server.mjs').then((r) => r.default || r);
 const getClientManifest = () => import('file://C:/Users/PC/Documents/GitHub/byway/apps/web/.nuxt//dist/server/client.manifest.mjs').then((r) => r.default || r).then((r) => typeof r === "function" ? r() : r);
 const getSSRRenderer = lazyCachedFunction(async () => {
   const createSSRApp = await getServerEntry();
@@ -1694,7 +1679,7 @@ function lazyCachedFunction(fn) {
   };
 }
 function getRenderer(ssrContext) {
-  return getSPARenderer() ;
+  return ssrContext.noSSR ? getSPARenderer() : getSSRRenderer();
 }
 const getSSRStyles = lazyCachedFunction(() => Promise.resolve().then(function () { return styles$1; }).then((r) => r.default || r));
 
@@ -2110,7 +2095,7 @@ parentPort?.on("message", (msg) => {
   }
 });
 const nitroApp = useNitroApp();
-const server$2 = new Server(toNodeListener(nitroApp.h3App));
+const server = new Server(toNodeListener(nitroApp.h3App));
 let listener;
 listen().catch(() => listen(
   true
@@ -2150,8 +2135,8 @@ function listen(useRandomPort = Boolean(
 )) {
   return new Promise((resolve, reject) => {
     try {
-      listener = server$2.listen(useRandomPort ? 0 : getSocketAddress(), () => {
-        const address = server$2.address();
+      listener = server.listen(useRandomPort ? 0 : getSocketAddress(), () => {
+        const address = server.address();
         parentPort?.postMessage({
           event: "listen",
           address: typeof address === "string" ? { socketPath: address } : { host: "localhost", port: address?.port }
@@ -2177,7 +2162,7 @@ function getSocketAddress() {
   return join(tmpdir(), socketName);
 }
 async function shutdown() {
-  server$2.closeAllConnections?.();
+  server.closeAllConnections?.();
   await Promise.all([
     new Promise((resolve) => listener?.close(resolve)),
     nitroApp.hooks.callHook("close").catch(console.error)
@@ -2194,13 +2179,6 @@ const template$1 = (messages) => {
 const error500 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
   __proto__: null,
   template: template$1
-}, Symbol.toStringTag, { value: 'Module' }));
-
-const server = () => {};
-
-const server$1 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
-  __proto__: null,
-  default: server
 }, Symbol.toStringTag, { value: 'Module' }));
 
 const template = "";
@@ -2234,7 +2212,7 @@ function renderPayloadJsonScript(opts) {
     "type": "application/json",
     "innerHTML": contents,
     "data-nuxt-data": appId,
-    "data-ssr": false
+    "data-ssr": !(opts.ssrContext.noSSR)
   };
   {
     payload.id = "__NUXT_DATA__";
@@ -2298,7 +2276,7 @@ const renderer = defineRenderHandler(async (event) => {
   if (routeOptions.ssr === false) {
     ssrContext.noSSR = true;
   }
-  const renderer = await getRenderer();
+  const renderer = await getRenderer(ssrContext);
   const _rendered = await renderer.renderToString(ssrContext).catch(async (error) => {
     if (ssrContext._renderResponse && error.message === "skipping render") {
       return {};

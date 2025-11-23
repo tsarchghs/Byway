@@ -1,9 +1,0 @@
-{
-  "name": "course-author",
-  "routes": [
-    {
-      "path": "/course-author",
-      "file": "nuxt/pages/course-author.vue"
-    }
-  ]
-}
