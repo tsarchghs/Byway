@@ -1,16 +1,39 @@
-export async function resolveUser(req) {
-  const baseUrl = (req.protocol + '://' + req.get('host')).replace(/\/$/, '')
-  const auth = req.headers.authorization || ''
+function getBaseUrl(req) {
   try {
-    const resp = await fetch(`${baseUrl}/api/authentication/graphql`, {
+    const protoRaw = req?.protocol || 'http'
+    const hostRaw = (req && typeof req.get === 'function' && req.get('host')) || process.env.API_HOST || 'localhost:4000'
+    const proto = String(protoRaw).startsWith('http') ? String(protoRaw).replace(/\/+$/, '') : `${protoRaw}://`
+    const base = String(proto).includes('://') ? `${proto}${hostRaw}` : `${proto}://${hostRaw}`
+    return base.replace(/\/$/, '')
+  } catch {
+    const fallback = process.env.API_BASE_URL || 'http://localhost:4000'
+    return fallback.replace(/\/$/, '')
+  }
+}
+
+export async function resolveUser(req) {
+  const baseUrl = getBaseUrl(req)
+  const auth = req.headers.authorization || ''
+  const cookie = req.headers.cookie || ''
+  console.log("HERE")
+  try {
+    const resp = await fetch(`localhost:4000/api/authentication/graphql`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', ...(auth ? { Authorization: auth } : {}) },
-      body: JSON.stringify({ query: `query Me { me { id email displayName roles } }` }),
+      headers: {
+        'content-type': 'application/json',
+        ...(auth ? { Authorization: auth } : {}),
+        ...(cookie ? { cookie } : {}),
+      },
+      body: JSON.stringify({ query: `query Me { me { id email displayName roles teacherProfileId } }` }),
     })
     const json = await resp.json().catch(() => null)
+    console.log({json})
     const me = json?.data?.me || null
-    return me ? { id: me.id, email: me.email, roles: me.roles || [] } : null
-  } catch { return null }
+    if (!me) return null
+    const roles = Array.isArray(me.roles) ? me.roles.slice() : []
+    if (me.teacherProfileId && !roles.includes('teacher')) roles.push('teacher')
+    return { id: me.id, email: me.email, roles, teacherProfileId: me.teacherProfileId || null }
+  } catch(e) { console.log(e);return null }
 }
 
 export async function resolveInstitutionRole(userId, institutionId, req) {
@@ -36,6 +59,7 @@ export async function resolveInstitutionRole(userId, institutionId, req) {
 
 export async function canUser(action, ctx) {
   const user = ctx?.user || null
+  const course = ctx?.course || null
   const institutionId = ctx?.institutionId || null
   let role = ctx?.institutionRole || null
   if (!role && user?.id && institutionId && ctx?.req) {
@@ -44,6 +68,7 @@ export async function canUser(action, ctx) {
   const isAdmin = role === 'admin'
   const isTeacher = role === 'teacher'
   const isStudent = role === 'student'
+  const ownsCourse = Boolean(course && user?.id && course.teacherId === user.id)
 
   switch (action) {
     case 'classroom.view':
@@ -51,10 +76,12 @@ export async function canUser(action, ctx) {
     case 'classroom.edit':
       return isTeacher || isAdmin
     case 'course.view':
-      if (!institutionId) return Boolean(user)
-      return Boolean(role)
+      return Boolean(user)
     case 'course.edit':
-      return isTeacher || isAdmin
+      if (ownsCourse) return true
+      if (institutionId) return isTeacher || isAdmin
+      // Allow standalone teachers (have teacher profile or role) to create/manage non-institution courses
+      return isTeacher || isAdmin || Boolean(user?.teacherProfileId)
     case 'institution.admin':
       return isAdmin
     case 'institution.teacher':

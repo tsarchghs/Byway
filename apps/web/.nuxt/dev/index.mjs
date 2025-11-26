@@ -1,41 +1,41 @@
 import process from 'node:process';globalThis._importMeta_={url:import.meta.url,env:process.env};import { tmpdir } from 'node:os';
+import { defineEventHandler, handleCacheHeaders, splitCookiesString, createEvent, fetchWithEvent, isEvent, eventHandler, setHeaders, sendRedirect, proxyRequest, getRequestHeader, setResponseHeaders, setResponseStatus, send, getRequestHeaders, setResponseHeader, appendResponseHeader, getRequestURL, getResponseHeader, removeResponseHeader, createError, getQuery as getQuery$1, readBody, createApp, createRouter as createRouter$1, toNodeListener, lazyEventHandler, getResponseStatus, getRouterParam, getResponseStatusText } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/h3@1.15.4/node_modules/h3/dist/index.mjs';
 import { Server } from 'node:http';
 import { resolve, dirname, join } from 'node:path';
 import nodeCrypto from 'node:crypto';
 import { parentPort, threadId } from 'node:worker_threads';
-import { defineEventHandler, handleCacheHeaders, splitCookiesString, createEvent, fetchWithEvent, isEvent, eventHandler, setHeaders, sendRedirect, proxyRequest, getRequestHeader, setResponseHeaders, setResponseStatus, send, getRequestHeaders, setResponseHeader, appendResponseHeader, getRequestURL, getResponseHeader, removeResponseHeader, createError, getQuery as getQuery$1, readBody, createApp, createRouter as createRouter$1, toNodeListener, lazyEventHandler, getResponseStatus, getRouterParam, getResponseStatusText } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/h3@1.15.4/node_modules/h3/dist/index.mjs';
-import { escapeHtml } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/@vue+shared@3.5.22/node_modules/@vue/shared/dist/shared.cjs.js';
-import { createRenderer, getRequestDependencies, getPreloadLinks, getPrefetchLinks } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/vue-bundle-renderer@2.2.0/node_modules/vue-bundle-renderer/dist/runtime.mjs';
-import { parseURL, withoutBase, joinURL, getQuery, withQuery, withTrailingSlash, decodePath, withLeadingSlash, withoutTrailingSlash, joinRelativeURL } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/ufo@1.6.1/node_modules/ufo/dist/index.mjs';
-import destr, { destr as destr$1 } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/destr@2.0.5/node_modules/destr/dist/index.mjs';
-import { renderToString } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/vue@3.5.22_typescript@5.9.3/node_modules/vue/server-renderer/index.mjs';
-import { klona } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/klona@2.0.6/node_modules/klona/dist/index.mjs';
-import defu, { defuFn } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/defu@6.1.4/node_modules/defu/dist/defu.mjs';
-import { snakeCase } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/scule@1.3.0/node_modules/scule/dist/index.mjs';
-import { createHead as createHead$1, propsToString, renderSSRHead } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/unhead@2.0.19/node_modules/unhead/dist/server.mjs';
-import { stringify, uneval } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/devalue@5.4.2/node_modules/devalue/index.js';
-import { isVNode, toValue, isRef } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/vue@3.5.22_typescript@5.9.3/node_modules/vue/index.mjs';
-import { createHooks } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/hookable@5.5.3/node_modules/hookable/dist/index.mjs';
-import { createFetch, Headers as Headers$1 } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/ofetch@1.5.1/node_modules/ofetch/dist/node.mjs';
-import { fetchNodeRequestHandler, callNodeRequestHandler } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/node-mock-http@1.0.3/node_modules/node-mock-http/dist/index.mjs';
-import { createStorage, prefixStorage } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/unstorage@1.17.2_db0@0.3.4_ioredis@5.8.2/node_modules/unstorage/dist/index.mjs';
-import unstorage_47drivers_47fs from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/unstorage@1.17.2_db0@0.3.4_ioredis@5.8.2/node_modules/unstorage/drivers/fs.mjs';
-import { digest } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/ohash@2.0.11/node_modules/ohash/dist/index.mjs';
-import { toRouteMatcher, createRouter } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/radix3@1.1.2/node_modules/radix3/dist/index.mjs';
+import { escapeHtml } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/@vue+shared@3.5.22/node_modules/@vue/shared/dist/shared.cjs.js';
+import { createRenderer, getRequestDependencies, getPreloadLinks, getPrefetchLinks } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/vue-bundle-renderer@2.2.0/node_modules/vue-bundle-renderer/dist/runtime.mjs';
+import { parseURL, withoutBase, joinURL, getQuery, withQuery, withTrailingSlash, decodePath, withLeadingSlash, withoutTrailingSlash, joinRelativeURL } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/ufo@1.6.1/node_modules/ufo/dist/index.mjs';
+import destr, { destr as destr$1 } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/destr@2.0.5/node_modules/destr/dist/index.mjs';
+import { createHooks } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/hookable@5.5.3/node_modules/hookable/dist/index.mjs';
+import { createFetch, Headers as Headers$1 } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/ofetch@1.5.1/node_modules/ofetch/dist/node.mjs';
+import { fetchNodeRequestHandler, callNodeRequestHandler } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/node-mock-http@1.0.3/node_modules/node-mock-http/dist/index.mjs';
+import { createStorage, prefixStorage } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/unstorage@1.17.2_db0@0.3.4_ioredis@5.8.2/node_modules/unstorage/dist/index.mjs';
+import unstorage_47drivers_47fs from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/unstorage@1.17.2_db0@0.3.4_ioredis@5.8.2/node_modules/unstorage/drivers/fs.mjs';
+import { digest } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/ohash@2.0.11/node_modules/ohash/dist/index.mjs';
+import { klona } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/klona@2.0.6/node_modules/klona/dist/index.mjs';
+import defu, { defuFn } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/defu@6.1.4/node_modules/defu/dist/defu.mjs';
+import { snakeCase } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/scule@1.3.0/node_modules/scule/dist/index.mjs';
+import { getContext } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/unctx@2.4.1/node_modules/unctx/dist/index.mjs';
+import { toRouteMatcher, createRouter } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/radix3@1.1.2/node_modules/radix3/dist/index.mjs';
 import { readFile } from 'node:fs/promises';
-import consola, { consola as consola$1 } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/consola@3.4.2/node_modules/consola/dist/index.mjs';
-import { ErrorParser } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/youch-core@0.3.3/node_modules/youch-core/build/index.js';
-import { Youch } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/youch@4.1.0-beta.11/node_modules/youch/build/index.js';
-import { SourceMapConsumer } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/source-map@0.7.6/node_modules/source-map/source-map.js';
+import consola, { consola as consola$1 } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/consola@3.4.2/node_modules/consola/dist/index.mjs';
+import { ErrorParser } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/youch-core@0.3.3/node_modules/youch-core/build/index.js';
+import { Youch } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/youch@4.1.0-beta.11/node_modules/youch/build/index.js';
+import { SourceMapConsumer } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/source-map@0.7.6/node_modules/source-map/source-map.js';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { getContext } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/unctx@2.4.1/node_modules/unctx/dist/index.mjs';
-import { captureRawStackTrace, parseRawStackTrace } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/errx@0.1.0/node_modules/errx/dist/index.js';
+import { stringify, uneval } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/devalue@5.4.2/node_modules/devalue/index.js';
+import { captureRawStackTrace, parseRawStackTrace } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/errx@0.1.0/node_modules/errx/dist/index.js';
+import { isVNode, toValue, isRef } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/vue@3.5.22_typescript@5.9.3/node_modules/vue/index.mjs';
 import { promises } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname as dirname$1, resolve as resolve$1 } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/pathe@2.0.3/node_modules/pathe/dist/index.mjs';
-import { walkResolver } from 'file://C:/Users/PC/Documents/GitHub/byway/node_modules/.pnpm/unhead@2.0.19/node_modules/unhead/dist/utils.mjs';
+import { dirname as dirname$1, resolve as resolve$1 } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/pathe@2.0.3/node_modules/pathe/dist/index.mjs';
+import { createHead as createHead$1, propsToString, renderSSRHead } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/unhead@2.0.19/node_modules/unhead/dist/server.mjs';
+import { renderToString } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/vue@3.5.22_typescript@5.9.3/node_modules/vue/server-renderer/index.mjs';
+import { walkResolver } from 'file:///Users/gjergjkadriu/Documents/GitHub/Byway/node_modules/.pnpm/unhead@2.0.19/node_modules/unhead/dist/utils.mjs';
 
-const serverAssets = [{"baseName":"server","dir":"C:/Users/PC/Documents/GitHub/byway/apps/web/server/assets"}];
+const serverAssets = [{"baseName":"server","dir":"/Users/gjergjkadriu/Documents/GitHub/Byway/apps/web/server/assets"}];
 
 const assets$1 = createStorage();
 
@@ -47,11 +47,11 @@ const storage = createStorage({});
 
 storage.mount('/assets', assets$1);
 
-storage.mount('root', unstorage_47drivers_47fs({"driver":"fs","readOnly":true,"base":"C:/Users/PC/Documents/GitHub/byway/apps/web","watchOptions":{"ignored":[null]}}));
-storage.mount('src', unstorage_47drivers_47fs({"driver":"fs","readOnly":true,"base":"C:/Users/PC/Documents/GitHub/byway/apps/web/server","watchOptions":{"ignored":[null]}}));
-storage.mount('build', unstorage_47drivers_47fs({"driver":"fs","readOnly":false,"base":"C:/Users/PC/Documents/GitHub/byway/apps/web/.nuxt"}));
-storage.mount('cache', unstorage_47drivers_47fs({"driver":"fs","readOnly":false,"base":"C:/Users/PC/Documents/GitHub/byway/apps/web/.nuxt/cache"}));
-storage.mount('data', unstorage_47drivers_47fs({"driver":"fs","base":"C:/Users/PC/Documents/GitHub/byway/apps/web/.data/kv"}));
+storage.mount('root', unstorage_47drivers_47fs({"driver":"fs","readOnly":true,"base":"/Users/gjergjkadriu/Documents/GitHub/Byway/apps/web","watchOptions":{"ignored":[null]}}));
+storage.mount('src', unstorage_47drivers_47fs({"driver":"fs","readOnly":true,"base":"/Users/gjergjkadriu/Documents/GitHub/Byway/apps/web/server","watchOptions":{"ignored":[null]}}));
+storage.mount('build', unstorage_47drivers_47fs({"driver":"fs","readOnly":false,"base":"/Users/gjergjkadriu/Documents/GitHub/Byway/apps/web/.nuxt"}));
+storage.mount('cache', unstorage_47drivers_47fs({"driver":"fs","readOnly":false,"base":"/Users/gjergjkadriu/Documents/GitHub/Byway/apps/web/.nuxt/cache"}));
+storage.mount('data', unstorage_47drivers_47fs({"driver":"fs","base":"/Users/gjergjkadriu/Documents/GitHub/Byway/apps/web/.data/kv"}));
 
 function useStorage(base = "") {
   return base ? prefixStorage(storage, base) : storage;
@@ -692,6 +692,11 @@ new Proxy(/* @__PURE__ */ Object.create(null), {
     }
     return void 0;
   }
+});
+
+getContext("nitro-app", {
+  asyncContext: false,
+  AsyncLocalStorage: void 0
 });
 
 const config = useRuntimeConfig();
@@ -1345,13 +1350,13 @@ if (!window.__NUXT_DEVTOOLS_TIME_METRIC__) {
 window.__NUXT_DEVTOOLS_TIME_METRIC__.appInit = Date.now()
 `;
 
-const _z2Yk7gwyZ7VFj9SQQLExQUaaOHCiUZMdcX0m6fo6j0 = (function(nitro) {
+const _Kpn3rQhXB47tlidPczMWVq_FXUXNPaFlrl48g1l1wA = (function(nitro) {
   nitro.hooks.hook("render:html", (htmlContext) => {
     htmlContext.head.push(`<script>${script}<\/script>`);
   });
 });
 
-const rootDir = "C:/Users/PC/Documents/GitHub/byway/apps/web";
+const rootDir = "/Users/gjergjkadriu/Documents/GitHub/Byway/apps/web";
 
 const appHead = {"meta":[{"name":"viewport","content":"width=device-width, initial-scale=1"},{"charset":"utf-8"}],"link":[],"style":[],"script":[],"noscript":[]};
 
@@ -1374,7 +1379,7 @@ const devReducers = {
   URL: (data) => data instanceof URL ? data.toString() : void 0
 };
 const asyncContext = getContext("nuxt-dev", { asyncContext: true, AsyncLocalStorage });
-const _z9hL_NSM06eTILGQ9SM3VDiVxjMWnkxmIe_dL7HZtwc = (nitroApp) => {
+const _3vIeoZovBnIYdHBxejnc6y4DwIfOJlFXQhMP0Eryas = (nitroApp) => {
   const handler = nitroApp.h3App.handler;
   nitroApp.h3App.handler = (event) => {
     return asyncContext.callAsync({ logs: [], event }, () => handler(event));
@@ -1444,8 +1449,8 @@ function onConsoleLog(callback) {
 }
 
 const plugins = [
-  _z2Yk7gwyZ7VFj9SQQLExQUaaOHCiUZMdcX0m6fo6j0,
-_z9hL_NSM06eTILGQ9SM3VDiVxjMWnkxmIe_dL7HZtwc
+  _Kpn3rQhXB47tlidPczMWVq_FXUXNPaFlrl48g1l1wA,
+_3vIeoZovBnIYdHBxejnc6y4DwIfOJlFXQhMP0Eryas
 ];
 
 const assets = {};
@@ -1473,7 +1478,7 @@ function getAsset (id) {
 
 const METHODS = /* @__PURE__ */ new Set(["HEAD", "GET"]);
 const EncodingMap = { gzip: ".gz", br: ".br" };
-const _NiXJjb = eventHandler((event) => {
+const _INh2v5 = eventHandler((event) => {
   if (event.method && !METHODS.has(event.method)) {
     return;
   }
@@ -1609,8 +1614,8 @@ function publicAssetsURL(...path) {
 
 const APP_ROOT_OPEN_TAG = `<${appRootTag}${propsToString(appRootAttrs)}>`;
 const APP_ROOT_CLOSE_TAG = `</${appRootTag}>`;
-const getServerEntry = () => import('file://C:/Users/PC/Documents/GitHub/byway/apps/web/.nuxt//dist/server/server.mjs').then((r) => r.default || r);
-const getClientManifest = () => import('file://C:/Users/PC/Documents/GitHub/byway/apps/web/.nuxt//dist/server/client.manifest.mjs').then((r) => r.default || r).then((r) => typeof r === "function" ? r() : r);
+const getServerEntry = () => import('file:///Users/gjergjkadriu/Documents/GitHub/Byway/apps/web/.nuxt//dist/server/server.mjs').then((r) => r.default || r);
+const getClientManifest = () => import('file:///Users/gjergjkadriu/Documents/GitHub/Byway/apps/web/.nuxt//dist/server/client.manifest.mjs').then((r) => r.default || r).then((r) => typeof r === "function" ? r() : r);
 const getSSRRenderer = lazyCachedFunction(async () => {
   const createSSRApp = await getServerEntry();
   if (!createSSRApp) {
@@ -1858,13 +1863,13 @@ async function getIslandContext(event) {
   return ctx;
 }
 
-const _lazy_p0ab7q = () => Promise.resolve().then(function () { return renderer$1; });
+const _lazy_K7jWTY = () => Promise.resolve().then(function () { return renderer$1; });
 
 const handlers = [
-  { route: '', handler: _NiXJjb, lazy: false, middleware: true, method: undefined },
-  { route: '/__nuxt_error', handler: _lazy_p0ab7q, lazy: true, middleware: false, method: undefined },
+  { route: '', handler: _INh2v5, lazy: false, middleware: true, method: undefined },
+  { route: '/__nuxt_error', handler: _lazy_K7jWTY, lazy: true, middleware: false, method: undefined },
   { route: '/__nuxt_island/**', handler: _SxA8c9, lazy: false, middleware: false, method: undefined },
-  { route: '/**', handler: _lazy_p0ab7q, lazy: true, middleware: false, method: undefined }
+  { route: '/**', handler: _lazy_K7jWTY, lazy: true, middleware: false, method: undefined }
 ];
 
 function createNitroApp() {

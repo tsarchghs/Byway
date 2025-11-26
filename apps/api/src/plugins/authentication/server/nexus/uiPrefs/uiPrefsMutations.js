@@ -1,7 +1,5 @@
 import { mutationField, nonNull, stringArg } from "nexus"
-import { PrismaClient } from "../../db/generated/index.js"
-
-const prisma = new PrismaClient()
+import { prisma } from "../../db/client.js"
 
 export const SetMyUiPrefs = mutationField("setMyUiPrefs", {
   type: "UiPrefsResult",

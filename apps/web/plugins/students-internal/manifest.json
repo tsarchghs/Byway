@@ -1,10 +1,10 @@
 {
   "name": "students-internal",
   "routes": [
-    {
-      "path": "/student/[student_id]",
-      "file": "nuxt/pages/stundent.vue"
-    },
+  {
+    "path": "/student/[student_id]",
+    "file": "nuxt/pages/student/[student_id].vue"
+  },
     {
       "path": "/students/my-courses",
       "file": "nuxt/pages/my-courses.vue"

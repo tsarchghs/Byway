@@ -17,6 +17,14 @@ const uploadsDir = path.resolve(process.cwd(), 'apps/api/uploads/teach-internal'
 fs.mkdirSync(uploadsDir, { recursive: true })
 const filePromises = fs.promises
 
+function authHeaderFromRequest(req) {
+  const headerAuth = req.headers.authorization || ''
+  if (headerAuth) return headerAuth
+  const raw = req.headers.cookie || ''
+  const match = raw.split(';').map((s) => s.trim()).find((s) => s.startsWith('token='))
+  return match ? `Bearer ${match.split('=').slice(1).join('=')}` : ''
+}
+
 
 // === Zod route validators (auto-generated) ===
 // === Zod route validators (auto-generated, fixed) ===
@@ -63,9 +71,49 @@ export const ZLessonUpdate = z.object({
   order: z.any().optional(),
 })
 
+function requireAuth(req, res) {
+  if (!req.user?.id) {
+    res.status(401).json({ ok: false, error: { code: 'UNAUTHENTICATED', message: 'Auth required' } })
+    return false
+  }
+  return true
+}
+
+async function requireCourseOwner(course, req, res) {
+  if (!course) {
+    res.status(404).json({ ok: false, error: { code: 'NOT_FOUND', message: 'Course not found' } })
+    return false
+  }
+  // Allow direct owner
+  if (course.teacherId === req.user?.teacherProfileId) return true
+  // Allow institution teachers/admins on institution-linked courses
+  if (course.institutionId && req.user?.id) {
+    const role = await resolveInstitutionRole(req.user.id, course.institutionId, req)
+    if (role === 'teacher' || role === 'admin') return true
+  }
+  res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not course owner' } })
+  return false
+}
+
+async function requireCourseOwnerById(courseId, req, res) {
+  if (!courseId) {
+    res.status(400).json({ ok: false, error: { code: 'BAD_REQUEST', message: 'courseId required' } })
+    return false
+  }
+  const course = await prisma.course.findUnique({ where: { id: courseId }, select: { id: true, teacherId: true, institutionId: true } })
+  return requireCourseOwner(course, req, res)
+}
+
 export async function register(app) {
   const router = express.Router()
-  router.use(async (req, _res, next) => { try { req.user = await resolveUser(req) } catch {} next() })
+  router.use(async (req, _res, next) => {
+    try {
+      const auth = authHeaderFromRequest(req)
+      if (auth && !req.headers.authorization) req.headers.authorization = auth
+      req.user = await resolveUser(req)
+    } catch {}
+    next()
+  })
   router.use('/files', express.static(uploadsDir))
   router.use((req, res, next) => {
     if (req.path.startsWith('/graphql') || req.path.includes('/webhook')) return next()
@@ -78,17 +126,73 @@ export async function register(app) {
   const server = new ApolloServer({
     schema,
     context: async ({ req }) => {
-      const auth = req.headers.authorization || ''
+      // Normalize auth header (from Authorization or cookies)
+      const auth = authHeaderFromRequest(req)
       const token = auth.replace('Bearer ', '').trim()
+      if (auth && !req.headers.authorization) req.headers.authorization = auth
 
-      // Prefer the resolved user from middleware (has roles) and fall back to JWT
+      // Prefer user from middleware, otherwise resolve via auth service / JWT
       let user = req.user || null
+      const reqWithAuth = auth === req.headers.authorization ? req : { ...req, headers: { ...req.headers, authorization: auth } }
+
+      if (!user) {
+        try {
+          user = await resolveUser(reqWithAuth)
+        } catch {}
+      }
+
+      // Fallback: decode JWT to at least get user id
       if (!user && token) {
         try {
           const decoded = jwt.verify(token, JWT_SECRET)
           user = { id: decoded.userId }
         } catch (err) {
-          console.warn('[teach-internal] Invalid JWT:', err.message)
+          const decoded = jwt.decode(token)
+          if (decoded?.userId) {
+            user = { id: decoded.userId }
+          }
+        }
+      }
+
+      // Hydrate teacherProfileId / roles when missing
+      if (token && user && !user.teacherProfileId) {
+        const baseUrl = process.env.API_BASE_URL
+          ? process.env.API_BASE_URL.replace(/\/$/, '')
+          : `http://${(req.get && req.get('host')) || 'localhost:4000'}`.replace(/\/$/, '')
+        try {
+          const headers = {
+            'content-type': 'application/json',
+            ...(auth ? { Authorization: auth } : {}),
+            ...(req.headers.cookie ? { cookie: req.headers.cookie } : {}),
+          }
+          // Primary: me query
+          const resp = await fetch(`${baseUrl}/api/authentication/graphql`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ query: 'query { me { id teacherProfileId roles } }' }),
+          })
+          const json = await resp.json().catch(() => null)
+          const me = json?.data?.me || null
+          if (me) {
+            user = { ...user, teacherProfileId: me.teacherProfileId || null, roles: me.roles || user.roles }
+          } else if (user.id) {
+            // Fallback: fetch user by id
+            const respById = await fetch(`${baseUrl}/api/authentication/graphql`, {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({
+                query: 'query($id:String!){ user(id:$id){ id teacherProfileId roles } }',
+                variables: { id: user.id },
+              }),
+            })
+            const jsonById = await respById.json().catch(() => null)
+            const u = jsonById?.data?.user || null
+            if (u) {
+              user = { ...user, teacherProfileId: u.teacherProfileId || null, roles: u.roles || user.roles }
+            }
+          }
+        } catch {
+          // best-effort only; leave user as-is on failure
         }
       }
 
@@ -197,33 +301,49 @@ router.get('/code-server/:teacherId/:lessonId', async (req, res) => {
   });
   router.post('/courses', async (req, res) => {
     try {
+      if (!requireAuth(req, res)) return
+      if (!req.user?.teacherProfileId) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Teacher profile required' } })
       const institutionCtxResp = await fetch(`${req.protocol}://${req.get('host')}/api/teach-internal/course/${encodeURIComponent(req.body?.id || req.body?.courseId || '')}/institution-context`).catch(() => null)
       const instCtx = institutionCtxResp && (await institutionCtxResp.json().catch(() => null))
       const institutionId = instCtx?.institutionId || null
       const allowed = await canUser('course.edit', { user: req.user, institutionId, req })
       if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
-      const created = await prisma.course.create({ data: req.body || {} });
+      const payload = { ...req.body, teacherId: req.user.teacherProfileId || req.user.id }
+      const created = await prisma.course.create({ data: payload });
       res.status(201).json({ success: true, data: created });
     } catch (e) { console.log(e); res.status(400).json({ success: false, error: e.message }); }
   });
   router.put('/courses/:id', async (req, res) => {
     try {
+      if (!requireAuth(req, res)) return
+      const existing = await prisma.course.findUnique({ where: { id: req.params.id } })
+      if (!(await requireCourseOwner(existing, req, res))) return
       const institutionCtxResp = await fetch(`${req.protocol}://${req.get('host')}/api/teach-internal/course/${encodeURIComponent(req.params.id)}/institution-context`).catch(() => null)
       const instCtx = institutionCtxResp && (await institutionCtxResp.json().catch(() => null))
       const institutionId = instCtx?.institutionId || null
-      const allowed = await canUser('course.edit', { user: req.user, institutionId, req })
-      if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
-      const updated = await prisma.course.update({ where: { id: req.params.id }, data: req.body || {} });
+      const isOwner = existing?.teacherId === req.user?.teacherProfileId
+      if (!isOwner) {
+        const allowed = await canUser('course.edit', { user: req.user, institutionId, req })
+        if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
+      }
+      const { teacherId, ...rest } = req.body || {}
+      const updated = await prisma.course.update({ where: { id: req.params.id }, data: rest });
       res.json({ success: true, data: updated });
     } catch (e) { res.status(400).json({ success: false, error: e.message }); }
   });
   router.delete('/courses/:id', async (req, res) => {
     try {
+      if (!requireAuth(req, res)) return
+      const existing = await prisma.course.findUnique({ where: { id: req.params.id } })
+      if (!(await requireCourseOwner(existing, req, res))) return
       const institutionCtxResp = await fetch(`${req.protocol}://${req.get('host')}/api/teach-internal/course/${encodeURIComponent(req.params.id)}/institution-context`).catch(() => null)
       const instCtx = institutionCtxResp && (await institutionCtxResp.json().catch(() => null))
       const institutionId = instCtx?.institutionId || null
-      const allowed = await canUser('course.edit', { user: req.user, institutionId, req })
-      if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
+      const isOwner = existing?.teacherId === req.user?.id
+      if (!isOwner) {
+        const allowed = await canUser('course.edit', { user: req.user, institutionId, req })
+        if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
+      }
       await prisma.course.delete({ where: { id: req.params.id } });
       res.json({ success: true });
     } catch (e) { res.status(400).json({ success: false, error: e.message }); }
@@ -269,35 +389,53 @@ router.get('/code-server/:teacherId/:lessonId', async (req, res) => {
   });
   router.post('/modules', async (req, res) => {
     try {
+      if (!requireAuth(req, res)) return
       const institutionCtxResp = await fetch(`${req.protocol}://${req.get('host')}/api/teach-internal/course/${encodeURIComponent(req.body?.courseId || '')}/institution-context`).catch(() => null)
       const instCtx = institutionCtxResp && (await institutionCtxResp.json().catch(() => null))
       const institutionId = instCtx?.institutionId || null
-      const allowed = await canUser('course.edit', { user: req.user, institutionId, req })
-      if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
+      const course = req.body?.courseId ? await prisma.course.findUnique({ where: { id: req.body.courseId }, select: { teacherId: true } }) : null
+      const isOwner = course?.teacherId === req.user?.id
+      if (!isOwner) {
+        const allowed = await canUser('course.edit', { user: req.user, institutionId, req })
+        if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
+      }
+      if (!(await requireCourseOwnerById(req.body?.courseId, req, res))) return
       const created = await prisma.module.create({ data: req.body || {} });
       res.status(201).json({ success: true, data: created });
     } catch (e) { res.status(400).json({ success: false, error: e.message }); }
   });
   router.put('/modules/:id', async (req, res) => {
     try {
+      if (!requireAuth(req, res)) return
       const mod = await prisma.module.findUnique({ where: { id: req.params.id } })
       const institutionCtxResp = mod?.courseId ? await fetch(`${req.protocol}://${req.get('host')}/api/teach-internal/course/${encodeURIComponent(mod.courseId)}/institution-context`).catch(() => null) : null
       const instCtx = institutionCtxResp && (await institutionCtxResp.json().catch(() => null))
       const institutionId = instCtx?.institutionId || null
-      const allowed = await canUser('course.edit', { user: req.user, institutionId, req })
-      if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
+      const course = mod?.courseId ? await prisma.course.findUnique({ where: { id: mod.courseId }, select: { teacherId: true } }) : null
+      const isOwner = course?.teacherId === req.user?.id
+      if (!isOwner) {
+        const allowed = await canUser('course.edit', { user: req.user, institutionId, req })
+        if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
+      }
+      if (!(await requireCourseOwnerById(mod?.courseId, req, res))) return
       const updated = await prisma.module.update({ where: { id: req.params.id }, data: req.body || {} });
       res.json({ success: true, data: updated });
     } catch (e) { res.status(400).json({ success: false, error: e.message }); }
   });
   router.delete('/modules/:id', async (req, res) => {
     try {
+      if (!requireAuth(req, res)) return
       const mod = await prisma.module.findUnique({ where: { id: req.params.id } })
       const institutionCtxResp = mod?.courseId ? await fetch(`${req.protocol}://${req.get('host')}/api/teach-internal/course/${encodeURIComponent(mod.courseId)}/institution-context`).catch(() => null) : null
       const instCtx = institutionCtxResp && (await institutionCtxResp.json().catch(() => null))
       const institutionId = instCtx?.institutionId || null
-      const allowed = await canUser('course.edit', { user: req.user, institutionId, req })
-      if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
+      const course = mod?.courseId ? await prisma.course.findUnique({ where: { id: mod.courseId }, select: { teacherId: true } }) : null
+      const isOwner = course?.teacherId === req.user?.id
+      if (!isOwner) {
+        const allowed = await canUser('course.edit', { user: req.user, institutionId, req })
+        if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
+      }
+      if (!(await requireCourseOwnerById(mod?.courseId, req, res))) return
       await prisma.module.delete({ where: { id: req.params.id } });
       res.json({ success: true });
     } catch (e) { res.status(400).json({ success: false, error: e.message }); }
@@ -344,19 +482,26 @@ router.get('/code-server/:teacherId/:lessonId', async (req, res) => {
   });
   router.post('/lessons', async (req, res) => {
     try {
+      if (!requireAuth(req, res)) return
       const modId = req.body?.moduleId
       const mod = modId ? await prisma.module.findUnique({ where: { id: modId } }) : null
       const institutionCtxResp = mod?.courseId ? await fetch(`${req.protocol}://${req.get('host')}/api/teach-internal/course/${encodeURIComponent(mod.courseId)}/institution-context`).catch(() => null) : null
       const instCtx = institutionCtxResp && (await institutionCtxResp.json().catch(() => null))
       const institutionId = instCtx?.institutionId || null
-      const allowed = await canUser('course.edit', { user: req.user, institutionId, req })
-      if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
+      const course = mod?.courseId ? await prisma.course.findUnique({ where: { id: mod.courseId }, select: { teacherId: true } }) : null
+      const isOwner = course?.teacherId === req.user?.id
+      if (!isOwner) {
+        const allowed = await canUser('course.edit', { user: req.user, institutionId, req })
+        if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
+      }
+      if (!(await requireCourseOwnerById(mod?.courseId, req, res))) return
       const created = await prisma.lesson.create({ data: req.body || {} });
       res.status(201).json({ success: true, data: created });
     } catch (e) { res.status(400).json({ success: false, error: e.message }); }
   });
   router.put('/lessons/:id', async (req, res) => {
     try {
+      if (!requireAuth(req, res)) return
       const lesson = await prisma.lesson.findUnique({ where: { id: req.params.id } })
       const mod = lesson?.moduleId ? await prisma.module.findUnique({ where: { id: lesson.moduleId } }) : null
       const institutionCtxResp = mod?.courseId ? await fetch(`${req.protocol}://${req.get('host')}/api/teach-internal/course/${encodeURIComponent(mod.courseId)}/institution-context`).catch(() => null) : null
@@ -364,12 +509,14 @@ router.get('/code-server/:teacherId/:lessonId', async (req, res) => {
       const institutionId = instCtx?.institutionId || null
       const allowed = await canUser('course.edit', { user: req.user, institutionId, req })
       if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
+      if (!(await requireCourseOwnerById(mod?.courseId, req, res))) return
       const updated = await prisma.lesson.update({ where: { id: req.params.id }, data: req.body || {} });
       res.json({ success: true, data: updated });
     } catch (e) { res.status(400).json({ success: false, error: e.message }); }
   });
   router.delete('/lessons/:id', async (req, res) => {
     try {
+      if (!requireAuth(req, res)) return
       const lesson = await prisma.lesson.findUnique({ where: { id: req.params.id } })
       const mod = lesson?.moduleId ? await prisma.module.findUnique({ where: { id: lesson.moduleId } }) : null
       const institutionCtxResp = mod?.courseId ? await fetch(`${req.protocol}://${req.get('host')}/api/teach-internal/course/${encodeURIComponent(mod.courseId)}/institution-context`).catch(() => null) : null
@@ -377,6 +524,7 @@ router.get('/code-server/:teacherId/:lessonId', async (req, res) => {
       const institutionId = instCtx?.institutionId || null
       const allowed = await canUser('course.edit', { user: req.user, institutionId, req })
       if (!allowed) return res.status(403).json({ ok: false, error: { code: 'FORBIDDEN', message: 'Not allowed' } })
+      if (!(await requireCourseOwnerById(mod?.courseId, req, res))) return
       await prisma.lesson.delete({ where: { id: req.params.id } });
       res.json({ success: true });
     } catch (e) { res.status(400).json({ success: false, error: e.message }); }

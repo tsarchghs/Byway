@@ -5,11 +5,14 @@ export async function resolveUser(req) {
     const resp = await fetch(`${baseUrl}/api/authentication/graphql`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...(auth ? { Authorization: auth } : {}) },
-      body: JSON.stringify({ query: `query Me { me { id email displayName roles } }` }),
+      body: JSON.stringify({ query: `query Me { me { id email displayName roles teacherProfileId } }` }),
     })
     const json = await resp.json().catch(() => null)
     const me = json?.data?.me || null
-    return me ? { id: me.id, email: me.email, roles: me.roles || [] } : null
+    if (!me) return null
+    const roles = Array.isArray(me.roles) ? me.roles.slice() : []
+    if (me.teacherProfileId && !roles.includes('teacher')) roles.push('teacher')
+    return { id: me.id, email: me.email, roles, teacherProfileId: me.teacherProfileId || null }
   } catch { return null }
 }
 
@@ -51,7 +54,8 @@ export async function canUser(action, ctx) {
       return Boolean(user?.id)
 
     case 'institution.edit':
-      // Only institution admin can edit
+    case 'institution.delete':
+      // Treat institution admin as owner
       return isAdmin
     case 'classroom.view':
       return Boolean(role)

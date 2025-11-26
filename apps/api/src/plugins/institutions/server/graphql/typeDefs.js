@@ -4,6 +4,8 @@ type Institution {
   id: ID!
   name: String!
   slug: String!
+  createdByUserId: String!
+  isPublic: Boolean!
   type: String
   location: String
   email: String
@@ -90,8 +92,8 @@ type Query {
 }
 
 type Mutation {
-  createInstitution(name: String!, slug: String!, type: String, location: String, email: String, phone: String, active: Boolean): Institution!
-  updateInstitution(id: String!, name: String, slug: String, type: String, location: String, email: String, phone: String, active: Boolean): Institution!
+  createInstitution(name: String!, slug: String!, type: String, location: String, email: String, phone: String, active: Boolean, isPublic: Boolean): Institution!
+  updateInstitution(id: String!, name: String, slug: String, type: String, location: String, email: String, phone: String, active: Boolean, isPublic: Boolean): Institution!
 
   createDepartment(institutionId: String!, name: String!, slug: String!, contact: String, head: String, active: Boolean): Department!
   updateDepartment(id: String!, name: String, slug: String, contact: String, head: String, active: Boolean): Department!

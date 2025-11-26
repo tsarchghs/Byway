@@ -1,0 +1,1 @@
+pnpm prisma generate --schema src/plugins/teacher-course-lab/server/db/schema.prisma

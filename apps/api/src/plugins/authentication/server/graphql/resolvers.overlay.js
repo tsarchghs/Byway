@@ -1,6 +1,5 @@
 // Overlay resolvers for Authentication plugin
-import { PrismaClient } from '../db/generated/index.js'
-const prisma = new PrismaClient()
+import { prisma } from '../db/client.js'
 
 const resolversOverlay = {
   Query: {

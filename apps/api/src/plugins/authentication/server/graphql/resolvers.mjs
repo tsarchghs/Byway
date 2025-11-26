@@ -1,7 +1,7 @@
 // plugins/authentication/server/graphql/resolvers.mjs
-import { PrismaClient } from "../db/generated/index";
+import { prisma } from "../db/client.js";
 import { canUser } from "../permissions.mjs";
-const prisma = new PrismaClient();
+// use shared prisma from db client
 
 function userFromCtx(ctx) {
   return ctx && ctx.user ? ctx.user : null;

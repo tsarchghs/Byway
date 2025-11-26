@@ -1,5 +1,4 @@
-import { PrismaClient } from "../db/generated/client/index.js";
-const prisma = new PrismaClient();
+import { prisma } from "../db/client.js";
 
 export default {
   Query: {

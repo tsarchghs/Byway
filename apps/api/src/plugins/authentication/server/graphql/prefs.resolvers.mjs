@@ -1,6 +1,4 @@
-import { PrismaClient } from '../db/generated/index'
-
-const prisma = new PrismaClient()
+import { prisma } from '../db/client.js'
 
 export const prefsResolvers = {
   Query: {

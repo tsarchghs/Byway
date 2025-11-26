@@ -5,11 +5,14 @@ export async function resolveUser(req) {
     const resp = await fetch(`${baseUrl}/api/authentication/graphql`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...(auth ? { Authorization: auth } : {}) },
-      body: JSON.stringify({ query: `query Me { me { id email displayName roles } }` }),
+      body: JSON.stringify({ query: `query Me { me { id email displayName roles teacherProfileId } }` }),
     })
     const json = await resp.json().catch(() => null)
     const me = json?.data?.me || null
-    return me ? { id: me.id, email: me.email, roles: me.roles || [] } : null
+    if (!me) return null
+    const roles = Array.isArray(me.roles) ? me.roles.slice() : []
+    if (me.teacherProfileId && !roles.includes('teacher')) roles.push('teacher')
+    return { id: me.id, email: me.email, roles, teacherProfileId: me.teacherProfileId || null }
   } catch { return null }
 }
 
@@ -36,6 +39,7 @@ export async function resolveInstitutionRole(userId, institutionId, req) {
 
 export async function canUser(action, ctx) {
   const user = ctx?.user || null
+  const studentId = ctx?.studentId || null
   const institutionId = ctx?.institutionId || null
   let role = ctx?.institutionRole || null
   if (!role && user?.id && institutionId && ctx?.req) {
@@ -46,6 +50,11 @@ export async function canUser(action, ctx) {
   const isStudent = role === 'student'
 
   switch (action) {
+    case 'student-record.view':
+      // ID must match the authenticated user; teachers/admins may view within institution scope
+      if (studentId && user?.id && studentId === user.id) return true
+      if (institutionId) return isTeacher || isAdmin
+      return false
     case 'classroom.view':
       return Boolean(role)
     case 'classroom.edit':

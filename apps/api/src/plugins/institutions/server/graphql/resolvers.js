@@ -6,16 +6,27 @@ export async function getPrisma() {
   return prismaSingleton
 }
 
+function isOwnerOrPublic(inst, user) {
+  if (!inst) return false
+  if (inst.isPublic) return true
+  return Boolean(user?.id && inst.createdByUserId === user.id)
+}
+
 export const resolvers = {
   Query: {
     institutions: async (_parent, _args, ctx) => {
       const reqLike = { headers: { authorization: ctx?.token ? `Bearer ${ctx.token}` : '' } }
       const user = await resolveUser(reqLike).catch(() => null)
-      const allowed = await canUser('course.view', { user })
-      if (!allowed) throw new Error('FORBIDDEN')
       const prisma = await getPrisma()
       if (!prisma?.institution) return []
+      const where = {
+        OR: [
+          { isPublic: true },
+          ...(user?.id ? [{ createdByUserId: user.id }] : []),
+        ],
+      }
       return prisma.institution.findMany({
+        where,
         orderBy: { createdAt: 'desc' },
         include: { departments: true, classrooms: true, members: true },
       })
@@ -24,21 +35,21 @@ export const resolvers = {
     institution: async (_parent, { id }, ctx) => {
       const reqLike = { headers: { authorization: ctx?.token ? `Bearer ${ctx.token}` : '' } }
       const user = await resolveUser(reqLike).catch(() => null)
-      const allowed = await canUser('course.view', { user })
-      if (!allowed) throw new Error('FORBIDDEN')
       const prisma = await getPrisma()
       if (!prisma?.institution) return null
-      return prisma.institution.findUnique({ where: { id }, include: { departments: true, classrooms: true, members: true } })
+      const inst = await prisma.institution.findUnique({ where: { id }, include: { departments: true, classrooms: true, members: true } })
+      if (!inst) return null
+      return isOwnerOrPublic(inst, user) ? inst : null
     },
 
     institutionBySlug: async (_parent, { slug }, ctx) => {
       const reqLike = { headers: { authorization: ctx?.token ? `Bearer ${ctx.token}` : '' } }
       const user = await resolveUser(reqLike).catch(() => null)
-      const allowed = await canUser('course.view', { user })
-      if (!allowed) throw new Error('FORBIDDEN')
       const prisma = await getPrisma()
       if (!prisma?.institution) return null
-      return prisma.institution.findUnique({ where: { slug }, include: { departments: true, classrooms: true, members: true } })
+      const inst = await prisma.institution.findUnique({ where: { slug }, include: { departments: true, classrooms: true, members: true } })
+      if (!inst) return null
+      return isOwnerOrPublic(inst, user) ? inst : null
     },
 
     departments: async (_parent, { institutionId }, ctx) => {
@@ -70,10 +81,9 @@ export const resolvers = {
     members: async (_parent, { institutionId, role }, ctx) => {
       const reqLike = { headers: { authorization: ctx?.token ? `Bearer ${ctx.token}` : '' } }
       const user = await resolveUser(reqLike).catch(() => null)
-      const r = user?.id && institutionId ? await resolveInstitutionRole(user.id, institutionId, reqLike) : null
-      const allowed = await canUser('institution.admin', { user, role: r })
-      if (!allowed) throw new Error('FORBIDDEN')
       const prisma = await getPrisma()
+      const inst = institutionId ? await prisma.institution.findUnique({ where: { id: institutionId } }) : null
+      if (!inst || inst.createdByUserId !== user?.id) throw new Error('FORBIDDEN')
       if (!prisma?.institutionMember) return []
       return prisma.institutionMember.findMany({
         where: { institutionId, ...(role ? { role } : {}) },
@@ -83,10 +93,8 @@ export const resolvers = {
 
     stats: async (_parent, { institutionId }, ctx) => {
       const reqLike = { headers: { authorization: ctx?.token ? `Bearer ${ctx.token}` : '' } }
-      const user = await resolveUser(reqLike).catch(() => null)
-      const role = user?.id && institutionId ? await resolveInstitutionRole(user.id, institutionId, reqLike) : null
-      const allowed = await canUser('institution.teacher', { user, role })
-      if (!allowed) throw new Error('FORBIDDEN')
+      const inst = institutionId ? await prisma.institution.findUnique({ where: { id: institutionId } }) : null
+      if (!inst || inst.createdByUserId !== user?.id) throw new Error('FORBIDDEN')
       const prisma = await getPrisma()
       if (!prisma?.institution) return null
       const [classrooms, departments, members, enrollments] = await Promise.all([
@@ -107,7 +115,7 @@ export const resolvers = {
   },
 
   Mutation: {
-  createInstitution: async (_, { data }, ctx) => {
+  createInstitution: async (_, data, ctx) => {
     if (!ctx.user?.id) throw new Error("Not authenticated")
 
     // 1) Create institution
@@ -115,6 +123,8 @@ export const resolvers = {
       data: {
         name: data.name,
         slug: data.slug,
+        createdByUserId: ctx.user.id,
+        isPublic: data.isPublic ?? false,
         description: data.description,
         type: data.type,
         location: data.location,
@@ -150,19 +160,13 @@ updateInstitution: async (_parent, { id, ...data }, ctx) => {
   const user = await resolveUser(reqLike).catch(() => null)
   if (!user?.id) throw new Error('UNAUTHENTICATED')
 
-  // Prepare context for canUser
-  const permCtx = {
-    user,
-    institutionId: id,   // <── THIS IS CRITICAL
-    req: reqLike
-  }
-
-  const allowed = await canUser('institution.edit', permCtx)
-  if (!allowed) throw new Error('FORBIDDEN')
+  const existing = await prisma.institution.findUnique({ where: { id } })
+  if (!existing) throw new Error('NOT_FOUND')
+  if (existing.createdByUserId !== user.id) throw new Error('FORBIDDEN')
 
   return prisma.institution.update({
     where: { id },
-    data
+    data: { ...data, createdByUserId: existing.createdByUserId }
   })
 },
 
@@ -172,9 +176,8 @@ updateInstitution: async (_parent, { id, ...data }, ctx) => {
       if (!prisma?.department) throw new Error('Prisma not ready for Department')
       const reqLike = { headers: { authorization: ctx?.token ? `Bearer ${ctx.token}` : '' } }
       const user = await resolveUser(reqLike).catch(() => null)
-      const role = user?.id && args?.institutionId ? await resolveInstitutionRole(user.id, args.institutionId, reqLike) : null
-      const allowed = await canUser('institution.admin', { user, role })
-      if (!allowed) throw new Error('FORBIDDEN')
+      const inst = args?.institutionId ? await prisma.institution.findUnique({ where: { id: args.institutionId } }) : null
+      if (!inst || inst.createdByUserId !== user?.id) throw new Error('FORBIDDEN')
       return prisma.department.create({ data: args })
     },
 
@@ -183,9 +186,9 @@ updateInstitution: async (_parent, { id, ...data }, ctx) => {
       if (!prisma?.department) throw new Error('Prisma not ready for Department')
       const reqLike = { headers: { authorization: ctx?.token ? `Bearer ${ctx.token}` : '' } }
       const user = await resolveUser(reqLike).catch(() => null)
-      const role = user?.id && data?.institutionId ? await resolveInstitutionRole(user.id, data.institutionId, reqLike) : null
-      const allowed = await canUser('institution.admin', { user, role })
-      if (!allowed) throw new Error('FORBIDDEN')
+      const dep = await prisma.department.findUnique({ where: { id } })
+      const inst = dep?.institutionId ? await prisma.institution.findUnique({ where: { id: dep.institutionId } }) : null
+      if (!inst || inst.createdByUserId !== user?.id) throw new Error('FORBIDDEN')
       return prisma.department.update({ where: { id }, data })
     },
 
@@ -194,9 +197,8 @@ updateInstitution: async (_parent, { id, ...data }, ctx) => {
       if (!prisma?.classroom) throw new Error('Prisma not ready for Classroom')
       const reqLike = { headers: { authorization: ctx?.token ? `Bearer ${ctx.token}` : '' } }
       const user = await resolveUser(reqLike).catch(() => null)
-      const role = user?.id && args?.institutionId ? await resolveInstitutionRole(user.id, args.institutionId, reqLike) : null
-      const allowed = await canUser('classroom.edit', { user, role })
-      if (!allowed) throw new Error('FORBIDDEN')
+      const inst = args?.institutionId ? await prisma.institution.findUnique({ where: { id: args.institutionId } }) : null
+      if (!inst || inst.createdByUserId !== user?.id) throw new Error('FORBIDDEN')
       const { name, ...rest } = args
       const title = args.title || name
       const data = { ...rest, title }
@@ -209,9 +211,9 @@ updateInstitution: async (_parent, { id, ...data }, ctx) => {
       if (!prisma?.classroom) throw new Error('Prisma not ready for Classroom')
       const reqLike = { headers: { authorization: ctx?.token ? `Bearer ${ctx.token}` : '' } }
       const user = await resolveUser(reqLike).catch(() => null)
-      const role = user?.id && data?.institutionId ? await resolveInstitutionRole(user.id, data.institutionId, reqLike) : null
-      const allowed = await canUser('classroom.edit', { user, role })
-      if (!allowed) throw new Error('FORBIDDEN')
+      const room = await prisma.classroom.findUnique({ where: { id } })
+      const inst = room?.institutionId ? await prisma.institution.findUnique({ where: { id: room.institutionId } }) : null
+      if (!inst || inst.createdByUserId !== user?.id) throw new Error('FORBIDDEN')
       const { name, title, ...rest } = data
       const next = { ...rest }
       if (title || name) next.title = title || name
@@ -224,9 +226,8 @@ updateInstitution: async (_parent, { id, ...data }, ctx) => {
       if (!prisma?.institutionMember) throw new Error('Prisma not ready for InstitutionMember')
       const reqLike = { headers: { authorization: ctx?.token ? `Bearer ${ctx.token}` : '' } }
       const user = await resolveUser(reqLike).catch(() => null)
-      const role = user?.id && args?.institutionId ? await resolveInstitutionRole(user.id, args.institutionId, reqLike) : null
-      const allowed = await canUser('institution.admin', { user, role })
-      if (!allowed) throw new Error('FORBIDDEN')
+      const inst = args?.institutionId ? await prisma.institution.findUnique({ where: { id: args.institutionId } }) : null
+      if (!inst || inst.createdByUserId !== user?.id) throw new Error('FORBIDDEN')
       return prisma.institutionMember.upsert({
         where: { institutionId_userId: { institutionId: args.institutionId, userId: args.userId } },
         create: args,
@@ -239,8 +240,9 @@ updateInstitution: async (_parent, { id, ...data }, ctx) => {
       if (!prisma?.institutionMember) throw new Error('Prisma not ready for InstitutionMember')
       const reqLike = { headers: { authorization: ctx?.token ? `Bearer ${ctx.token}` : '' } }
       const user = await resolveUser(reqLike).catch(() => null)
-      const allowed = await canUser('institution.admin', { user, role: 'admin' })
-      if (!allowed) throw new Error('FORBIDDEN')
+      const membership = await prisma.institutionMember.findUnique({ where: { id } })
+      const inst = membership?.institutionId ? await prisma.institution.findUnique({ where: { id: membership.institutionId } }) : null
+      if (!inst || inst.createdByUserId !== user?.id) throw new Error('FORBIDDEN')
       await prisma.institutionMember.delete({ where: { id } })
       return true
     },
@@ -250,8 +252,9 @@ updateInstitution: async (_parent, { id, ...data }, ctx) => {
       if (!prisma?.institutionMember) throw new Error('Prisma not ready for InstitutionMember')
       const reqLike = { headers: { authorization: ctx?.token ? `Bearer ${ctx.token}` : '' } }
       const user = await resolveUser(reqLike).catch(() => null)
-      const allowed = await canUser('institution.admin', { user, role: 'admin' })
-      if (!allowed) throw new Error('FORBIDDEN')
+      const membership = await prisma.institutionMember.findUnique({ where: { id } })
+      const inst = membership?.institutionId ? await prisma.institution.findUnique({ where: { id: membership.institutionId } }) : null
+      if (!inst || inst.createdByUserId !== user?.id) throw new Error('FORBIDDEN')
       return prisma.institutionMember.update({ where: { id }, data: { role, ...(status ? { status } : {}) } })
     },
 
@@ -260,9 +263,8 @@ updateInstitution: async (_parent, { id, ...data }, ctx) => {
       if (!prisma?.institutionInvite) throw new Error('Prisma not ready for InstitutionInvite')
       const reqLike = { headers: { authorization: ctx?.token ? `Bearer ${ctx.token}` : '' } }
       const user = await resolveUser(reqLike).catch(() => null)
-      const role = user?.id && args?.institutionId ? await resolveInstitutionRole(user.id, args.institutionId, reqLike) : null
-      const allowed = await canUser('institution.admin', { user, role })
-      if (!allowed) throw new Error('FORBIDDEN')
+      const inst = args?.institutionId ? await prisma.institution.findUnique({ where: { id: args.institutionId } }) : null
+      if (!inst || inst.createdByUserId !== user?.id) throw new Error('FORBIDDEN')
       const code = Math.random().toString(36).slice(2, 8)
       return prisma.institutionInvite.create({
         data: { institutionId: args.institutionId, role: args.role, expiresAt: args.expiresAt ? new Date(args.expiresAt) : null, code },
@@ -278,6 +280,8 @@ updateInstitution: async (_parent, { id, ...data }, ctx) => {
       const invite = await prisma.institutionInvite.findUnique({ where: { code } })
       if (!invite) throw new Error('Invite not found')
       if (invite.expiresAt && invite.expiresAt < new Date()) throw new Error('Invite expired')
+      const inst = await prisma.institution.findUnique({ where: { id: invite.institutionId } })
+      if (!inst || (!inst.isPublic && inst.createdByUserId !== user.id)) throw new Error('FORBIDDEN')
       return prisma.institutionMember.upsert({
         where: { institutionId_userId: { institutionId: invite.institutionId, userId } },
         create: { institutionId: invite.institutionId, userId, role: invite.role },
@@ -290,4 +294,3 @@ updateInstitution: async (_parent, { id, ...data }, ctx) => {
 function requireAuth(ctx) {
   if (!ctx?.token) throw new Error('Not authenticated')
 }
-

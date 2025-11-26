@@ -5,7 +5,7 @@ import cors from 'cors'
 import { ApolloServer } from 'apollo-server-express'
 import { typeDefs } from './graphql/typeDefs.js'
 import { resolvers } from './graphql/resolvers.js'
-
+import jwt from 'jsonwebtoken'
 export async function register(app) {
   // Register sub-GraphQL (optional)
   const mod = await import('./registerGraphql.mjs').catch(() => null)
@@ -22,7 +22,10 @@ export async function register(app) {
       const prisma = await (await import('./graphql/resolvers.js')).getPrisma?.()
       const auth = req?.headers?.authorization || ''
       const token = auth.replace('Bearer ', '').trim()
-      return { prisma, token, user: req.user, req }
+      let decoded = jwt.decode(token)
+      console.log(decoded)
+      decoded.id = decoded.userId
+      return { prisma, token, user: decoded, req }
     },
   })
 

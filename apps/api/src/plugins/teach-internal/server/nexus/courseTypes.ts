@@ -77,6 +77,7 @@ export const CourseQuery = extendType({
       type: 'GqlCourse',
       async resolve(_, __, ctx) {
         const items = await ctx.prisma.course.findMany({
+          where: { institutionId: null }, // only teacher-created courses (non-institution)
           include: { modules: { include: { lessons: true } } },
         })
         const baseUrl = (ctx.req.protocol + '://' + ctx.req.get('host')).replace(/\/$/, '')
@@ -164,24 +165,21 @@ export const CourseMutation = extendType({
       },
       resolve: async (_, args, ctx) => {
           const token = ctx?.token
-          if (!token) throw new Error('Not authenticated')
+          if (!token || !ctx?.user?.teacherProfileId) throw new Error('Not authenticated or not a teacher')
 
-          // Determine permission in two ways:
-          // 1) Role-based: user has 'teacher' or 'admin' role
+          // Only course owner (current teacher) can create
           const role = Array.isArray(ctx.user?.roles) && ctx.user.roles.includes('admin') ? 'admin' : (Array.isArray(ctx.user?.roles) && ctx.user.roles.includes('teacher') ? 'teacher' : null)
-          let allowedEdit = await canUser('course.edit', { user: ctx.user, role })
-
-          // 2) Profile-based: user owns the teacherProfileId matching the provided teacherId
+          const allowedEdit = await canUser('course.edit', { user: ctx.user, role, course: null })
           let ownsTeacherProfile = false
           try {
             const authResp = await callGraphQL('/api/authentication/graphql', `query { me { id teacherProfileId } }`, {}, token)
             const me = authResp?.me
-            if (me?.teacherProfileId && String(me.teacherProfileId) === String(args.teacherId)) {
+            if (me?.teacherProfileId && String(me.teacherProfileId) === String(ctx.user.teacherProfileId)) {
               ownsTeacherProfile = true
             }
           } catch {}
 
-          if (!allowedEdit && !ownsTeacherProfile) throw new Error('FORBIDDEN')
+          if (!allowedEdit || !ownsTeacherProfile) throw new Error('FORBIDDEN')
 
           // Best-effort: verify teacher profile exists in teach plugin, do not block creation
           try {
@@ -198,6 +196,7 @@ export const CourseMutation = extendType({
           return ctx.prisma.course.create({
             data: {
               ...courseData,
+              teacherId: ctx.user.id,
               ...(metadata ? { metadata } : {}),
             },
           })
@@ -218,14 +217,21 @@ export const CourseMutation = extendType({
         files: arg({ type: 'JSON' }),
       },
       resolve: async (_, args, ctx) => {
+        console.log(JSON.stringify(ctx.user))
+        const existing = await ctx.prisma.course.findUnique({ where: { id: args.id } })
+       
+        const requesterTeacherId = ctx.user?.teacherProfileId || ctx.user?.id
+        const isOwner = existing && (existing.teacherId === requesterTeacherId || existing.teacherId === ctx.user?.id)
+        if (!existing) throw new Error('FORBIDDEN')
         const baseUrl = (ctx.req.protocol + '://' + ctx.req.get('host')).replace(/\/$/, '')
-        const authHeader = ctx.req.headers.authorization || ''
         const instResp = await fetch(`${baseUrl}/api/teach-internal/course/${encodeURIComponent(args.id)}/institution-context`).catch(() => null)
         const instCtx = instResp && (await instResp.json().catch(() => null))
         const institutionId = instCtx?.institutionId || null
         const role = ctx.user?.id && institutionId ? await resolveInstitutionRole(ctx.user.id, institutionId, ctx.req) : null
-        const allowedEdit = await canUser('course.edit', { user: ctx.user, role })
-        if (!allowedEdit) throw new Error('FORBIDDEN')
+        if (!isOwner) {
+          const allowedEdit = await canUser('course.edit', { user: ctx.user, role, institutionId, req: ctx.req })
+          if (!allowedEdit) throw new Error('FORBIDDEN')
+        }
         const { id, files, ...data } = args
         let metadataPatch
         if (files !== undefined) {
@@ -246,6 +252,8 @@ export const CourseMutation = extendType({
       type: 'GqlCourse',
       args: { id: nonNull(stringArg()) },
       resolve: async (_, { id }, ctx) => {
+        const existing = await ctx.prisma.course.findUnique({ where: { id } })
+        if (!existing || existing.teacherId !== ctx.user?.id) throw new Error('FORBIDDEN')
         const baseUrl = (ctx.req.protocol + '://' + ctx.req.get('host')).replace(/\/$/, '')
         const instResp = await fetch(`${baseUrl}/api/teach-internal/course/${encodeURIComponent(id)}/institution-context`).catch(() => null)
         const instCtx = instResp && (await instResp.json().catch(() => null))

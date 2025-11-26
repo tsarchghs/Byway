@@ -2,9 +2,7 @@
 // Auto-generated minimal Nexus schema for Authentication plugin
 import { makeSchema, objectType, stringArg, nonNull, enumType, extendType } from 'nexus'
 import jwt from 'jsonwebtoken'
-import { PrismaClient } from '../db/generated/index.js'
-
-const prisma = new PrismaClient()
+import { prisma } from '../db/client.js'
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret'
 
 const InstitutionUser = objectType({

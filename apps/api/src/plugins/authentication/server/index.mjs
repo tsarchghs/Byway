@@ -4,7 +4,7 @@ import compression from "compression";
 import cors from "cors";
 import { ApolloServer } from "apollo-server-express";
 import { z } from "zod";
-import { PrismaClient } from "./db/generated/index.js";
+import { prisma } from "./db/client.js";
 import { schema } from "./nexus/authSchema.ts";
 import { createContext } from "./nexus/context.js";
 import {
@@ -35,7 +35,7 @@ export const ZUserUpdate = z.object({
 });
 
 // --- Prisma client (singleton) ---
-const prisma = new PrismaClient();
+// Provided by ./db/client.js with proper datasource configuration
 
 // --- Express Router ---
 export async function register(app) {

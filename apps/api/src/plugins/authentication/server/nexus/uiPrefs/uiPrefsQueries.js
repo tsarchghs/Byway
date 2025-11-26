@@ -1,7 +1,5 @@
 import { queryField } from "nexus"
-import { PrismaClient } from "../../db/generated/index.js"
-
-const prisma = new PrismaClient()
+import { prisma } from "../../db/client.js"
 
 export const MyUiPrefs = queryField("myUiPrefs", {
   type: "String",
