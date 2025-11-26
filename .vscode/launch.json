@@ -1,0 +1,45 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // Debug API (Node + Nexus + Express)
+      "type": "pwa-node",
+      "request": "launch",
+      "name": "Debug API",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@bloggrs/api", "dev"],
+      "cwd": "${workspaceFolder}",
+      "autoAttachChildProcesses": true,
+      "sourceMaps": true,
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ],
+      "skipFiles": ["<node_internals>/**"]
+    },
+
+    {
+      // Debug Web (Nuxt 3)
+      "type": "pwa-node",
+      "request": "launch",
+      "name": "Debug Web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@bloggrs/web", "dev"],
+      "cwd": "${workspaceFolder}",
+      "autoAttachChildProcesses": true,
+      "sourceMaps": true,
+      "skipFiles": ["<node_internals>/**"],
+      "env": {
+        "NITRO_DEBUG": "1"
+      }
+    },
+
+    {
+      // Debug BOTH: Web + API together
+      // (best option for you)
+      "type": "compound",
+      "name": "Debug Web + API",
+      "configurations": ["Debug API", "Debug Web"]
+    }
+  ]
+}

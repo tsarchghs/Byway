@@ -58,8 +58,7 @@ export const AuthQuery = extendType({
     t.field("me", {
       type: "GqlUser",
       async resolve(_, __, ctx) {
-        if (!ctx.userId) throw new Error("Not authenticated")
-        return prisma.user.findUnique({ where: { id: ctx.userId } })
+        console.log({ctx},4)
       },
     })
   },

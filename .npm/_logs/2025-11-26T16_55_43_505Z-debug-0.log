@@ -1,0 +1,18 @@
+0 verbose cli /opt/homebrew/Cellar/node/25.1.0_1/bin/node /opt/homebrew/lib/node_modules/npm/bin/npm-cli.js
+1 info using npm@11.6.2
+2 info using node@v25.1.0
+3 silly config load:file:/opt/homebrew/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/gjergjkadriu/Documents/GitHub/Byway/.npmrc
+5 silly config load:file:/opt/homebrew/etc/npmrc
+6 verbose title npm exec prisma generate --schema apps/api/src/plugins/institutions/server/db/schema.prisma
+7 verbose argv "exec" "--" "prisma" "generate" "--schema" "apps/api/src/plugins/institutions/server/db/schema.prisma"
+8 verbose logfile logs-max:10 dir:/Users/gjergjkadriu/Documents/GitHub/Byway/.npm/_logs/2025-11-26T16_55_43_505Z-
+9 verbose logfile /Users/gjergjkadriu/Documents/GitHub/Byway/.npm/_logs/2025-11-26T16_55_43_505Z-debug-0.log
+10 silly logfile done cleaning log files
+11 http fetch GET https://registry.npmjs.org/npm attempt 1 failed with ENOTFOUND
+12 verbose cwd /Users/gjergjkadriu/Documents/GitHub/Byway
+13 verbose os Darwin 24.5.0
+14 verbose node v25.1.0
+15 verbose npm  v11.6.2
+16 verbose exit 1
+17 verbose code 1

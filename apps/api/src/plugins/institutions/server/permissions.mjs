@@ -1,19 +1,21 @@
 export async function resolveUser(req) {
-  const baseUrl = (req.protocol + '://' + req.get('host')).replace(/\/$/, '')
+  const baseUrl = "localhost:4000"
   const auth = req.headers.authorization || ''
+  console.log({auth},2)
   try {
     const resp = await fetch(`${baseUrl}/api/authentication/graphql`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...(auth ? { Authorization: auth } : {}) },
       body: JSON.stringify({ query: `query Me { me { id email displayName roles teacherProfileId } }` }),
     })
-    const json = await resp.json().catch(() => null)
+    const json = await resp.json()
+    console.log({json})
     const me = json?.data?.me || null
     if (!me) return null
     const roles = Array.isArray(me.roles) ? me.roles.slice() : []
     if (me.teacherProfileId && !roles.includes('teacher')) roles.push('teacher')
     return { id: me.id, email: me.email, roles, teacherProfileId: me.teacherProfileId || null }
-  } catch { return null }
+  } catch(err) { throw err; }
 }
 
 export async function resolveInstitutionRole(userId, institutionId, req) {
